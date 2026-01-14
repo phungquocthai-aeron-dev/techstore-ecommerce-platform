@@ -1,0 +1,33 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /identity
+
+spring:
+  application:
+    name: identity-service
+  datasource:
+    url: "jdbc:mysql://localhost:3306/techstore_identity"
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+jwt:
+  signerKey: "u00HlI390ctLn7BGyr0F2HczWiIskDBeX9WFOk25MEGnFoEjKwFoZh6h7gcX3Z3pJ0BAr9AbbGXelLMviWbZoZ"
+  valid-duration: 3600 # in second
+  refreshable-duration: 36000 # in seconds
+
+app:
+  admin:
+    email: admin@gmail.com
+    password: admin
+  services:
+    profile: http://localhost:8081/profile

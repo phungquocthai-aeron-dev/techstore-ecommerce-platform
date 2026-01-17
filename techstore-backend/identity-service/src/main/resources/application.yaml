@@ -7,14 +7,28 @@ spring:
   application:
     name: identity-service
   datasource:
-    url: "jdbc:mysql://localhost:3306/techstore_identity"
+    url: "jdbc:mysql://localhost:3307/techstore_identity"
     driverClassName: "com.mysql.cj.jdbc.Driver"
     username: root
     password: root
   jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect    
     hibernate:
       ddl-auto: update
     show-sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "927045210043-prue4q9vqjb7f08jps9do3iqrtpnl8jk.apps.googleusercontent.com"
+            client-secret: "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"
+            scope:
+              - email
+              - profile
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
   kafka:
     bootstrap-servers: localhost:9094
     producer:
@@ -25,9 +39,9 @@ jwt:
   valid-duration: 3600 # in second
   refreshable-duration: 36000 # in seconds
 
+google:
+  client-id: "927045210043-prue4q9vqjb7f08jps9do3iqrtpnl8jk.apps.googleusercontent.com"
+
 app:
-  admin:
-    email: admin@gmail.com
-    password: admin
   services:
-    profile: http://localhost:8081/profile
+    user: http://localhost:8081/user

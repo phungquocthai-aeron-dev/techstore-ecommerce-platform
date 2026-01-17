@@ -10,4 +10,3 @@ public class RoleResponse {
     private String name;
     private String description;
 }
-

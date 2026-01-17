@@ -6,10 +6,9 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableFeignClients
-public class IndentityServiceApplication {
+public class IdentityServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(IndentityServiceApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(IdentityServiceApplication.class, args);
+    }
 }

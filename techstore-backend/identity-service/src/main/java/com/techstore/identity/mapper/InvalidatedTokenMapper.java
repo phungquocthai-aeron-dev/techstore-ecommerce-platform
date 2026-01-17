@@ -9,9 +9,10 @@ import com.techstore.identity.entity.InvalidatedToken;
 @Mapper(componentModel = "spring")
 public interface InvalidatedTokenMapper {
 
-    @Mapping(target = "customer", ignore = true)
+    @Mapping(target = "expiredAt", ignore = true)
+    @Mapping(target = "revoked", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
     InvalidatedToken toEntity(String token);
 
     AuthenticationResponse toResponse(InvalidatedToken invalidatedToken);
 }
-

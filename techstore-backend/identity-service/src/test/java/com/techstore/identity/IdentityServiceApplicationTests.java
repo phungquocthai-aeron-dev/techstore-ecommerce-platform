@@ -1,13 +1,11 @@
-package com.techstore.indentity_service;
+package com.techstore.identity;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class IndentityServiceApplicationTests {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+class IdentityServiceApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoads() {}
 }

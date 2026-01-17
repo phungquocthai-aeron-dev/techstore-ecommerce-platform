@@ -38,6 +38,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private String[] publicEndpoints = {
             "/identity/auth/.*",
             "/identity/users/registration",
+            // Register and Login by Google
+            "/identity/oauth2/.*",
+            "/identity/login/.*"
     };
 
     @Value("${app.api-prefix}")

@@ -1,8 +1,0 @@
-package com.techstore.identity.constant;
-
-public class PredefinedRole {
-    public static final String ADMIN = "ADMIN";
-    public static final String STAFF = "STAFF";
-
-    private PredefinedRole() {}
-}

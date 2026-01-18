@@ -24,6 +24,8 @@ public enum ErrorCode {
     GOOGLE_AUTH_FAILED(1402, "Google authentication failed", HttpStatus.UNAUTHORIZED),
     ACCOUNT_ALREADY_LINKED(1403, "This Google account is already linked to another user", HttpStatus.CONFLICT),
     USER_SERVICE_UNAVAILABLE(1501, "User service is unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+    ROLE_NOT_FOUND(1011, "Role not found", HttpStatus.BAD_REQUEST),
+    INVALID_ROLE(1012, "Invalid role", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

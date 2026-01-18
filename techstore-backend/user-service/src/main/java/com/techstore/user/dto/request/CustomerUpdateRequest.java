@@ -10,7 +10,5 @@ import lombok.Setter;
 public class CustomerUpdateRequest {
     private String fullName;
     private String phone;
-    private String avatarUrl;
     private LocalDate dob;
-    private String status;
 }

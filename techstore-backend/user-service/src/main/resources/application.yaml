@@ -28,3 +28,4 @@ app:
     password: admin
   services:
     identity: http://localhost:8080/identity
+    file: http://localhost:8082/file

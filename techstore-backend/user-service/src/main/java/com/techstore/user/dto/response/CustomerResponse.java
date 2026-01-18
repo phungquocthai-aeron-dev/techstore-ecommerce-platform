@@ -1,7 +1,6 @@
 package com.techstore.user.dto.response;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -17,5 +16,4 @@ public class CustomerResponse {
     private String provider;
     private String status;
     private LocalDate dob;
-    private LocalDateTime createdAt;
 }

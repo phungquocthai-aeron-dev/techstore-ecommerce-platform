@@ -7,11 +7,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class StaffRequest {
-    private Long id;
-    private String fullName;
+public class StaffCreateRequest {
     private String email;
+    private String password;
+    private String fullName;
     private String phone;
-    private String status;
-    private Set<String> roleNames;
+    private Set<String> roles;
 }

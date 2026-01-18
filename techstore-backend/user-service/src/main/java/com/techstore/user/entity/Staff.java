@@ -39,6 +39,7 @@ public class Staff {
 
     private String phone;
 
+    @Column(nullable = false)
     private String status;
 
     private String password;

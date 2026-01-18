@@ -38,9 +38,11 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private String[] publicEndpoints = {
             "/identity/auth/.*",
             "/identity/users/registration",
-            // Register and Login by Google
+            
             "/identity/oauth2/.*",
-            "/identity/login/.*"
+            "/identity/login/.*",
+            
+            "/file/media/download/.*"
     };
 
     @Value("${app.api-prefix}")
@@ -54,7 +56,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         if (isPublicEndpoint(exchange.getRequest()))
             return chain.filter(exchange);
 
-        // Get token from authorization header
         List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
             return unauthenticated(exchange.getResponse());

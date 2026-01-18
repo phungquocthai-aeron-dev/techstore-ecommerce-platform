@@ -7,7 +7,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
-import com.techstore.identity.client.UserServiceClient;
+import com.techstore.identity.client.UserServiceClient2;
 import com.techstore.identity.client.dto.CustomerAuthDTO;
 import com.techstore.identity.client.dto.GoogleAuthDTO;
 
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClient2 userServiceClient2;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -31,7 +31,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 .providerId(oauth2User.getAttribute("sub"))
                 .build();
 
-        CustomerAuthDTO customer = userServiceClient.handleGoogle(dto);
+        CustomerAuthDTO customer = userServiceClient2.handleGoogle(dto);
 
         return new CustomOAuth2User(customer, oauth2User.getAttributes());
     }

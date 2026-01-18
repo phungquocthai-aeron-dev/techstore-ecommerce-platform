@@ -1,82 +1,31 @@
 package com.techstore.identity.client;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.techstore.identity.client.dto.CustomerAuthDTO;
 import com.techstore.identity.client.dto.GoogleAuthDTO;
 import com.techstore.identity.client.dto.StaffAuthDTO;
-import com.techstore.identity.exception.AppException;
-import com.techstore.identity.exception.ErrorCode;
+import com.techstore.identity.configuration.UserFeignConfig;
 
-import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
+@FeignClient(name = "user-service", url = "${app.services.user}", configuration = UserFeignConfig.class)
+public interface UserServiceClient {
+    @GetMapping("/internal/auth/staff")
+    StaffAuthDTO getStaffByEmail(@RequestParam String email);
 
-@Component
-@RequiredArgsConstructor
-public class UserServiceClient {
+    @GetMapping("/internal/auth/staff/{id}")
+    StaffAuthDTO getStaffById(@PathVariable Long id);
 
-    @Qualifier("userWebClient")
-    private final WebClient userServiceClient;
+    @GetMapping("/internal/auth/customer")
+    CustomerAuthDTO getCustomerByEmail(@RequestParam String email);
 
-    public StaffAuthDTO getStaffByEmail(String email) {
-        return userServiceClient
-                .get()
-                .uri(uri -> uri.path("/internal/auth/staff")
-                        .queryParam("email", email)
-                        .build())
-                .retrieve()
-                .bodyToMono(StaffAuthDTO.class)
-                .block();
-    }
+    @GetMapping("/internal/auth/customer/{id}")
+    CustomerAuthDTO getCustomerById(@PathVariable Long id);
 
-    public StaffAuthDTO getStaffById(Long id) {
-        return userServiceClient
-                .get()
-                .uri("/internal/auth/staff/{id}", id)
-                .retrieve()
-                .bodyToMono(StaffAuthDTO.class)
-                .block();
-    }
-
-    public CustomerAuthDTO getCustomerByEmail(String email) {
-        return userServiceClient
-                .get()
-                .uri(uri -> uri.path("/internal/auth/customer")
-                        .queryParam("email", email)
-                        .build())
-                .retrieve()
-                .bodyToMono(CustomerAuthDTO.class)
-                .block();
-    }
-
-    public CustomerAuthDTO getCustomerById(Long id) {
-        return userServiceClient
-                .get()
-                .uri("/internal/auth/customer/{id}", id)
-                .retrieve()
-                .bodyToMono(CustomerAuthDTO.class)
-                .block();
-    }
-
-    public CustomerAuthDTO handleGoogle(GoogleAuthDTO request) {
-        return userServiceClient
-                .post()
-                .uri("/internal/auth/customer/google")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(
-                        status -> status.value() == 403,
-                        response -> Mono.error(new AppException(ErrorCode.ACCOUNT_DISABLED)))
-                .onStatus(
-                        status -> status.value() == 409,
-                        response -> Mono.error(new AppException(ErrorCode.ACCOUNT_ALREADY_LINKED)))
-                .onStatus(
-                        HttpStatusCode::is5xxServerError,
-                        response -> Mono.error(new AppException(ErrorCode.USER_SERVICE_UNAVAILABLE)))
-                .bodyToMono(CustomerAuthDTO.class)
-                .block();
-    }
+    @PostMapping("/internal/auth/customer/google")
+    CustomerAuthDTO handleGoogle(@RequestBody GoogleAuthDTO request);
 }

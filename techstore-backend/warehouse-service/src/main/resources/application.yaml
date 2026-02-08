@@ -1,0 +1,28 @@
+server:
+  port: 8084
+  servlet:
+    context-path: /warehouse
+
+spring:
+  application:
+    name: product-service
+  datasource:
+    url: "jdbc:mysql://localhost:3307/techstore_warehouse"
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: root
+    password: root
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect    
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+app:
+  services:
+    identity: http://localhost:8080/identity
+    file: http://localhost:8082/file

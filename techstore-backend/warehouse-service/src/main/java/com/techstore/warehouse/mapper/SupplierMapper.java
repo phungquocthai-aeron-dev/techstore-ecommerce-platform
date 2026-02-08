@@ -1,0 +1,19 @@
+package com.techstore.warehouse.mapper;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+
+import com.techstore.warehouse.dto.request.SupplierCreateRequest;
+import com.techstore.warehouse.dto.request.SupplierUpdateRequest;
+import com.techstore.warehouse.dto.response.SupplierResponse;
+import com.techstore.warehouse.entity.Supplier;
+
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+public interface SupplierMapper {
+    Supplier toEntity(SupplierCreateRequest request);
+
+    SupplierResponse toResponse(Supplier supplier);
+
+    void updateEntityFromRequest(SupplierUpdateRequest request, @MappingTarget Supplier supplier);
+}

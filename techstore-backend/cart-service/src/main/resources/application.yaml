@@ -1,0 +1,45 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /cart
+
+spring:
+  application:
+    name: cart-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3307/techstore_cart
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6380
+      password:
+      timeout: 2000ms
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+cart:
+  ttl: 604800
+  max-items-per-cart: 50
+
+app:
+  services:
+    identity: http://localhost:8080/identity
+    file: http://localhost:8082/file
+    product: http://localhost:8083/product
+    order: http://localhost:8084/order

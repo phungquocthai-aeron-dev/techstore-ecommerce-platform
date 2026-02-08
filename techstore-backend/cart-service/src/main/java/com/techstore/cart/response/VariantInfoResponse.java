@@ -1,0 +1,14 @@
+package com.techstore.cart.response;
+
+import lombok.Data;
+
+@Data
+public class VariantInfoResponse {
+    private Long id;
+    private Long productId;
+    private String color;
+    private Double price;
+    private Integer stock;
+    private String status;
+    private String imageUrl;
+}

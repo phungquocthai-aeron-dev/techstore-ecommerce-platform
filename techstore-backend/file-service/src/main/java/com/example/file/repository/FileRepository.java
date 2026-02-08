@@ -16,6 +16,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.file.constant.UploadFolder;
 import com.example.file.dto.response.FileInfo;
 import com.example.file.entity.FileMetadata;
 
@@ -27,25 +28,27 @@ public class FileRepository {
     @Value("${app.file.download-prefix}")
     String urlPrefix;
 
-    public FileInfo store(MultipartFile file) throws IOException {
-        Path folder = Paths.get(storageDir);
+    public FileInfo store(MultipartFile file, UploadFolder folder) throws IOException {
+
+        Path baseDir = Paths.get(storageDir, folder.getRelativePath());
+        Files.createDirectories(baseDir);
 
         String fileExtension = StringUtils.getFilenameExtension(file.getOriginalFilename());
 
         String fileName =
                 Objects.isNull(fileExtension) ? UUID.randomUUID().toString() : UUID.randomUUID() + "." + fileExtension;
 
-        Path filePath = folder.resolve(fileName).normalize().toAbsolutePath();
+        Path filePath = baseDir.resolve(fileName).normalize().toAbsolutePath();
 
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         return FileInfo.builder()
-                .name(fileName)
+                .name(folder.getRelativePath() + "/" + fileName)
                 .size(file.getSize())
                 .contentType(file.getContentType())
                 .md5Checksum(DigestUtils.md5DigestAsHex(file.getInputStream()))
                 .path(filePath.toString())
-                .url(urlPrefix + fileName)
+                .url(urlPrefix + folder.getRelativePath() + "/" + fileName)
                 .build();
     }
 

@@ -9,5 +9,6 @@ import com.example.file.entity.FileMetadata;
 @Mapper(componentModel = "spring")
 public interface FileMetadataMapper {
     @Mapping(target = "id", source = "name")
+    @Mapping(target = "ownerId", ignore = true)
     FileMetadata toFileMetadata(FileInfo fileInfo);
 }

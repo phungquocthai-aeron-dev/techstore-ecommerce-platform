@@ -25,6 +25,10 @@ public enum ErrorCode {
     ACCOUNT_ALREADY_LINKED(1403, "This Google account is already linked to another user", HttpStatus.CONFLICT),
     USER_SERVICE_UNAVAILABLE(1501, "User service is unavailable", HttpStatus.SERVICE_UNAVAILABLE),
     FILE_NOT_FOUND(1012, "File not found", HttpStatus.NOT_FOUND),
+    FILE_EMPTY(1013, "File list is empty", HttpStatus.BAD_REQUEST),
+    FILE_LIMIT_EXCEEDED(1014, "Maximum 10 files are allowed", HttpStatus.BAD_REQUEST),
+    INVALID_IMAGE_FOLDER(
+            1015, "Invalid image folder. Allowed values: USER_AVATAR, PRODUCT_IMAGE", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

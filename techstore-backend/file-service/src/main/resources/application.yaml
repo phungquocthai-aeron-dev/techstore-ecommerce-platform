@@ -11,8 +11,8 @@ spring:
   servlet:
     multipart:
       max-file-size: 5MB
-      max-request-size: 5MB
+      max-request-size: 50MB
 app:
   file:
-    storage-dir: D:\Luan_Van\app-data\uploads
+    storage-dir: D:/Luan_Van/app-data/uploads
     download-prefix: http://localhost:8888/techstore/api/v1/file/media/download/

@@ -18,6 +18,7 @@ public class UserInternalController {
 
     @GetMapping("/staff")
     public StaffAuthResponse getStaff(@RequestParam String email) {
+        System.err.println("AAAAAAA");
         return userInternalService.getStaffForAuth(email);
     }
 

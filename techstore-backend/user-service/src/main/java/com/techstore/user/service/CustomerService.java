@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.techstore.user.client.FileServiceClient;
 import com.techstore.user.constant.AccountStatus;
+import com.techstore.user.constant.UploadFolder;
 import com.techstore.user.dto.request.CustomerRegisterRequest;
 import com.techstore.user.dto.request.CustomerUpdateRequest;
 import com.techstore.user.dto.response.CustomerResponse;
@@ -89,7 +90,7 @@ public class CustomerService {
     public void updateAvatar(Long id, MultipartFile file) {
         Customer customer = getCustomerAndCheckPermission(id);
 
-        var upload = fileClient.upload(file);
+        var upload = fileClient.upload(file, UploadFolder.USER_AVATAR.name());
         customer.setAvatarUrl(upload.getResult().getUrl());
 
         customerRepo.save(customer);

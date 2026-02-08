@@ -14,7 +14,7 @@
 	<name>user-service</name>
 	<description>User Service for TechStore E-commerce Platform.</description>
 	<url/>
-<licenses>
+		<licenses>
 		<license/>
 	</licenses>
 	<developers>

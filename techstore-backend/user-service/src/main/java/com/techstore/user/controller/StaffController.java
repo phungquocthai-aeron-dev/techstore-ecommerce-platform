@@ -2,6 +2,8 @@ package com.techstore.user.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +30,7 @@ public class StaffController {
     private final StaffService staffService;
 
     @PostMapping
-    public ApiResponse<StaffResponse> create(@RequestBody StaffRequest req) {
+    public ApiResponse<StaffResponse> create(@Valid @RequestBody StaffRequest req) {
         return ApiResponse.<StaffResponse>builder()
                 .result(staffService.createStaff(req))
                 .build();
@@ -58,7 +60,7 @@ public class StaffController {
     }
 
     @PatchMapping("/{id}")
-    public ApiResponse<StaffResponse> updateInfo(@PathVariable Long id, @RequestBody StaffRequest req) {
+    public ApiResponse<StaffResponse> updateInfo(@PathVariable Long id, @Valid @RequestBody StaffRequest req) {
 
         return ApiResponse.<StaffResponse>builder()
                 .result(staffService.updateInfo(id, req))

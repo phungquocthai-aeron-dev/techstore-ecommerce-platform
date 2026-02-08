@@ -14,5 +14,5 @@ import com.techstore.user.dto.response.FileResponse;
 public interface FileServiceClient {
 
     @PostMapping(value = "/media/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ApiResponse<FileResponse> upload(@RequestPart MultipartFile file);
+    ApiResponse<FileResponse> upload(@RequestPart MultipartFile file, @RequestPart("folder") String folder);
 }

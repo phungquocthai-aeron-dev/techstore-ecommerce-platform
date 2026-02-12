@@ -26,6 +26,15 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
+    @GetMapping("/available")
+    public ApiResponse<List<InventoryResponse>> findAvailableInventory(
+            @RequestParam Long warehouseId, @RequestParam Long variantId, @RequestParam Long requiredQuantity) {
+
+        return ApiResponse.<List<InventoryResponse>>builder()
+                .result(inventoryService.findActiveInventories(warehouseId, variantId))
+                .build();
+    }
+
     @PutMapping("/{id}")
     public ApiResponse<InventoryResponse> update(
             @PathVariable Long id, @Valid @RequestBody InventoryUpdateRequest req) {

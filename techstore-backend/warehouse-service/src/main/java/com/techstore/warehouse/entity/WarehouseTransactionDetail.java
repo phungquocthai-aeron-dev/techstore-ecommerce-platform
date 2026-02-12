@@ -26,6 +26,7 @@ public class WarehouseTransactionDetail {
     private Long id;
 
     private Long quantity;
+    private Long cost;
     private Long variantId;
 
     @ManyToOne

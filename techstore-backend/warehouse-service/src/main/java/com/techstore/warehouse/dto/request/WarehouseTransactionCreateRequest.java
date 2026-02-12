@@ -25,7 +25,7 @@ public class WarehouseTransactionCreateRequest {
     @NotBlank(message = "Reference type is required")
     private String referenceType;
 
-    private String orderId;
+    private Long orderId;
 
     @NotNull(message = "Staff ID is required")
     private Long staffId;

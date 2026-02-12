@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.techstore.warehouse.dto.request.InventoryExportRequest;
 import com.techstore.warehouse.dto.request.WarehouseTransactionCreateRequest;
 import com.techstore.warehouse.dto.response.ApiResponse;
 import com.techstore.warehouse.dto.response.WarehouseTransactionResponse;
@@ -41,7 +42,7 @@ public class WarehouseTransactionController {
     }
 
     /**
-     * Tạo phiếu xuất hàng (OUTBOUND)
+     * Tạo phiếu xuất hàng (MUNUAL)
      */
     @PostMapping("/outbound")
     public ApiResponse<WarehouseTransactionResponse> createOutbound(
@@ -49,6 +50,17 @@ public class WarehouseTransactionController {
         return ApiResponse.<WarehouseTransactionResponse>builder()
                 .result(transactionService.createOutboundTransaction(req))
                 .build();
+    }
+
+    /**
+     * Xuất kho theo variant (FIFO) phục vụ bán hàng
+     */
+    @PostMapping("/export")
+    public ApiResponse<Void> exportInventory(@Valid @RequestBody InventoryExportRequest request) {
+
+        transactionService.exportInventory(request.getOrderId(), request.getStaffId(), request.getItems());
+
+        return ApiResponse.<Void>builder().build();
     }
 
     @GetMapping("/{id}")
@@ -94,7 +106,7 @@ public class WarehouseTransactionController {
     }
 
     @GetMapping("/order/{orderId}")
-    public ApiResponse<List<WarehouseTransactionResponse>> getByOrderId(@PathVariable String orderId) {
+    public ApiResponse<List<WarehouseTransactionResponse>> getByOrderId(@PathVariable Long orderId) {
         return ApiResponse.<List<WarehouseTransactionResponse>>builder()
                 .result(transactionService.getByOrderId(orderId))
                 .build();

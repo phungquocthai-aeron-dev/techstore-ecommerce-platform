@@ -24,7 +24,7 @@ public class Warehouse {
     private Long id;
 
     private String name;
-    private String maxCapacity;
+    private Long maxCapacity;
     private String unitCapacity;
     private String status;
     private String addressId;

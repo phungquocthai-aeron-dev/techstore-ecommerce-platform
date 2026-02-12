@@ -14,7 +14,13 @@ public interface InventoryMapper {
 
     @Mapping(source = "warehouse.id", target = "warehouseId")
     @Mapping(source = "warehouse.name", target = "warehouseName")
+    @Mapping(target = "variantInfo", ignore = true)
     InventoryResponse toResponse(Inventory inventory);
 
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "warehouse", ignore = true)
+    @Mapping(target = "variantId", ignore = true)
+    @Mapping(target = "id", ignore = true)
     void updateEntityFromRequest(InventoryUpdateRequest request, @MappingTarget Inventory inventory);
 }

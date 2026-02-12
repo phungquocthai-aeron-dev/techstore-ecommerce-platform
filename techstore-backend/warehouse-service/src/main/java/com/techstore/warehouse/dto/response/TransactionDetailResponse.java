@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class TransactionDetailResponse {
     private Long id;
     private Long quantity;
+    private Long cost;
     private Long variantId;
     private InventoryResponse inventory;
 }

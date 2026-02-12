@@ -63,6 +63,7 @@ public enum ErrorCode {
     // Staff service errors
     STAFF_NOT_FOUND(5501, "Staff not found", HttpStatus.NOT_FOUND),
     STAFF_SERVICE_ERROR(5502, "Error communicating with user service", HttpStatus.SERVICE_UNAVAILABLE),
+    INVALID_STOCK_QUANTITY(5503, "Invalid stock quantity", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

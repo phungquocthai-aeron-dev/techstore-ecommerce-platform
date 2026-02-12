@@ -4,11 +4,13 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import com.techstore.warehouse.configuration.FileFeignConfig;
 import com.techstore.warehouse.dto.response.ApiResponse;
+import com.techstore.warehouse.dto.response.StaffResponse;
 
-@FeignClient(name = "user-service", url = "${user.service.url:http://localhost:8081}")
+@FeignClient(name = "file-service", url = "${app.services.user}", configuration = FileFeignConfig.class)
 public interface UserServiceClient {
 
-    @GetMapping("/staff/{staffId}")
-    ApiResponse<Object> getStaffById(@PathVariable Long staffId);
+    @GetMapping("/staffs/{staffId}")
+    ApiResponse<StaffResponse> getStaffById(@PathVariable Long staffId);
 }

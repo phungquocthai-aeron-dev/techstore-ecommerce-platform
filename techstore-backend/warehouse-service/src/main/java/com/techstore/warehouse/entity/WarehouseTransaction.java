@@ -35,7 +35,7 @@ public class WarehouseTransaction {
     private String note;
     private String transactionType;
     private String referenceType;
-    private String orderId;
+    private Long orderId;
     private Long staffId;
     private String status;
 

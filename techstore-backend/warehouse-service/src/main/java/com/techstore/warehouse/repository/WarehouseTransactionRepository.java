@@ -21,7 +21,7 @@ public interface WarehouseTransactionRepository extends JpaRepository<WarehouseT
 
     List<WarehouseTransaction> findByStatus(String status);
 
-    List<WarehouseTransaction> findByOrderId(String orderId);
+    List<WarehouseTransaction> findByOrderId(Long orderId);
 
     @Query("SELECT t FROM WarehouseTransaction t WHERE t.createdAt BETWEEN :startDate AND :endDate")
     List<WarehouseTransaction> findByDateRange(

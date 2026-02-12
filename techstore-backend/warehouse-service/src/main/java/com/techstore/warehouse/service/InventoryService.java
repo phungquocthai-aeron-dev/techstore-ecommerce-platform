@@ -1,6 +1,5 @@
 package com.techstore.warehouse.service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,12 +42,15 @@ public class InventoryService {
                 inventoryRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
 
         inventoryMapper.updateEntityFromRequest(req, inventory);
-        inventory.setUpdatedAt(LocalDate.now());
+
+        if (inventory.getStock() < 0) {
+            throw new AppException(ErrorCode.INVALID_STOCK_QUANTITY);
+        }
 
         // Auto update status based on stock
         if (inventory.getStock() == 0) {
             inventory.setStatus(InventoryStatus.OUT_OF_STOCK.name());
-        } else if (req.getStatus() == null) {
+        } else {
             inventory.setStatus(InventoryStatus.ACTIVE.name());
         }
 
@@ -65,40 +67,29 @@ public class InventoryService {
 
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public List<InventoryResponse> getByWarehouse(Long warehouseId) {
-        return inventoryRepo.findByWarehouseId(warehouseId).stream()
-                .map(this::buildInventoryResponse)
-                .toList();
+        return buildInventoryResponsesBatch(inventoryRepo.findByWarehouseId(warehouseId));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public List<InventoryResponse> getByVariant(Long variantId) {
-        return inventoryRepo.findByVariantId(variantId).stream()
-                .map(this::buildInventoryResponse)
-                .toList();
+        return buildInventoryResponsesBatch(inventoryRepo.findByVariantId(variantId));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public List<InventoryResponse> getByWarehouseAndVariant(Long warehouseId, Long variantId) {
-        return inventoryRepo.findByWarehouseAndVariant(warehouseId, variantId).stream()
-                .map(this::buildInventoryResponse)
-                .toList();
+        return buildInventoryResponsesBatch(
+                inventoryRepo.findByWarehouseIdAndVariantIdOrderByCreatedAtAsc(warehouseId, variantId));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public List<InventoryResponse> getAll() {
-        return inventoryRepo.findAll().stream()
-                .map(this::buildInventoryResponse)
-                .toList();
+        return buildInventoryResponsesBatch(inventoryRepo.findAll());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public List<InventoryResponse> getByStatus(String status) {
-        return inventoryRepo.findByStatus(status).stream()
-                .map(this::buildInventoryResponse)
-                .toList();
+        return buildInventoryResponsesBatch(inventoryRepo.findByStatus(status));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public Long getTotalStockByVariant(Long variantId) {
         Long totalStock = inventoryRepo.getTotalStockByVariantId(variantId);
         return totalStock != null ? totalStock : 0L;
@@ -118,6 +109,10 @@ public class InventoryService {
         Warehouse warehouse =
                 warehouseRepo.findById(warehouseId).orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
 
+        if (quantity == null || quantity <= 0) {
+            throw new AppException(ErrorCode.INVALID_STOCK_QUANTITY);
+        }
+
         // Verify variant exists
         verifyVariantExists(variantId);
 
@@ -129,7 +124,6 @@ public class InventoryService {
         if (inventory != null) {
             // Update existing inventory
             inventory.setStock(inventory.getStock() + quantity);
-            inventory.setUpdatedAt(LocalDate.now());
             if (inventory.getStock() > 0) {
                 inventory.setStatus(InventoryStatus.ACTIVE.name());
             }
@@ -141,7 +135,6 @@ public class InventoryService {
                     .stock(quantity)
                     .batchCode(batchCode)
                     .status(InventoryStatus.ACTIVE.name())
-                    .updatedAt(LocalDate.now())
                     .build();
         }
 
@@ -155,19 +148,25 @@ public class InventoryService {
     public Inventory reduceInventory(Long inventoryId, Long quantity) {
         log.info("Reducing inventory id: {} by quantity: {}", inventoryId, quantity);
 
-        Inventory inventory =
-                inventoryRepo.findById(inventoryId).orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
+        if (quantity == null || quantity <= 0) {
+            throw new AppException(ErrorCode.INVALID_STOCK_QUANTITY);
+        }
+
+        Inventory inventory = inventoryRepo
+                .findByIdForUpdate(inventoryId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
 
         if (inventory.getStock() < quantity) {
             throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
         }
 
         inventory.setStock(inventory.getStock() - quantity);
-        inventory.setUpdatedAt(LocalDate.now());
 
         // Update status if out of stock
         if (inventory.getStock() == 0) {
             inventory.setStatus(InventoryStatus.OUT_OF_STOCK.name());
+        } else {
+            inventory.setStatus(InventoryStatus.ACTIVE.name());
         }
 
         return inventoryRepo.save(inventory);
@@ -176,6 +175,7 @@ public class InventoryService {
     /**
      * Tìm inventory phù hợp để xuất hàng (FIFO - First In First Out)
      */
+    @Deprecated
     public Inventory findAvailableInventory(Long warehouseId, Long variantId, Long requiredQuantity) {
         List<Inventory> inventories = inventoryRepo.findByWarehouseAndVariant(warehouseId, variantId);
 
@@ -184,6 +184,19 @@ public class InventoryService {
                 .filter(inv -> inv.getStock() >= requiredQuantity)
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.INSUFFICIENT_STOCK));
+    }
+
+    public List<Inventory> findByWarehouseAndVariantForUpdate(Long warehouseId, Long variantId) {
+        return inventoryRepo.findByWarehouseAndVariantForUpdate(warehouseId, variantId);
+    }
+
+    public List<InventoryResponse> findActiveInventories(Long warehouseId, Long variantId) {
+        List<Inventory> inventories =
+                inventoryRepo.findByWarehouseIdAndVariantIdOrderByCreatedAtAsc(warehouseId, variantId).stream()
+                        .filter(inv -> InventoryStatus.ACTIVE.name().equals(inv.getStatus()))
+                        .toList();
+
+        return buildInventoryResponsesBatch(inventories);
     }
 
     private InventoryResponse buildInventoryResponse(Inventory inventory) {
@@ -211,5 +224,37 @@ public class InventoryService {
             log.error("Error communicating with product service", e);
             throw new AppException(ErrorCode.PRODUCT_SERVICE_ERROR);
         }
+    }
+
+    private List<InventoryResponse> buildInventoryResponsesBatch(List<Inventory> inventories) {
+
+        if (inventories.isEmpty()) {
+            return List.of();
+        }
+
+        // 1. Collect unique variantIds
+        List<Long> variantIds =
+                inventories.stream().map(Inventory::getVariantId).distinct().toList();
+
+        // 2. Call product-service ONE TIME
+        List<VariantInfo> variantInfos;
+        try {
+            variantInfos = productClient.getVariantsByIds(variantIds).getResult();
+        } catch (FeignException e) {
+            log.error("Error fetching variant batch info", e);
+            variantInfos = List.of();
+        }
+
+        // 3. Convert to Map for fast lookup
+        var variantMap = variantInfos.stream().collect(java.util.stream.Collectors.toMap(VariantInfo::getId, v -> v));
+
+        // 4. Build response
+        return inventories.stream()
+                .map(inv -> {
+                    InventoryResponse response = inventoryMapper.toResponse(inv);
+                    response.setVariantInfo(variantMap.get(inv.getVariantId()));
+                    return response;
+                })
+                .toList();
     }
 }

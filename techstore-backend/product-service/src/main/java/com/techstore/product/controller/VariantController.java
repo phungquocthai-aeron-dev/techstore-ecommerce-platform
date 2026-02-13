@@ -1,5 +1,7 @@
 package com.techstore.product.controller;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.MediaType;
@@ -31,6 +33,33 @@ public class VariantController {
 
         return ApiResponse.<VariantResponseDTO>builder()
                 .result(variantService.getVariantById(variantId))
+                .build();
+    }
+
+    /**
+     * Lấy variant theo ID bao gồm stock
+     */
+    @GetMapping("/detail/{variantId}")
+    public ApiResponse<VariantResponseDTO> getDetailById(@PathVariable Long variantId) {
+
+        return ApiResponse.<VariantResponseDTO>builder()
+                .result(variantService.getVariantWithStockById(variantId))
+                .build();
+    }
+
+    @GetMapping
+    public ApiResponse<List<VariantResponseDTO>> getByIds(@RequestParam List<Long> ids) {
+
+        return ApiResponse.<List<VariantResponseDTO>>builder()
+                .result(variantService.getVariantByIds(ids))
+                .build();
+    }
+
+    @PostMapping("/variants/detail/batch")
+    public ApiResponse<List<VariantResponseDTO>> getVariantsWithStock(@RequestBody List<Long> variantIds) {
+
+        return ApiResponse.<List<VariantResponseDTO>>builder()
+                .result(variantService.getVariantsWithStock(variantIds))
                 .build();
     }
 

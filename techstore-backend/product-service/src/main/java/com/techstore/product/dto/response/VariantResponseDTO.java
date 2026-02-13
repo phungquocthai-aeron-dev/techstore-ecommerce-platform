@@ -11,7 +11,7 @@ public class VariantResponseDTO {
     private Long productId;
     private String color;
     private Double price;
-    private Integer stock;
+    private Long stock;
     private String status;
     private String imageUrl;
 }

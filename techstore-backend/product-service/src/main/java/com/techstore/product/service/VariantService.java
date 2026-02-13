@@ -1,6 +1,9 @@
 package com.techstore.product.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -9,12 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.techstore.product.client.FileServiceClient;
+import com.techstore.product.client.WarehouseServiceClient;
 import com.techstore.product.constant.UploadFolder;
 import com.techstore.product.dto.request.VariantCreateRequestDTO;
 import com.techstore.product.dto.request.VariantUpdateImageRequestDTO;
 import com.techstore.product.dto.request.VariantUpdateRequestDTO;
+import com.techstore.product.dto.response.ApiResponse;
 import com.techstore.product.dto.response.FileResponse;
 import com.techstore.product.dto.response.VariantResponseDTO;
+import com.techstore.product.dto.response.VariantStockResponse;
 import com.techstore.product.entity.Product;
 import com.techstore.product.entity.Variant;
 import com.techstore.product.exception.AppException;
@@ -23,6 +29,9 @@ import com.techstore.product.mapper.VariantMapper;
 import com.techstore.product.repository.ProductRepository;
 import com.techstore.product.repository.VariantRepository;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 @Transactional
 public class VariantService {
@@ -38,6 +47,9 @@ public class VariantService {
 
     @Autowired
     private FileServiceClient fileServiceClient;
+
+    @Autowired
+    private WarehouseServiceClient warehouseServiceClient;
 
     /**
      * Thêm variant cho product (ADMIN)
@@ -119,7 +131,6 @@ public class VariantService {
         }
 
         VariantResponseDTO dto = variantMapper.toResponseDTO(updatedVariant);
-        dto.setProductId(updatedVariant.getProduct().getId());
         return dto;
     }
 
@@ -153,8 +164,66 @@ public class VariantService {
                 variantRepository.findById(variantId).orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
 
         VariantResponseDTO dto = variantMapper.toResponseDTO(variant);
-        dto.setProductId(variant.getProduct().getId());
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public VariantResponseDTO getVariantWithStockById(Long variantId) {
+
+        Variant variant =
+                variantRepository.findById(variantId).orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
+
+        VariantResponseDTO dto = variantMapper.toResponseDTO(variant);
+
+        try {
+            Long stock =
+                    warehouseServiceClient.getTotalStockByVariant(variantId).getResult();
+            dto.setStock(stock);
+        } catch (Exception e) {
+            log.error("Failed to fetch stock for variantId={}", variantId, e);
+            dto.setStock(null); // UNKNOWN
+        }
+
+        return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public List<VariantResponseDTO> getVariantsWithStock(List<Long> variantIds) {
+
+        // Lấy variant
+        List<Variant> variants = variantRepository.findByIdIn(variantIds);
+
+        // Gọi batch warehouse
+        Map<Long, Long> stockMap = new HashMap<>();
+
+        if (!variants.isEmpty()) {
+            try {
+                ApiResponse<List<VariantStockResponse>> response =
+                        warehouseServiceClient.getTotalStockByVariants(variantIds);
+
+                stockMap = response.getResult().stream()
+                        .collect(Collectors.toMap(VariantStockResponse::getVariantId, VariantStockResponse::getStock));
+            } catch (Exception e) {
+                log.error("Batch stock fetch failed", e);
+            }
+        }
+
+        // Map sang DTO
+        Map<Long, Long> finalStockMap = stockMap;
+
+        return variants.stream()
+                .map(v -> {
+                    VariantResponseDTO dto = variantMapper.toResponseDTO(v);
+                    dto.setStock(finalStockMap.getOrDefault(v.getId(), null));
+                    return dto;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<VariantResponseDTO> getVariantByIds(List<Long> ids) {
+        List<Variant> variants = variantRepository.findAllById(ids);
+        return variantMapper.toResponseDTOList(variants);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -192,7 +261,6 @@ public class VariantService {
         Variant saved = variantRepository.save(variant);
 
         VariantResponseDTO dtoRes = variantMapper.toResponseDTO(saved);
-        dtoRes.setProductId(saved.getProduct().getId());
         return dtoRes;
     }
 

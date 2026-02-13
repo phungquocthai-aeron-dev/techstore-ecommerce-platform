@@ -12,6 +12,7 @@ import com.techstore.product.entity.Variant;
 @Mapper(componentModel = "spring")
 public interface VariantMapper {
 
+    @Mapping(target = "productId", source = "product.id")
     VariantResponseDTO toResponseDTO(Variant variant);
 
     List<VariantResponseDTO> toResponseDTOList(List<Variant> variants);

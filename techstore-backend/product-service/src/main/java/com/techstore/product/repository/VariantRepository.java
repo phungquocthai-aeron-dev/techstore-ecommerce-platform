@@ -11,6 +11,8 @@ public interface VariantRepository extends JpaRepository<Variant, Long> {
 
     List<Variant> findByProductId(Long productId);
 
+    List<Variant> findByIdIn(List<Long> ids);
+
     boolean existsByProductIdAndColor(Long productId, String color);
 
     @Query(

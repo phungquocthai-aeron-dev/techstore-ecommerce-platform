@@ -70,6 +70,10 @@ public class CustomerService {
         if (customerRepo.findByEmail(req.getEmail()).isPresent()) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
+        
+        if (!req.getPassword().equals(req.getPasswordConfirm())) {
+            throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
 
         Customer customer = customerMapper.toEntity(req);
         customer.setPassword(passwordEncoder.encode(req.getPassword()));
@@ -97,11 +101,23 @@ public class CustomerService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','CUSTOMER')")
-    public void updatePassword(Long id, String oldPw, String newPw) {
+    public void updatePassword(Long id, String oldPw, String newPw, String passwordConfirm) {
         Customer customer = getCustomerAndCheckPermission(id);
 
         if (!isAdmin() && !passwordEncoder.matches(oldPw, customer.getPassword())) {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        if (newPw == null || newPw.trim().isEmpty()) {
+            throw new AppException(ErrorCode.PASSWORD_EMPTY);
+        }
+
+        if (!newPw.equals(passwordConfirm)) {
+            throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
+
+        if (passwordEncoder.matches(newPw, customer.getPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_DUPLICATE);
         }
 
         customer.setPassword(passwordEncoder.encode(newPw));

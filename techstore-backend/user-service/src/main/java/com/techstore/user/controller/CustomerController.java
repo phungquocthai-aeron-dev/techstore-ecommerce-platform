@@ -80,9 +80,12 @@ public class CustomerController {
 
     @PutMapping("/{id}/password")
     public ApiResponse<Void> updatePassword(
-            @PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword) {
+            @PathVariable Long id,
+            @RequestParam String oldPassword,
+            @RequestParam String newPassword,
+            @RequestParam String passwordConfirm) {
 
-        customerService.updatePassword(id, oldPassword, newPassword);
+        customerService.updatePassword(id, oldPassword, newPassword, passwordConfirm);
         return ApiResponse.<Void>builder().build();
     }
 

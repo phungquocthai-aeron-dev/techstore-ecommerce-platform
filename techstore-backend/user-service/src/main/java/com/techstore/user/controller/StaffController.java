@@ -36,6 +36,13 @@ public class StaffController {
                 .build();
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<StaffResponse> findById(@PathVariable Long id) {
+        return ApiResponse.<StaffResponse>builder()
+                .result(staffService.findById(id))
+                .build();
+    }
+
     @GetMapping
     public ApiResponse<StaffResponse> findOne(
             @RequestParam(required = false) Long id,
@@ -69,9 +76,12 @@ public class StaffController {
 
     @PutMapping("/{id}/password")
     public ApiResponse<Void> updatePassword(
-            @PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword) {
+            @PathVariable Long id,
+            @RequestParam String oldPassword,
+            @RequestParam String newPassword,
+            @RequestParam String passwordConfirm) {
 
-        staffService.updatePassword(id, oldPassword, newPassword);
+        staffService.updatePassword(id, oldPassword, newPassword, passwordConfirm);
         return ApiResponse.<Void>builder().build();
     }
 

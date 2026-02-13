@@ -72,11 +72,23 @@ public class StaffService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
-    public void updatePassword(Long id, String oldPw, String newPw) {
+    public void updatePassword(Long id, String oldPw, String newPw, String passwordConfirm) {
         Staff staff = getStaffAndCheckPermission(id);
 
         if (!isAdmin() && !passwordEncoder.matches(oldPw, staff.getPassword())) {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        if (newPw == null || newPw.trim().isEmpty()) {
+            throw new AppException(ErrorCode.PASSWORD_EMPTY);
+        }
+
+        if (!newPw.equals(passwordConfirm)) {
+            throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
+
+        if (passwordEncoder.matches(newPw, staff.getPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_DUPLICATE);
         }
 
         staff.setPassword(passwordEncoder.encode(newPw));
@@ -113,7 +125,18 @@ public class StaffService {
         return staffMapper.toResponse(staffRepo.save(staff));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public StaffResponse findById(Long id) {
+        if (id == null) {
+            throw new AppException(ErrorCode.INVALID_KEY);
+        }
+
+        Staff staff = staffRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return staffMapper.toResponse(staff);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public StaffResponse findOne(Long id, String email, String phone) {
         if (id == null && email == null && phone == null) {
             throw new AppException(ErrorCode.INVALID_KEY);

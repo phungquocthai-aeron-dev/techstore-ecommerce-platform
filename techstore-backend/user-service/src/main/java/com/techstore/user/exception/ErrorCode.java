@@ -27,11 +27,14 @@ public enum ErrorCode {
     ROLE_NOT_FOUND(1011, "Role not found", HttpStatus.BAD_REQUEST),
     INVALID_ROLE(1012, "Invalid role", HttpStatus.BAD_REQUEST),
     INVALID_PHONE(
-            4001,
+            1013,
             "Số điện thoại không hợp lệ. "
                     + "Yêu cầu: 10 chữ số, bắt đầu bằng các đầu số hợp lệ tại Việt Nam (03, 05, 07, 08, 09). "
                     + "Ví dụ: 0912345678",
             HttpStatus.BAD_REQUEST),
+    PASSWORD_EMPTY(1014, "Password empty", HttpStatus.BAD_REQUEST),
+    PASSWORD_CONFIRM_NOT_MATCH(1015, "Password confirm not match", HttpStatus.BAD_REQUEST),
+    PASSWORD_DUPLICATE(1016, "Password duplicate", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

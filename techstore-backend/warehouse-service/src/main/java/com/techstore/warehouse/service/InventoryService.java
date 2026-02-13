@@ -1,6 +1,8 @@
 package com.techstore.warehouse.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import com.techstore.warehouse.constant.InventoryStatus;
 import com.techstore.warehouse.dto.request.InventoryUpdateRequest;
 import com.techstore.warehouse.dto.response.InventoryResponse;
 import com.techstore.warehouse.dto.response.VariantInfo;
+import com.techstore.warehouse.dto.response.VariantStockResponse;
 import com.techstore.warehouse.entity.Inventory;
 import com.techstore.warehouse.entity.Warehouse;
 import com.techstore.warehouse.exception.AppException;
@@ -93,6 +96,21 @@ public class InventoryService {
     public Long getTotalStockByVariant(Long variantId) {
         Long totalStock = inventoryRepo.getTotalStockByVariantId(variantId);
         return totalStock != null ? totalStock : 0L;
+    }
+
+    public List<VariantStockResponse> getTotalStockByVariantIds(List<Long> variantIds) {
+
+        List<Object[]> results = inventoryRepo.getTotalStockByVariantIds(variantIds);
+
+        Map<Long, Long> stockMap = results.stream().collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+
+        // đảm bảo variant không có record vẫn trả về 0
+        return variantIds.stream()
+                .map(id -> VariantStockResponse.builder()
+                        .variantId(id)
+                        .stock(stockMap.getOrDefault(id, 0L))
+                        .build())
+                .toList();
     }
 
     /**

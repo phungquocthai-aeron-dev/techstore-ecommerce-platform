@@ -5,7 +5,7 @@ server:
 
 spring:
   application:
-    name: product-service
+    name: warehouse-service
   datasource:
     url: "jdbc:mysql://localhost:3307/techstore_warehouse"
     driverClassName: "com.mysql.cj.jdbc.Driver"

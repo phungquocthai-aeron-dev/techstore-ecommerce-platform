@@ -47,6 +47,16 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 		""")
     Long getTotalStockByVariantId(Long variantId);
 
+    @Query(
+            """
+			SELECT i.variantId, COALESCE(SUM(i.stock), 0)
+			FROM Inventory i
+			WHERE i.variantId IN :variantIds
+			AND i.stock > 0
+			GROUP BY i.variantId
+		""")
+    List<Object[]> getTotalStockByVariantIds(List<Long> variantIds);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM Inventory i WHERE i.id = :id")
     Optional<Inventory> findByIdForUpdate(@Param("id") Long id);

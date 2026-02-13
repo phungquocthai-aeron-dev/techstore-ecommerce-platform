@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.techstore.warehouse.dto.request.InventoryUpdateRequest;
 import com.techstore.warehouse.dto.response.ApiResponse;
 import com.techstore.warehouse.dto.response.InventoryResponse;
+import com.techstore.warehouse.dto.response.VariantStockResponse;
 import com.techstore.warehouse.service.InventoryService;
 
 import lombok.RequiredArgsConstructor;
@@ -90,6 +92,14 @@ public class InventoryController {
     public ApiResponse<Long> getTotalStockByVariant(@PathVariable Long variantId) {
         return ApiResponse.<Long>builder()
                 .result(inventoryService.getTotalStockByVariant(variantId))
+                .build();
+    }
+
+    @PostMapping("/variant/total-stock/batch")
+    public ApiResponse<List<VariantStockResponse>> getTotalStockByVariants(@RequestBody List<Long> variantIds) {
+
+        return ApiResponse.<List<VariantStockResponse>>builder()
+                .result(inventoryService.getTotalStockByVariantIds(variantIds))
                 .build();
     }
 }

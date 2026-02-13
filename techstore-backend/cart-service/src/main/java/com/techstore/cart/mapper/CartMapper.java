@@ -17,17 +17,17 @@ public interface CartMapper {
 
     @Mapping(target = "cartId", source = "id")
     @Mapping(target = "items", source = "details")
-    @Mapping(target = "totalPrice", expression = "java(BigDecimal.valueOf(calculateTotal(cart)))")
+    @Mapping(target = "totalPrice", expression = "java(calculateTotal(cart))")
     CartResponse toResponseDTO(Cart cart);
 
-    default Double calculateTotal(Cart cart) {
+    default BigDecimal calculateTotal(Cart cart) {
         if (cart.getDetails() == null || cart.getDetails().isEmpty()) {
-            return 0.0;
+            return BigDecimal.ZERO;
         }
 
         return cart.getDetails().stream()
-                .mapToDouble(d -> d.getPriceSnapshot() * d.getQuantity())
-                .sum();
+                .map(d -> d.getPriceSnapshot().multiply(BigDecimal.valueOf(d.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     default CreateOrderRequest toCreateOrderRequest(Long customerId, List<CartDetail> details) {
@@ -38,7 +38,7 @@ public interface CartMapper {
         request.setItems(details.stream().map(this::toCreateOrderItem).toList());
 
         BigDecimal totalAmount = details.stream()
-                .map(d -> BigDecimal.valueOf(d.getPriceSnapshot()).multiply(BigDecimal.valueOf(d.getQuantity())))
+                .map(d -> d.getPriceSnapshot().multiply(BigDecimal.valueOf(d.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         request.setTotalAmount(totalAmount);
@@ -50,7 +50,7 @@ public interface CartMapper {
         CreateOrderItemRequest item = new CreateOrderItemRequest();
         item.setVariantId(detail.getVariantId());
         item.setQuantity(detail.getQuantity());
-        item.setPrice(BigDecimal.valueOf(detail.getPriceSnapshot()));
+        item.setPrice(detail.getPriceSnapshot());
 
         return item;
     }

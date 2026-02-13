@@ -11,10 +11,9 @@ import com.techstore.cart.response.CartItemResponse;
 @Mapper(componentModel = "spring", imports = BigDecimal.class)
 public interface CartItemMapper {
 
-    @Mapping(target = "price", expression = "java(BigDecimal.valueOf(detail.getPriceSnapshot()))")
+    @Mapping(target = "price", source = "priceSnapshot")
     @Mapping(
             target = "subTotal",
-            expression = "java(BigDecimal.valueOf(detail.getPriceSnapshot())"
-                    + ".multiply(BigDecimal.valueOf(detail.getQuantity())))")
+            expression = "java(detail.getPriceSnapshot()" + ".multiply(BigDecimal.valueOf(detail.getQuantity())))")
     CartItemResponse toResponse(CartDetail detail);
 }

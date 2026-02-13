@@ -1,71 +1,58 @@
 package com.techstore.cart.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.techstore.cart.dto.request.AddItemRequest;
 import com.techstore.cart.dto.request.CheckoutRequest;
 import com.techstore.cart.dto.request.UpdateQuantityRequest;
+import com.techstore.cart.response.ApiResponse;
 import com.techstore.cart.response.CartResponse;
 import com.techstore.cart.service.CartService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
-@RequestMapping("/cart")
+@RequiredArgsConstructor
 public class CartController {
 
-    @Autowired
-    private CartService cartService;
+    private final CartService cartService;
 
-    /**
-     * Lấy giỏ hàng của customer
-     */
     @GetMapping
-    public CartResponse getCart(@RequestHeader("X-Customer-Id") Long customerId) {
-
-        return cartService.getCart(customerId);
+    public ApiResponse<CartResponse> getCart() {
+        return ApiResponse.<CartResponse>builder().result(cartService.getCart()).build();
     }
 
-    /**
-     * Thêm item vào giỏ hàng
-     */
     @PostMapping("/items")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addItem(@RequestHeader("X-Customer-Id") Long customerId, @RequestBody AddItemRequest requestDTO) {
-
-        cartService.addItem(customerId, requestDTO);
+    public ApiResponse<Void> addItem(@RequestBody AddItemRequest requestDTO) {
+        cartService.addItem(requestDTO);
+        return ApiResponse.<Void>builder().build();
     }
 
-    /**
-     * Cập nhật số lượng item
-     */
     @PutMapping("/items/{variantId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateQuantity(
-            @RequestHeader("X-Customer-Id") Long customerId,
-            @PathVariable Long variantId,
-            @RequestBody UpdateQuantityRequest requestDTO) {
+    public ApiResponse<Void> updateQuantity(
+            @PathVariable Long variantId, @RequestBody UpdateQuantityRequest requestDTO) {
 
-        cartService.updateQuantity(customerId, variantId, requestDTO);
+        cartService.updateQuantity(variantId, requestDTO);
+        return ApiResponse.<Void>builder().build();
     }
 
-    /**
-     * Xóa item khỏi giỏ hàng
-     */
     @DeleteMapping("/items/{variantId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeItem(@RequestHeader("X-Customer-Id") Long customerId, @PathVariable Long variantId) {
+    public ApiResponse<Void> removeItem(@PathVariable Long variantId) {
 
-        cartService.removeItem(customerId, variantId);
+        cartService.removeItem(variantId);
+        return ApiResponse.<Void>builder().build();
     }
 
-    /**
-     * Checkout một phần giỏ hàng
-     */
     @PostMapping("/checkout")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void checkout(@RequestHeader("X-Customer-Id") Long customerId, @RequestBody CheckoutRequest requestDTO) {
+    public ApiResponse<Void> checkout(@RequestBody CheckoutRequest requestDTO) {
 
-        cartService.checkout(customerId, requestDTO);
+        cartService.checkout(requestDTO);
+        return ApiResponse.<Void>builder().build();
     }
 }

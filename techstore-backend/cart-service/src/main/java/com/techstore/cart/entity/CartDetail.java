@@ -1,5 +1,6 @@
 package com.techstore.cart.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
@@ -29,7 +30,7 @@ public class CartDetail {
 
     private Long variantId;
     private Integer quantity;
-    private Double priceSnapshot;
+    private BigDecimal priceSnapshot;
 
     @CreationTimestamp
     private LocalDateTime addAt;

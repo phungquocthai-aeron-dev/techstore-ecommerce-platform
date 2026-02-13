@@ -35,7 +35,7 @@ public enum ErrorCode {
     BRAND_NOT_FOUND(2001, "Brand not found", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(2002, "Category not found", HttpStatus.NOT_FOUND),
     PRODUCT_NOT_FOUND(2003, "Product not found", HttpStatus.NOT_FOUND),
-    VARIANT_NOT_FOUND(2004, "Product not found", HttpStatus.NOT_FOUND),
+    VARIANT_NOT_FOUND(2004, "Variant not found", HttpStatus.NOT_FOUND),
     VARIANT_ALREADY_EXISTS(2005, "Variant Already Exists", HttpStatus.CONFLICT),
     INVALID_PAGE_REQUEST(2006, "Invalid paging or sorting request", HttpStatus.BAD_REQUEST),
     CART_NOT_FOUND(3001, "Cart not found", HttpStatus.NOT_FOUND),
@@ -43,6 +43,9 @@ public enum ErrorCode {
     CART_ITEM_INVALID_QUANTITY(3003, "Invalid cart item quantity", HttpStatus.BAD_REQUEST),
     CART_EMPTY(3004, "Cart is empty", HttpStatus.BAD_REQUEST),
     CHECKOUT_FAILED(3005, "Checkout failed", HttpStatus.BAD_REQUEST),
+    OUT_OF_STOCK(3006, "Out of stock", HttpStatus.BAD_REQUEST),
+    INVALID_QUANTITY(3007, "Invalid quantity", HttpStatus.BAD_REQUEST),
+    PRODUCT_SERVICE_TIMEOUT(5001, "Product service timeout", HttpStatus.GATEWAY_TIMEOUT),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

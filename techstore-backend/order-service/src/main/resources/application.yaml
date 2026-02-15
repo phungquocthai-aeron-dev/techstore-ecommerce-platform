@@ -1,0 +1,30 @@
+server:
+  port: 8086
+  servlet:
+    context-path: /order
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: "jdbc:mysql://localhost:3307/techstore_order"
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: root
+    password: root
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect    
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+app:
+  services:
+    user: http://localhost:8081/user
+    warehouse: http://localhost:8084/warehouse
+    product: http://localhost:8083/product
+    cart: http://localhost:8085/cart

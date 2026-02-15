@@ -14,7 +14,4 @@ public class InventoryExportRequest {
 
     @NotNull
     private Long orderId;
-
-    @NotNull
-    private Long staffId;
 }

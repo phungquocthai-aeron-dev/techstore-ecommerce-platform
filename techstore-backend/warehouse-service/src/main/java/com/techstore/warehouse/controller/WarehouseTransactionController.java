@@ -58,7 +58,7 @@ public class WarehouseTransactionController {
     @PostMapping("/export")
     public ApiResponse<Void> exportInventory(@Valid @RequestBody InventoryExportRequest request) {
 
-        transactionService.exportInventory(request.getOrderId(), request.getStaffId(), request.getItems());
+        transactionService.exportInventory(request.getOrderId(), request.getItems());
 
         return ApiResponse.<Void>builder().build();
     }
@@ -98,6 +98,7 @@ public class WarehouseTransactionController {
                 .build();
     }
 
+//    Cần bổ sung người chỉnh status
     @GetMapping("/status/{status}")
     public ApiResponse<List<WarehouseTransactionResponse>> getByStatus(@PathVariable String status) {
         return ApiResponse.<List<WarehouseTransactionResponse>>builder()
@@ -125,6 +126,13 @@ public class WarehouseTransactionController {
     public ApiResponse<WarehouseTransactionResponse> cancel(@PathVariable Long id) {
         return ApiResponse.<WarehouseTransactionResponse>builder()
                 .result(transactionService.cancelTransaction(id))
+                .build();
+    }
+
+    @PutMapping("/{id}/status")
+    public ApiResponse<WarehouseTransactionResponse> updateStatus(@PathVariable Long id, @RequestBody String status) {
+        return ApiResponse.<WarehouseTransactionResponse>builder()
+                .result(transactionService.updateTransactionStatus(id, status))
                 .build();
     }
 }

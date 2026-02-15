@@ -113,6 +113,7 @@ public class WarehouseTransactionService {
         return transactionMapper.toResponse(saved);
     }
 
+    //  Chỉ tạo 1 phiếu xuất phục vụ cho nhập thủ công
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     @Transactional
     public WarehouseTransactionResponse createOutboundTransaction(WarehouseTransactionCreateRequest req) {
@@ -181,7 +182,6 @@ public class WarehouseTransactionService {
         }
 
         transaction.setDetails(details);
-        transaction.setStatus(TransactionStatus.COMPLETED.name());
 
         WarehouseTransaction saved = transactionRepo.save(transaction);
         return transactionMapper.toResponse(saved);
@@ -241,8 +241,9 @@ public class WarehouseTransactionService {
     //        }
     //    }
 
+    //    Phục vụ bán hàng
     @Transactional
-    public void exportInventory(Long orderId, Long staffId, List<OrderItemRequest> items) {
+    public void exportInventory(Long orderId, List<OrderItemRequest> items) {
 
         List<Long> variantIds =
                 items.stream().map(OrderItemRequest::getVariantId).toList();
@@ -295,8 +296,7 @@ public class WarehouseTransactionService {
                             .transactionType(TransactionType.OUTBOUND.name())
                             .referenceType("ORDER")
                             .orderId(orderId)
-                            .staffId(staffId)
-                            .status(TransactionStatus.COMPLETED.name())
+                            .status(TransactionStatus.PENDING.name())
                             .details(new ArrayList<>())
                             .build();
                     return tx;
@@ -376,10 +376,9 @@ public class WarehouseTransactionService {
                 .toList();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     @Transactional
     public WarehouseTransactionResponse cancelTransaction(Long id) {
-        log.info("Cancelling transaction with id: {}", id);
 
         WarehouseTransaction transaction =
                 transactionRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
@@ -392,9 +391,58 @@ public class WarehouseTransactionService {
             throw new AppException(ErrorCode.TRANSACTION_ALREADY_CANCELLED);
         }
 
+        if (TransactionType.OUTBOUND.name().equals(transaction.getTransactionType())) {
+
+            for (WarehouseTransactionDetail detail : transaction.getDetails()) {
+
+                Inventory inventory = inventoryRepo
+                        .findByIdForUpdate(detail.getInventory().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
+
+                inventory.setStock(inventory.getStock() + detail.getQuantity());
+
+                if (inventory.getStock() > 0) {
+                    inventory.setStatus(InventoryStatus.ACTIVE.name());
+                }
+            }
+        }
+
         transaction.setStatus(TransactionStatus.CANCELLED.name());
+
+        return transactionMapper.toResponse(transaction);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @Transactional
+    public WarehouseTransactionResponse updateTransactionStatus(Long id, String status) {
+        log.info("Update status transaction with id: {}", id);
+
+        if (TransactionStatus.CANCELLED.name().equals(status)) {
+            throw new AppException(ErrorCode.CANNOT_UPDATE_TO_CANCELLED);
+        }
+
+        if (!TransactionStatus.isValid(status)) {
+            throw new AppException(ErrorCode.INVALID_TRANSACTION_STATUS);
+        }
+
+        WarehouseTransaction transaction =
+                transactionRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
+
+        if (TransactionStatus.COMPLETED.name().equals(transaction.getStatus())) {
+            throw new AppException(ErrorCode.CANNOT_CANCEL_COMPLETED_TRANSACTION);
+        }
+
+        if (status.equals(transaction.getStatus())) {
+            throw new AppException(ErrorCode.TRANSACTION_STATUS_UNCHANGED);
+        }
+
+        transaction.setStatus(status);
         return transactionMapper.toResponse(transactionRepo.save(transaction));
     }
+
+    //    private void successfulExport() {
+    //
+    //    }
 
     private void validateTransactionType(String requestType, String expectedType) {
         if (!expectedType.equals(requestType)) {

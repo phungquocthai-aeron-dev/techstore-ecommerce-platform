@@ -54,6 +54,7 @@ public enum ErrorCode {
     INVALID_TRANSACTION_TYPE(5302, "Invalid transaction type. Must be INBOUND or OUTBOUND", HttpStatus.BAD_REQUEST),
     TRANSACTION_ALREADY_COMPLETED(5303, "Transaction already completed", HttpStatus.BAD_REQUEST),
     TRANSACTION_ALREADY_CANCELLED(5304, "Transaction already cancelled", HttpStatus.BAD_REQUEST),
+
     CANNOT_CANCEL_COMPLETED_TRANSACTION(5305, "Cannot cancel completed transaction", HttpStatus.BAD_REQUEST),
 
     // Product service errors
@@ -64,6 +65,9 @@ public enum ErrorCode {
     STAFF_NOT_FOUND(5501, "Staff not found", HttpStatus.NOT_FOUND),
     STAFF_SERVICE_ERROR(5502, "Error communicating with user service", HttpStatus.SERVICE_UNAVAILABLE),
     INVALID_STOCK_QUANTITY(5503, "Invalid stock quantity", HttpStatus.BAD_REQUEST),
+    INVALID_TRANSACTION_STATUS(5504, "Invalid transaction status", HttpStatus.BAD_REQUEST),
+    TRANSACTION_STATUS_UNCHANGED(5505, "Transaction status unchanged", HttpStatus.BAD_REQUEST),
+    CANNOT_UPDATE_TO_CANCELLED(5506, "Can not update to cancelled", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

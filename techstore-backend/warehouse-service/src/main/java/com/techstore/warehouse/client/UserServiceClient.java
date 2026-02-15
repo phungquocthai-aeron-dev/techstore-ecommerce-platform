@@ -8,7 +8,7 @@ import com.techstore.warehouse.configuration.FileFeignConfig;
 import com.techstore.warehouse.dto.response.ApiResponse;
 import com.techstore.warehouse.dto.response.StaffResponse;
 
-@FeignClient(name = "file-service", url = "${app.services.user}", configuration = FileFeignConfig.class)
+@FeignClient(name = "user-service", url = "${app.services.user}", configuration = FileFeignConfig.class)
 public interface UserServiceClient {
 
     @GetMapping("/staffs/{staffId}")

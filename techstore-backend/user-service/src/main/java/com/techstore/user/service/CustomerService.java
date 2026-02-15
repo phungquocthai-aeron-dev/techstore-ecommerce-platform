@@ -70,7 +70,7 @@ public class CustomerService {
         if (customerRepo.findByEmail(req.getEmail()).isPresent()) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
-        
+
         if (!req.getPassword().equals(req.getPasswordConfirm())) {
             throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
         }

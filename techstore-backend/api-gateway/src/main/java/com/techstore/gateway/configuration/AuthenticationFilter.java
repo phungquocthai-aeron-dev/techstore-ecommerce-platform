@@ -44,7 +44,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             
             "/file/media/download/.*",
             
-            "/user/customers/register"
+            "/user/customers/register",
+            
+            "/order/payment/vnpay/ipn"
 
     };
 

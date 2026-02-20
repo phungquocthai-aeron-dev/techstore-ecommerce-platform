@@ -243,7 +243,7 @@ public class WarehouseTransactionService {
 
     //    Phục vụ bán hàng
     @Transactional
-    public void exportInventory(Long orderId, List<OrderItemRequest> items) {
+    public List<Long> exportInventory(Long orderId, List<OrderItemRequest> items) {
 
         List<Long> variantIds =
                 items.stream().map(OrderItemRequest::getVariantId).toList();
@@ -317,7 +317,9 @@ public class WarehouseTransactionService {
         }
 
         // ===== 4. Save tất cả transaction 1 lần =====
-        transactionRepo.saveAll(transactionMap.values());
+        List<WarehouseTransaction> savedTransactions = transactionRepo.saveAll(transactionMap.values());
+
+        return savedTransactions.stream().map(WarehouseTransaction::getId).toList();
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")

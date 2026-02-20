@@ -56,11 +56,11 @@ public class WarehouseTransactionController {
      * Xuất kho theo variant (FIFO) phục vụ bán hàng
      */
     @PostMapping("/export")
-    public ApiResponse<Void> exportInventory(@Valid @RequestBody InventoryExportRequest request) {
+    public ApiResponse<List<Long>> exportInventory(@Valid @RequestBody InventoryExportRequest request) {
 
-        transactionService.exportInventory(request.getOrderId(), request.getItems());
+        List<Long> transactionIds = transactionService.exportInventory(request.getOrderId(), request.getItems());
 
-        return ApiResponse.<Void>builder().build();
+        return ApiResponse.<List<Long>>builder().result(transactionIds).build();
     }
 
     @GetMapping("/{id}")
@@ -98,7 +98,7 @@ public class WarehouseTransactionController {
                 .build();
     }
 
-//    Cần bổ sung người chỉnh status
+    //    Cần bổ sung người chỉnh status
     @GetMapping("/status/{status}")
     public ApiResponse<List<WarehouseTransactionResponse>> getByStatus(@PathVariable String status) {
         return ApiResponse.<List<WarehouseTransactionResponse>>builder()

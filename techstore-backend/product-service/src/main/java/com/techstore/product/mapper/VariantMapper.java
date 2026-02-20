@@ -13,6 +13,7 @@ import com.techstore.product.entity.Variant;
 public interface VariantMapper {
 
     @Mapping(target = "productId", source = "product.id")
+    @Mapping(target = "name", expression = "java(buildVariantName(variant))")
     VariantResponseDTO toResponseDTO(Variant variant);
 
     List<VariantResponseDTO> toResponseDTOList(List<Variant> variants);
@@ -20,4 +21,11 @@ public interface VariantMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "product", ignore = true)
     Variant toEntity(VariantCreateRequestDTO dto);
+
+    default String buildVariantName(Variant variant) {
+        if (variant.getProduct() == null) {
+            return variant.getColor();
+        }
+        return variant.getProduct().getName() + " - " + variant.getColor();
+    }
 }

@@ -119,6 +119,14 @@ public class VariantService {
             recalcBasePrice = true;
         }
 
+        if (requestDTO.getWeight() != null) {
+            if (requestDTO.getPrice() <= 0) {
+                throw new AppException(ErrorCode.INVALID_WEIGHT);
+            }
+            variant.setWeight(requestDTO.getWeight());
+            recalcBasePrice = true;
+        }
+
         if (requestDTO.getStatus() != null) {
             variant.setStatus(requestDTO.getStatus());
             recalcBasePrice = true;

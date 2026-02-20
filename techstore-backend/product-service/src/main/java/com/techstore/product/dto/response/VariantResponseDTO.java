@@ -14,4 +14,6 @@ public class VariantResponseDTO {
     private Long stock;
     private String status;
     private String imageUrl;
+    private Double weight;
+    private String name;
 }

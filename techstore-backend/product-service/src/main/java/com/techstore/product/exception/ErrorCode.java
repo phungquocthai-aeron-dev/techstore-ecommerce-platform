@@ -32,6 +32,7 @@ public enum ErrorCode {
                     + "Yêu cầu: 10 chữ số, bắt đầu bằng các đầu số hợp lệ tại Việt Nam (03, 05, 07, 08, 09). "
                     + "Ví dụ: 0912345678",
             HttpStatus.BAD_REQUEST),
+    INVALID_WEIGHT(1013, "Invalid weight", HttpStatus.BAD_REQUEST),
     BRAND_NOT_FOUND(2001, "Brand not found", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(2002, "Category not found", HttpStatus.NOT_FOUND),
     PRODUCT_NOT_FOUND(2003, "Product not found", HttpStatus.NOT_FOUND),

@@ -32,6 +32,8 @@ public class Variant {
 
     private String status;
 
+    private Double weight;
+
     @Column(name = "image_url")
     private String imageUrl;
 

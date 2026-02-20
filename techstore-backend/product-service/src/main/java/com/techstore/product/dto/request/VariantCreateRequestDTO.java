@@ -10,4 +10,5 @@ public class VariantCreateRequestDTO {
     private String color;
     private Double price;
     private String status;
+    private Double weight;
 }

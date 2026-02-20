@@ -16,4 +16,6 @@ public class VariantInfo {
     private Double price;
     private String status;
     private String imageUrl;
+    private Double weight;
+    private String name;
 }

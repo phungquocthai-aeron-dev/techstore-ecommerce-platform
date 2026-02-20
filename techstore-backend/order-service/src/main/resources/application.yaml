@@ -28,3 +28,13 @@ app:
     warehouse: http://localhost:8084/warehouse
     product: http://localhost:8083/product
     cart: http://localhost:8085/cart
+  ghn:
+    base-url: https://dev-online-gateway.ghn.vn/shiip/public-api
+    token: c780be21-2b42-11f0-9b81-222185cb68c8
+    shipping:
+      warehouse:
+        province-id: 220
+        district-id: 1572
+        ward-code: 550113
+
+  

@@ -1,7 +1,7 @@
 package com.techstore.order.service;
 
-import com.techstore.order.request.OrderCreateRequest;
-import com.techstore.order.request.OrderResponse;
+import com.techstore.order.dto.request.OrderCreateRequest;
+import com.techstore.order.dto.response.OrderResponse;
 
 public interface OrderService {
 
@@ -14,4 +14,6 @@ public interface OrderService {
     void updateStatus(Long orderId, String status);
 
     void createRefund(Long orderDetailId, String reason, Long staffId);
+
+    public String printLabel(Long orderId);
 }

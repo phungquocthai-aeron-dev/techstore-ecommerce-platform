@@ -1,4 +1,4 @@
-package com.techstore.order.request;
+package com.techstore.order.dto.response;
 
 import lombok.Builder;
 import lombok.Data;

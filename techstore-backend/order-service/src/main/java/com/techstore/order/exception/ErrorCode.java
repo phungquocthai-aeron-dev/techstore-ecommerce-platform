@@ -51,6 +51,7 @@ public enum ErrorCode {
 
     FILE_SERVICE_UNSUPPORTED_MEDIA_TYPE(
             4503, "Unsupported media type for file service", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+    SHIPPING_PROVIDER_NOT_FOUND(4504, "Shipping provider not found", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST(4000, "Invalid request", HttpStatus.BAD_REQUEST),
 
     UNSUPPORTED_MEDIA_TYPE(4001, "Unsupported media type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
@@ -58,6 +59,26 @@ public enum ErrorCode {
     INVALID_PRICE(4003, "Invalid price", HttpStatus.BAD_REQUEST),
     INVALID_COLOR(4004, "Invalid variant color", HttpStatus.BAD_REQUEST),
     VARIANT_IMAGE_NOT_FOUND(4005, "Variant image not found", HttpStatus.BAD_REQUEST),
+
+    ADDRESS_NOT_EXISTED(3001, "Address not existed", HttpStatus.NOT_FOUND),
+
+    COUPON_NOT_EXISTED(3002, "Coupon not existed", HttpStatus.NOT_FOUND),
+
+    COUPON_EXISTED(3003, "Coupon already existed", HttpStatus.BAD_REQUEST),
+
+    ORDER_NOT_FOUND(5001, "Order not found", HttpStatus.NOT_FOUND),
+
+    ORDER_DETAIL_NOT_FOUND(5002, "Order detail not found", HttpStatus.NOT_FOUND),
+    INVALID_PROVINCE(5003, "Invalid province", HttpStatus.BAD_REQUEST),
+    INVALID_DISTRICT(5004, "Invalid district", HttpStatus.BAD_REQUEST),
+    INVALID_WARD(5005, "Invalid ward", HttpStatus.BAD_REQUEST),
+
+    UNSUPPORTED_SHIPPING_TYPE(6001, "Unsupported shipping type", HttpStatus.BAD_REQUEST),
+
+    SHIPPING_SERVICE_NOT_AVAILABLE(6002, "Shipping service is not available", HttpStatus.SERVICE_UNAVAILABLE),
+
+    INVALID_SHIPPING_TYPE(6003, "Invalid shipping type", HttpStatus.BAD_REQUEST),
+    PAYMENT_METHOD_NOT_FOUND(6004, "Payment method not found", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

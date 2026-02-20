@@ -12,7 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -48,7 +47,7 @@ public class Order {
 
     private Long customerId;
     private Long staffId;
-    private Long warehouseTransactionId;
+    private String warehouseTransactionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shipping_id")
@@ -63,12 +62,9 @@ public class Order {
     private Address address;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id")
+    @JoinColumn(name = "payment_method_id")
     private PaymentMethod paymentMethod;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
-
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
-    private Payment payment;
 }

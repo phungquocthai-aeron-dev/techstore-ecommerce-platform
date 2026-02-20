@@ -2,8 +2,8 @@ package com.techstore.order.mapper;
 
 import org.springframework.stereotype.Component;
 
+import com.techstore.order.dto.response.OrderResponse;
 import com.techstore.order.entity.Order;
-import com.techstore.order.request.OrderResponse;
 
 @Component
 public class OrderMapper {
@@ -15,7 +15,6 @@ public class OrderMapper {
                 .shippingFee(order.getShippingFee())
                 .vat(order.getVat())
                 .status(order.getStatus())
-                .paymentStatus(order.getPayment() != null ? order.getPayment().getStatus() : null)
                 .build();
     }
 }

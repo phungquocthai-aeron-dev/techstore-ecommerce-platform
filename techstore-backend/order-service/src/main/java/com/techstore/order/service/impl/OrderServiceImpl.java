@@ -1,6 +1,8 @@
 package com.techstore.order.service.impl;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -11,21 +13,33 @@ import org.springframework.stereotype.Service;
 
 import com.techstore.order.client.ProductServiceClient;
 import com.techstore.order.client.WarehouseServiceClient;
+import com.techstore.order.dto.request.InventoryExportRequest;
+import com.techstore.order.dto.request.OrderCreateRequest;
+import com.techstore.order.dto.request.OrderItemRequest;
 import com.techstore.order.dto.response.ApiResponse;
+import com.techstore.order.dto.response.OrderResponse;
+import com.techstore.order.dto.response.ShippingInfo;
 import com.techstore.order.dto.response.VariantInfo;
+import com.techstore.order.entity.Address;
 import com.techstore.order.entity.Order;
 import com.techstore.order.entity.OrderDetail;
+import com.techstore.order.entity.PaymentMethod;
 import com.techstore.order.entity.Refund;
+import com.techstore.order.entity.ShippingProvider;
+import com.techstore.order.exception.AppException;
+import com.techstore.order.exception.ErrorCode;
 import com.techstore.order.mapper.OrderMapper;
+import com.techstore.order.repository.AddressRepository;
 import com.techstore.order.repository.OrderDetailRepository;
 import com.techstore.order.repository.OrderRepository;
-import com.techstore.order.request.InventoryExportRequest;
-import com.techstore.order.request.OrderCreateRequest;
-import com.techstore.order.request.OrderItemRequest;
-import com.techstore.order.request.OrderResponse;
+import com.techstore.order.repository.PaymentMethodRepository;
+import com.techstore.order.repository.PaymentRepository;
+import com.techstore.order.repository.ShippingProviderRepository;
 import com.techstore.order.service.OrderService;
 import com.techstore.order.service.payment.PaymentStrategy;
 import com.techstore.order.service.payment.PaymentStrategyFactory;
+import com.techstore.order.service.shipping.ShippingFactory;
+import com.techstore.order.service.shipping.ShippingService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -42,20 +56,23 @@ public class OrderServiceImpl implements OrderService {
     private final ProductServiceClient productClient;
     private final OrderMapper mapper;
     private final PaymentStrategyFactory paymentFactory;
+    private final ShippingFactory shippingFactory;
+
+    private final ShippingProviderRepository shippingProviderRepository;
+    private final AddressRepository addressRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
 
     @Override
     public OrderResponse createOrder(OrderCreateRequest request, String ipAddress) {
-        log.info("AAAAAAAAAAAAAAAAAAAAAA");
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
         order.setStatus("CREATED");
 
         List<Long> variantIds =
                 request.getItems().stream().map(OrderItemRequest::getVariantId).toList();
-        log.info("BBBBBBBBBBBBBB");
 
         ApiResponse<List<VariantInfo>> response = productClient.getVariantsByIds(variantIds);
-        log.info("CCCCCCCCCCCCCCCCCCCC");
 
         List<VariantInfo> variants = response.getResult();
 
@@ -69,13 +86,15 @@ public class OrderServiceImpl implements OrderService {
             VariantInfo variant = variantMap.get(item.getVariantId());
 
             if (variant == null) {
-                throw new RuntimeException("Variant not found: " + item.getVariantId());
+                throw new AppException(ErrorCode.VARIANT_NOT_FOUND);
             }
 
             OrderDetail detail = OrderDetail.builder()
                     .variantId(item.getVariantId())
+                    .name(variant.getName())
                     .quantity(item.getQuantity().intValue())
                     .price(variant.getPrice())
+                    .totalWeight(variant.getWeight() * item.getQuantity().intValue())
                     .status("ACTIVE")
                     .order(order)
                     .build();
@@ -88,8 +107,28 @@ public class OrderServiceImpl implements OrderService {
         order.setVat(total * 0.1);
         order.setOrderDetails(details);
 
+        ShippingProvider shippingProvider = shippingProviderRepository
+                .findById(request.getShippingProviderId())
+                .orElseThrow(() -> new AppException(ErrorCode.SHIPPING_PROVIDER_NOT_FOUND));
+
+        order.setShippingProvider(shippingProvider);
+
+        Address address = addressRepository
+                .findById(request.getAddressId())
+                .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_EXISTED));
+
+        order.setAddress(address);
+
+        if (request.getPaymentMethodId() != null) {
+
+            PaymentMethod paymentMethod = paymentMethodRepository
+                    .findById(request.getPaymentMethodId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_METHOD_NOT_FOUND));
+
+            order.setPaymentMethod(paymentMethod);
+        }
+
         orderRepository.save(order);
-        log.info("DDDDDDDDDDDDDDD");
 
         String paymentUrl = null;
 
@@ -99,13 +138,19 @@ public class OrderServiceImpl implements OrderService {
 
             paymentUrl = strategy.createPaymentUrl(order, ipAddress);
         }
-        log.info("EEEEEEEEEEEEEEEEE");
 
-        warehouseClient.exportInventory(InventoryExportRequest.builder()
-                .orderId(order.getId())
-                .items(request.getItems())
-                .build());
-        log.info("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        List<Long> transactionIds = warehouseClient
+                .exportInventory(InventoryExportRequest.builder()
+                        .orderId(order.getId())
+                        .items(request.getItems())
+                        .build())
+                .getResult();
+
+        if (transactionIds != null && !transactionIds.isEmpty()) {
+            String txString = transactionIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+            order.setWarehouseTransactionId(txString);
+        }
+        orderRepository.save(order);
 
         OrderResponse result = mapper.toDto(order);
         result.setPaymentUrl(paymentUrl);
@@ -113,42 +158,80 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public void confirmOrder(Long orderId, Long staffId) {
 
-        Order order = orderRepository.findById(orderId).orElseThrow();
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+        if (order.getShippingProvider() == null) {
+            throw new AppException(ErrorCode.INVALID_SHIPPING_TYPE);
+        }
+
+        String shippingType = order.getShippingProvider().getCode();
+
+        ShippingService shippingService = shippingFactory.getService(shippingType);
+
+        Address address = order.getAddress();
+
+        ShippingInfo shippingInfo = shippingService.createShippingOrder(order, address);
+
+        order.setShippingCode(shippingInfo.getOrderCode());
+        order.setShippingFee(shippingInfo.getShippingFee());
+        order.setExpectedDeliveryTime(shippingInfo
+                .getExpectedDeliveryTime()
+                .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .toLocalDateTime());
         order.setStaffId(staffId);
+
         order.setStatus("READY_TO_SHIP");
     }
 
     @Override
+    @Transactional
     public void cancelOrder(Long orderId, Long staffId) {
 
-        Order order = orderRepository.findById(orderId).orElseThrow();
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         order.setStaffId(staffId);
         order.setStatus("CANCELLED");
 
-        // rollback warehouse
-        warehouseClient.cancelTransaction(order.getWarehouseTransactionId());
+        // ===== Cancel nhiều warehouse transaction =====
+        if (order.getWarehouseTransactionId() != null
+                && !order.getWarehouseTransactionId().isBlank()) {
 
-        // refund payment
-        if (order.getPayment() != null) {
-            order.getPayment().setStatus("REFUNDED");
+            List<Long> transactionIds = Arrays.stream(
+                            order.getWarehouseTransactionId().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::valueOf)
+                    .toList();
+
+            for (Long txId : transactionIds) {
+                warehouseClient.cancelTransaction(txId);
+            }
         }
+
+        // ===== Refund nếu có payment =====
+        paymentRepository.findByOrderId(order.getId()).ifPresent(payment -> {
+            payment.setStatus("REFUNDED");
+            paymentRepository.save(payment);
+        });
     }
 
     @Override
     public void updateStatus(Long orderId, String status) {
 
-        Order order = orderRepository.findById(orderId).orElseThrow();
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
         order.setStatus(status);
     }
 
     @Override
     public void createRefund(Long detailId, String reason, Long staffId) {
 
-        OrderDetail detail = orderDetailRepository.findById(detailId).orElseThrow();
+        OrderDetail detail = orderDetailRepository
+                .findById(detailId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_DETAIL_NOT_FOUND));
 
         Refund.builder()
                 .reason(reason)
@@ -167,5 +250,16 @@ public class OrderServiceImpl implements OrderService {
         } else {
             detail.getOrder().setStatus("PARTIALLY_RETURNED");
         }
+    }
+
+    @Override
+    public String printLabel(Long orderId) {
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        ShippingService shippingService =
+                shippingFactory.getService(order.getShippingProvider().getCode());
+
+        return shippingService.generatePrintUrl(order);
     }
 }

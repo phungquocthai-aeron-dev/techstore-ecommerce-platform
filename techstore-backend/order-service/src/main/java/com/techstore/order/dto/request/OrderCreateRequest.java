@@ -1,4 +1,4 @@
-package com.techstore.order.request;
+package com.techstore.order.dto.request;
 
 import java.util.List;
 
@@ -12,6 +12,7 @@ public class OrderCreateRequest {
     private String paymentMethod;
     private Long paymentMethodId;
     private Long couponId;
+    private Long shippingProviderId;
 
     private List<OrderItemRequest> items;
 }

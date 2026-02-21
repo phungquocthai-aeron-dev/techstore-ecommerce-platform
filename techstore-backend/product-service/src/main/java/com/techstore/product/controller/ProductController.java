@@ -176,4 +176,11 @@ public class ProductController {
                 .result(productService.searchProducts(req))
                 .build();
     }
+
+    @GetMapping("/variant/{id}")
+    public ApiResponse<ProductResponseDTO> findByVariantId(@PathVariable Long id) {
+        return ApiResponse.<ProductResponseDTO>builder()
+                .result(productService.findByVariantId(id))
+                .build();
+    }
 }

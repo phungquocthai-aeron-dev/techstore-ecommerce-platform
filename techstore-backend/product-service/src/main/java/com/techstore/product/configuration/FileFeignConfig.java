@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 import feign.Request;
 import feign.RequestInterceptor;
+import feign.codec.ErrorDecoder;
 
 @Configuration
 public class FileFeignConfig {
@@ -21,8 +22,8 @@ public class FileFeignConfig {
         return new AuthenticationRequestInterceptor();
     }
 
-    //    @Bean
-    //    ErrorDecoder errorDecoder() {
-    //        return new FileFeignErrorDecoder();
-    //    }
+    @Bean
+    ErrorDecoder errorDecoder() {
+        return new FileFeignErrorDecoder();
+    }
 }

@@ -66,4 +66,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             @Param("minPrice") Double minPrice,
             @Param("maxPrice") Double maxPrice,
             Pageable pageable);
+
+    @Query("SELECT p FROM Product p JOIN p.variants v WHERE v.id = :variantId")
+    Optional<Product> findByVariantId(@Param("variantId") Long variantId);
 }

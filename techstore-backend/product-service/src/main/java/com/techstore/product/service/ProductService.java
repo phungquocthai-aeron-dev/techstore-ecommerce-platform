@@ -428,6 +428,13 @@ public class ProductService {
                 productPage.isLast());
     }
 
+    public ProductResponseDTO findByVariantId(Long variantId) {
+        Product product = productRepository
+                .findByVariantId(variantId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        return productMapper.toResponseDTO(product);
+    }
+
     private void ensurePrimaryImage(List<ProductImage> images) {
 
         List<ProductImage> primaries = images.stream()

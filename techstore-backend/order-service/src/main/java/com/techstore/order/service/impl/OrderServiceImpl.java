@@ -17,6 +17,7 @@ import com.techstore.order.dto.request.InventoryExportRequest;
 import com.techstore.order.dto.request.OrderCreateRequest;
 import com.techstore.order.dto.request.OrderItemRequest;
 import com.techstore.order.dto.response.ApiResponse;
+import com.techstore.order.dto.response.OrderDetailResponse;
 import com.techstore.order.dto.response.OrderResponse;
 import com.techstore.order.dto.response.ShippingInfo;
 import com.techstore.order.dto.response.VariantInfo;
@@ -261,5 +262,21 @@ public class OrderServiceImpl implements OrderService {
                 shippingFactory.getService(order.getShippingProvider().getCode());
 
         return shippingService.generatePrintUrl(order);
+    }
+
+    @Override
+    public OrderDetailResponse getOrderDetail(Long detailId) {
+        OrderDetail orderDetail = orderDetailRepository
+                .findById(detailId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_DETAIL_NOT_FOUND));
+        return OrderDetailResponse.builder()
+                .id(orderDetail.getId())
+                .quantity(orderDetail.getQuantity())
+                .name(orderDetail.getName())
+                .price(orderDetail.getPrice())
+                .status(orderDetail.getStatus())
+                .totalWeight(orderDetail.getTotalWeight())
+                .variantId(orderDetail.getVariantId())
+                .build();
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.techstore.order.dto.request.OrderCreateRequest;
 import com.techstore.order.dto.response.ApiResponse;
+import com.techstore.order.dto.response.OrderDetailResponse;
 import com.techstore.order.dto.response.OrderResponse;
 import com.techstore.order.service.OrderService;
 import com.techstore.order.util.VNPayUtils;
@@ -27,6 +28,13 @@ public class OrderController {
 
         return ApiResponse.<OrderResponse>builder()
                 .result(orderService.createOrder(request, ipAddress))
+                .build();
+    }
+
+    @GetMapping("/order-detail/{id}")
+    public ApiResponse<OrderDetailResponse> getOrderDetail(@PathVariable Long id) {
+        return ApiResponse.<OrderDetailResponse>builder()
+                .result(orderService.getOrderDetail(id))
                 .build();
     }
 

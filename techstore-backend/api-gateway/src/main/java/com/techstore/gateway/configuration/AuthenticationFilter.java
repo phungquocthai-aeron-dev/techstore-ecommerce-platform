@@ -14,6 +14,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -23,8 +24,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 @Component
 @Slf4j
@@ -34,21 +36,38 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     IdentityService identityService;
     ObjectMapper objectMapper;
 
-    @NonFinal
-    private String[] publicEndpoints = {
-            "/identity/auth/.*",
-            "/identity/users/registration",
-            
-            "/identity/oauth2/.*",
-            "/identity/login/.*",
-            
-            "/file/media/download/.*",
-            
-            "/user/customers/register",
-            
-            "/order/payment/vnpay/ipn"
+//    @NonFinal
+//    private String[] publicEndpoints = {
+//            "/identity/auth/.*",
+//            "/identity/users/registration",
+//            
+//            "/identity/oauth2/.*",
+//            "/identity/login/.*",
+//            
+//            "/file/media/download/.*",
+//            
+//            "/user/customers/register",
+//            
+//            "/order/payment/vnpay/ipn"
+//
+//    };
+    
+    private static final Map<HttpMethod, List<Pattern>> PUBLIC_ENDPOINTS =
+            Map.of(
+                    HttpMethod.GET, List.of(
+                            Pattern.compile("/review/reviews.*"),
+                            Pattern.compile("/file/media/download/.*"),
+                            Pattern.compile("/order/payment/vnpay/ipn")
 
-    };
+                    ),
+                    HttpMethod.POST, List.of(
+                            Pattern.compile("/identity/auth/.*"),
+                            Pattern.compile("/identity/users/registration"),
+                            Pattern.compile("/identity/oauth2/.*"),
+                            Pattern.compile("/identity/login/.*"),
+                            Pattern.compile("/user/customers/register")
+                    )
+            );
 
     @Value("${app.api-prefix}")
     @NonFinal
@@ -81,9 +100,24 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         return -1;
     }
 
-    private boolean isPublicEndpoint(ServerHttpRequest request){
-        return Arrays.stream(publicEndpoints)
-                .anyMatch(s -> request.getURI().getPath().matches(apiPrefix + s));
+//    private boolean isPublicEndpoint(ServerHttpRequest request){
+//        return Arrays.stream(publicEndpoints)
+//                .anyMatch(s -> request.getURI().getPath().matches(apiPrefix + s));
+//    }
+    
+    private boolean isPublicEndpoint(ServerHttpRequest request) {
+
+        String path = request.getURI().getPath().replaceFirst(apiPrefix, "");
+        HttpMethod method = request.getMethod();
+
+        if (method == null) return false;
+
+        List<Pattern> patterns = PUBLIC_ENDPOINTS.get(method);
+
+        if (patterns == null) return false;
+
+        return patterns.stream()
+                .anyMatch(pattern -> pattern.matcher(path).matches());
     }
 
     Mono<Void> unauthenticated(ServerHttpResponse response){

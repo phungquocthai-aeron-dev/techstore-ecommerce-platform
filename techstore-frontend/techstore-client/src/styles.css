@@ -1,0 +1,116 @@
+/* =======================
+   DARK THEME (MẶC ĐỊNH)
+======================= */
+:root {
+
+    /* ===== Core Brand ===== */
+    --color-primary: #38bdf8;
+    /* Xanh neon chủ đạo */
+    --color-primary-hover: #0ea5e9;
+    --color-accent: #a855f7;
+    /* Tím gradient */
+    --color-success: #4ade80;
+    /* Giá tiền */
+    --color-danger: #ef4444;
+
+    /* ===== Background ===== */
+    --color-bg-main: #020617;
+    --color-bg-secondary: #0f172a;
+    --color-bg-card: #111827;
+
+    /* ===== Text ===== */
+    --color-text-main: #e5e7eb;
+    --color-text-muted: #9ca3af;
+
+    /* ===== Border ===== */
+    --color-border: rgba(56, 189, 248, 0.2);
+    --color-border-soft: rgba(56, 189, 248, 0.1);
+
+    /* ===== Gradient ===== */
+    --gradient-primary: linear-gradient(135deg, #38bdf8 0%, #a855f7 100%);
+
+    /* ===== Shadow ===== */
+    --shadow-primary: 0 10px 30px rgba(56, 189, 248, 0.3);
+}
+
+/* =======================
+   LIGHT THEME
+   Thêm class="light-theme" vào body để kích hoạt
+======================= */
+.light-theme {
+
+    /* ===== Core Brand ===== */
+    --color-primary: #2563eb;
+    /* Xanh công nghệ dịu hơn */
+    --color-primary-hover: #1d4ed8;
+    --color-accent: #7c3aed;
+    --color-success: #16a34a;
+    --color-danger: #dc2626;
+
+    /* ===== Background ===== */
+    --color-bg-main: #f8fafc;
+    --color-bg-secondary: #ffffff;
+    --color-bg-card: #ffffff;
+
+    /* ===== Text ===== */
+    --color-text-main: #0f172a;
+    --color-text-muted: #475569;
+
+    /* ===== Border ===== */
+    --color-border: rgba(37, 99, 235, 0.2);
+    --color-border-soft: rgba(37, 99, 235, 0.1);
+
+    /* ===== Gradient ===== */
+    --gradient-primary: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+
+    /* ===== Shadow ===== */
+    --shadow-primary: 0 10px 30px rgba(37, 99, 235, 0.2);
+}
+
+/* ===== Global Body ===== */
+body {
+    background: var(--color-bg-main);
+    color: var(--color-text-main);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== Utility classes ===== */
+.section-bg {
+    background: var(--color-bg-secondary);
+}
+
+.text-muted-custom {
+    color: var(--color-text-muted);
+}
+
+.price-text {
+    color: var(--color-success);
+}
+
+.gradient-text {
+    background: var(--gradient-primary);
+    /* -webkit-background-clip: text; */
+    -webkit-text-fill-color: transparent;
+}
+
+/* ===== Button System ===== */
+.btn-primary-custom {
+    background: var(--color-primary);
+    border: none;
+    color: #fff;
+}
+
+.btn-primary-custom:hover {
+    background: var(--color-primary-hover);
+}
+
+.btn-outline-primary-custom {
+    background: transparent;
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-outline-primary-custom:hover {
+    background: var(--color-primary);
+    color: var(--color-bg-main);
+}

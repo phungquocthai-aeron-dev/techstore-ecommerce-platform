@@ -1,0 +1,431 @@
+<div class="auth-wrapper">
+  <div class="bg-pulse"></div>
+
+  <div class="auth-container" [class.wide]="activeTab === 'register'">
+    <!-- Logo -->
+    <div class="logo-section">
+      <div class="logo-text">TECH STORE</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'login'"
+        (click)="switchTab('login')"
+        type="button"
+      >
+        Đăng nhập
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'register'"
+        (click)="switchTab('register')"
+        type="button"
+      >
+        Đăng ký
+      </button>
+    </div>
+
+    <!-- ───────── LOGIN FORM ───────── -->
+    <form
+      *ngIf="activeTab === 'login'"
+      #loginForm="ngForm"
+      (ngSubmit)="handleLogin(loginForm)"
+      class="auth-form"
+      novalidate
+    >
+      <div
+        *ngIf="loginAlert"
+        class="alert"
+        [class.alert-success]="loginAlert.type === 'success'"
+        [class.alert-error]="loginAlert.type === 'error'"
+      >
+        {{ loginAlert.message }}
+      </div>
+
+      <!-- Email / SĐT -->
+      <div class="form-group">
+        <label class="form-label"
+          >Địa chỉ email <span class="required">*</span></label
+        >
+        <input
+          type="text"
+          class="form-control"
+          [class.is-invalid]="
+            loginIdentifier.invalid &&
+            (loginIdentifier.dirty || loginIdentifier.touched)
+          "
+          placeholder="example@email.com"
+          name="identifier"
+          [(ngModel)]="loginData.identifier"
+          #loginIdentifier="ngModel"
+          required
+        />
+        <div
+          class="field-error"
+          *ngIf="
+            loginIdentifier.invalid &&
+            (loginIdentifier.dirty || loginIdentifier.touched)
+          "
+        >
+          <span *ngIf="loginIdentifier.errors?.['required']"
+            >Vui lòng nhập địa chỉ email.</span
+          >
+        </div>
+      </div>
+
+      <!-- Mật khẩu -->
+      <div class="form-group">
+        <label class="form-label"
+          >Mật khẩu <span class="required">*</span></label
+        >
+        <div class="password-wrapper">
+          <input
+            [type]="showLoginPassword ? 'text' : 'password'"
+            class="form-control"
+            [class.is-invalid]="
+              loginPassword.invalid &&
+              (loginPassword.dirty || loginPassword.touched)
+            "
+            placeholder="Nhập mật khẩu"
+            name="password"
+            [(ngModel)]="loginData.password"
+            #loginPassword="ngModel"
+            required
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePassword('login')"
+          >
+            <i
+              class="bi"
+              [class.bi-eye]="!showLoginPassword"
+              [class.bi-eye-slash]="showLoginPassword"
+            ></i>
+          </button>
+        </div>
+        <div
+          class="field-error"
+          *ngIf="
+            loginPassword.invalid &&
+            (loginPassword.dirty || loginPassword.touched)
+          "
+        >
+          <span *ngIf="loginPassword.errors?.['required']"
+            >Vui lòng nhập mật khẩu.</span
+          >
+        </div>
+      </div>
+
+      <div class="forgot-password">
+        <a href="#">Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="isLoginLoading">
+        <span *ngIf="!isLoginLoading">Đăng nhập</span>
+        <span *ngIf="isLoginLoading" class="spinner"></span>
+      </button>
+
+      <div class="divider"><span>Hoặc đăng nhập với</span></div>
+
+      <button type="button" class="btn-google" (click)="handleGoogleLogin()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            fill="#4285F4"
+          />
+          <path
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            fill="#34A853"
+          />
+          <path
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            fill="#FBBC05"
+          />
+          <path
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            fill="#EA4335"
+          />
+        </svg>
+        Đăng nhập với Google
+      </button>
+    </form>
+
+    <!-- ───────── REGISTER FORM ───────── -->
+    <form
+      *ngIf="activeTab === 'register'"
+      #registerForm="ngForm"
+      (ngSubmit)="handleRegister(registerForm)"
+      class="auth-form"
+      novalidate
+    >
+      <div
+        *ngIf="registerAlert"
+        class="alert"
+        [class.alert-success]="registerAlert.type === 'success'"
+        [class.alert-error]="registerAlert.type === 'error'"
+      >
+        {{ registerAlert.message }}
+      </div>
+
+      <!-- Row 1: Họ tên + Ngày sinh -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label"
+            >Họ và tên <span class="required">*</span></label
+          >
+          <input
+            type="text"
+            class="form-control"
+            [class.is-invalid]="
+              fullName.invalid && (fullName.dirty || fullName.touched)
+            "
+            placeholder="Nguyễn Văn A"
+            name="fullName"
+            [(ngModel)]="registerData.fullName"
+            #fullName="ngModel"
+            required
+          />
+          <div
+            class="field-error"
+            *ngIf="fullName.invalid && (fullName.dirty || fullName.touched)"
+          >
+            <span *ngIf="fullName.errors?.['required']"
+              >Vui lòng nhập họ và tên.</span
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"
+            >Ngày sinh <span class="required">*</span></label
+          >
+          <input
+            type="date"
+            class="form-control"
+            [class.is-invalid]="dob.invalid && (dob.dirty || dob.touched)"
+            name="dob"
+            [(ngModel)]="registerData.dob"
+            #dob="ngModel"
+            required
+          />
+          <div
+            class="field-error"
+            *ngIf="dob.invalid && (dob.dirty || dob.touched)"
+          >
+            <span *ngIf="dob.errors?.['required']"
+              >Vui lòng chọn ngày sinh.</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Email + SĐT -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label"
+            >Email <span class="required">*</span></label
+          >
+          <input
+            type="email"
+            class="form-control"
+            [class.is-invalid]="
+              regEmail.invalid && (regEmail.dirty || regEmail.touched)
+            "
+            placeholder="example@email.com"
+            name="email"
+            [(ngModel)]="registerData.email"
+            #regEmail="ngModel"
+            required
+            email
+          />
+          <div
+            class="field-error"
+            *ngIf="regEmail.invalid && (regEmail.dirty || regEmail.touched)"
+          >
+            <span *ngIf="regEmail.errors?.['required']"
+              >Vui lòng nhập email.</span
+            >
+            <span *ngIf="regEmail.errors?.['email']"
+              >Email không đúng định dạng.</span
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"
+            >Số điện thoại <span class="required">*</span></label
+          >
+          <input
+            type="tel"
+            class="form-control"
+            [class.is-invalid]="phone.invalid && (phone.dirty || phone.touched)"
+            placeholder="0912 345 678"
+            name="phone"
+            [(ngModel)]="registerData.phone"
+            #phone="ngModel"
+            required
+            pattern="^(0|\+84)[0-9]{9}$"
+          />
+          <div
+            class="field-error"
+            *ngIf="phone.invalid && (phone.dirty || phone.touched)"
+          >
+            <span *ngIf="phone.errors?.['required']"
+              >Vui lòng nhập số điện thoại.</span
+            >
+            <span *ngIf="phone.errors?.['pattern']"
+              >Số điện thoại không hợp lệ (VD: 0912345678).</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Mật khẩu + Xác nhận -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label"
+            >Mật khẩu <span class="required">*</span></label
+          >
+          <div class="password-wrapper">
+            <input
+              [type]="showRegisterPassword ? 'text' : 'password'"
+              class="form-control"
+              [class.is-invalid]="
+                regPassword.invalid &&
+                (regPassword.dirty || regPassword.touched)
+              "
+              placeholder="Tối thiểu 8 ký tự"
+              name="password"
+              [(ngModel)]="registerData.password"
+              #regPassword="ngModel"
+              required
+              minlength="8"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              (click)="togglePassword('register')"
+            >
+              <i
+                class="bi"
+                [class.bi-eye]="!showRegisterPassword"
+                [class.bi-eye-slash]="showRegisterPassword"
+              ></i>
+            </button>
+          </div>
+          <div
+            class="field-error"
+            *ngIf="
+              regPassword.invalid && (regPassword.dirty || regPassword.touched)
+            "
+          >
+            <span *ngIf="regPassword.errors?.['required']"
+              >Vui lòng nhập mật khẩu.</span
+            >
+            <span *ngIf="regPassword.errors?.['minlength']"
+              >Mật khẩu phải có ít nhất 8 ký tự.</span
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"
+            >Xác nhận mật khẩu <span class="required">*</span></label
+          >
+          <div class="password-wrapper">
+            <input
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              class="form-control"
+              [class.is-invalid]="
+                (confirmPwd.invalid &&
+                  (confirmPwd.dirty || confirmPwd.touched)) ||
+                (confirmPwd.touched &&
+                  registerData.password !== registerData.passwordConfirm)
+              "
+              placeholder="Nhập lại mật khẩu"
+              name="passwordConfirm"
+              [(ngModel)]="registerData.passwordConfirm"
+              #confirmPwd="ngModel"
+              required
+              minlength="8"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              (click)="togglePassword('confirm')"
+            >
+              <i
+                class="bi"
+                [class.bi-eye]="!showConfirmPassword"
+                [class.bi-eye-slash]="showConfirmPassword"
+              ></i>
+            </button>
+          </div>
+          <div
+            class="field-error"
+            *ngIf="
+              confirmPwd.invalid && (confirmPwd.dirty || confirmPwd.touched)
+            "
+          >
+            <span *ngIf="confirmPwd.errors?.['required']"
+              >Vui lòng xác nhận mật khẩu.</span
+            >
+            <span *ngIf="confirmPwd.errors?.['minlength']"
+              >Mật khẩu phải có ít nhất 8 ký tự.</span
+            >
+          </div>
+          <div
+            class="field-error"
+            *ngIf="
+              confirmPwd.touched &&
+              !confirmPwd.errors &&
+              registerData.password !== registerData.passwordConfirm
+            "
+          >
+            <span>Mật khẩu xác nhận không khớp.</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="isRegisterLoading">
+        <span *ngIf="!isRegisterLoading">Đăng ký</span>
+        <span *ngIf="isRegisterLoading" class="spinner"></span>
+      </button>
+
+      <div class="divider"><span>Hoặc đăng ký với</span></div>
+
+      <button type="button" class="btn-google" (click)="handleGoogleLogin()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            fill="#4285F4"
+          />
+          <path
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            fill="#34A853"
+          />
+          <path
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            fill="#FBBC05"
+          />
+          <path
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            fill="#EA4335"
+          />
+        </svg>
+        Đăng ký với Google
+      </button>
+    </form>
+
+    <!-- Back home -->
+    <div class="back-home">
+      <a routerLink="/">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại trang chủ
+      </a>
+    </div>
+  </div>
+</div>

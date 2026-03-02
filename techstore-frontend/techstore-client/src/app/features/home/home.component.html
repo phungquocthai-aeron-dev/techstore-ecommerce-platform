@@ -1,1 +1,299 @@
-<p>home works!</p>
+<!-- Hero Section -->
+<section class="hero-section p-0 position-relative">
+  <div id="techCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <img
+          src="images/laptop.jpg"
+          class="d-block w-100 hero-img"
+          alt="Laptop Gaming"
+        />
+      </div>
+
+      <div class="carousel-item">
+        <img
+          src="images/pc.jpg"
+          class="d-block w-100 hero-img"
+          alt="PC Setup"
+        />
+      </div>
+
+      <div class="carousel-item">
+        <img
+          src="images/case.jpg"
+          class="d-block w-100 hero-img"
+          alt="Gaming Gear"
+        />
+      </div>
+    </div>
+
+    <div class="hero-caption">
+      <h1>TECH GEAR 2024</h1>
+      <p>Nâng cấp trải nghiệm công nghệ với những sản phẩm đỉnh cao</p>
+      <button class="btn btn-hero">Khám phá ngay</button>
+    </div>
+
+    <button
+      class="carousel-control-prev carousel-control-btn"
+      data-bs-target="#techCarousel"
+      data-bs-slide="prev"
+    >
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button
+      class="carousel-control-next carousel-control-btn"
+      data-bs-target="#techCarousel"
+      data-bs-slide="next"
+    >
+      <span class="carousel-control-next-icon"></span>
+    </button>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-2">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="feature-box">
+          <i class="bi bi-shield-check feature-icon"></i>
+          <h4>Bảo hành chính hãng</h4>
+          <p>Cam kết 100% hàng chính hãng, bảo hành toàn diện</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-box">
+          <i class="bi bi-truck feature-icon"></i>
+          <h4>Giao hàng nhanh chóng</h4>
+          <p>Miễn phí vận chuyển toàn quốc cho đơn từ 500k</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-box">
+          <i class="bi bi-headset feature-icon"></i>
+          <h4>Hỗ trợ 24/7</h4>
+          <p>Tư vấn kỹ thuật và chăm sóc khách hàng tận tâm</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Products Section - Latest -->
+<section class="product-section" id="products">
+  <div class="container">
+    <div class="section-title">
+      <h2>Sản Phẩm Mới Nhất</h2>
+      <p>Công nghệ hàng đầu với giá tốt nhất thị trường</p>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingLatest" class="text-center text-light">
+      Đang tải sản phẩm...
+    </div>
+
+    <!-- Product List -->
+    <div class="row" *ngIf="!loadingLatest">
+      <div class="col-md-3" *ngFor="let product of latestProducts">
+        <div class="product-card">
+          <img
+            [src]="getImageUrl(product.primaryImage)"
+            (error)="handleImageError($event)"
+            class="product-img"
+            [alt]="product.name"
+          />
+
+          <div class="product-body">
+            <div class="product-category">
+              {{ product.categoryName }}
+            </div>
+
+            <h5 class="product-title">
+              {{ product.name }}
+            </h5>
+
+            <div class="product-price">{{ product.basePrice | number }}đ</div>
+
+            <button
+              class="btn-add-cart"
+              [routerLink]="['/product', product.id]"
+            >
+              <i class="bi bi-eye me-2"></i>Xem chi tiết
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Không có sản phẩm -->
+    <div
+      *ngIf="!loadingLatest && latestProducts.length === 0"
+      class="text-center text-muted"
+    >
+      Không có sản phẩm nào.
+    </div>
+  </div>
+</section>
+
+<!-- Laptop -->
+<section class="product-section">
+  <div class="container">
+    <div class="section-title">
+      <h2>Laptop</h2>
+    </div>
+
+    <div *ngIf="loadingLaptop" class="text-center text-light">
+      Đang tải sản phẩm...
+    </div>
+
+    <div class="row" *ngIf="!loadingLaptop">
+      <div class="col-md-3" *ngFor="let product of laptops">
+        <div class="product-card">
+          <img
+            [src]="getImageUrl(product.primaryImage)"
+            (error)="handleImageError($event)"
+            class="product-img"
+          />
+
+          <div class="product-body">
+            <div class="product-category">
+              {{ product.categoryName }}
+            </div>
+
+            <h5 class="product-title">
+              {{ product.name }}
+            </h5>
+
+            <div class="product-price">{{ product.basePrice | number }}đ</div>
+
+            <button
+              class="btn-add-cart"
+              [routerLink]="['/product', product.id]"
+            >
+              Xem chi tiết
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Phụ kiện -->
+<section class="product-section">
+  <div class="container">
+    <div class="section-title">
+      <h2>Phụ kiện</h2>
+    </div>
+
+    <div *ngIf="loadingAccessory" class="text-center text-light">
+      Đang tải sản phẩm...
+    </div>
+
+    <div class="row" *ngIf="!loadingAccessory">
+      <div class="col-md-3" *ngFor="let product of accessories">
+        <div class="product-card">
+          <img
+            [src]="getImageUrl(product.primaryImage)"
+            (error)="handleImageError($event)"
+            class="product-img"
+          />
+
+          <div class="product-body">
+            <div class="product-category">
+              {{ product.categoryName }}
+            </div>
+
+            <h5 class="product-title">
+              {{ product.name }}
+            </h5>
+
+            <div class="product-price">{{ product.basePrice | number }}đ</div>
+
+            <button
+              class="btn-add-cart"
+              [routerLink]="['/product', product.id]"
+            >
+              Xem chi tiết
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Điện thoại thông minh -->
+<section class="product-section">
+  <div class="container">
+    <div class="section-title">
+      <h2>Smartphone</h2>
+    </div>
+
+    <div *ngIf="loadingSmartphone" class="text-center text-light">
+      Đang tải sản phẩm...
+    </div>
+
+    <div class="row" *ngIf="!loadingSmartphone">
+      <div class="col-md-3" *ngFor="let product of smartphones">
+        <div class="product-card">
+          <img
+            [src]="getImageUrl(product.primaryImage)"
+            (error)="handleImageError($event)"
+            class="product-img"
+          />
+
+          <div class="product-body">
+            <div class="product-category">
+              {{ product.categoryName }}
+            </div>
+
+            <h5 class="product-title">
+              {{ product.name }}
+            </h5>
+
+            <div class="product-price">{{ product.basePrice | number }}đ</div>
+
+            <button
+              class="btn-add-cart"
+              [routerLink]="['/product', product.id]"
+            >
+              Xem chi tiết
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Brand Story Section -->
+<section class="brand-section">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6 mb-4 mb-md-0">
+        <img src="images/about-us.jpg" class="img-fluid" alt="Tech Store" />
+      </div>
+
+      <div class="col-md-6">
+        <h2>Về Tech Store</h2>
+        <p>
+          Tech Store là đơn vị hàng đầu chuyên cung cấp các sản phẩm công nghệ
+          cao cấp tại Việt Nam. Với hơn 10 năm kinh nghiệm trong ngành, chúng
+          tôi cam kết mang đến cho khách hàng những sản phẩm chính hãng với giá
+          tốt nhất.
+        </p>
+        <p>
+          Từ laptop, điện thoại, linh kiện PC cho đến gaming gear chuyên nghiệp,
+          mọi sản phẩm đều được tuyển chọn kỹ lưỡng từ các thương hiệu uy tín
+          hàng đầu thế giới.
+        </p>
+        <p>
+          Đội ngũ tư vấn chuyên nghiệp của chúng tôi luôn sẵn sàng hỗ trợ bạn
+          tìm ra giải pháp công nghệ phù hợp nhất, từ build PC gaming, setup văn
+          phòng cho đến trang bị studio chuyên nghiệp.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

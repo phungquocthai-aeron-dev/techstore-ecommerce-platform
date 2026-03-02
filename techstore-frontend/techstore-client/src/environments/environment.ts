@@ -5,4 +5,6 @@ export const environment = {
     imageAvatarUrl: 'http://localhost:8888/techstore/api/v1/file/media/download/img/users/',
     identityUrl: 'http://localhost:8888/techstore/api/v1/identity',
     userUrl: 'http://localhost:8888/techstore/api/v1/user',
+    productUrl: 'http://localhost:8888/techstore/api/v1/product',
+    cartUrl: 'http://localhost:8888/techstore/api/v1/cart',
 };

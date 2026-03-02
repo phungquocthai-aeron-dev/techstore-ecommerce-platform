@@ -1,0 +1,119 @@
+<aside class="sidebar" [class.open]="isOpen">
+  <!-- Header -->
+  <div class="sidebar-header">
+    <div class="sidebar-title">
+      <span class="sidebar-icon">⚙</span>
+      <h3>Bộ lọc</h3>
+    </div>
+    <button class="sidebar-close" (click)="close()" title="Đóng">✕</button>
+  </div>
+
+  <div class="sidebar-body">
+    <!-- Sort -->
+    <div class="filter-section">
+      <h4 class="filter-label">Sắp xếp theo</h4>
+      <select
+        class="filter-select"
+        [(ngModel)]="sortBy"
+        (change)="emitFilter()"
+      >
+        <option *ngFor="let opt of sortOptions" [value]="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Divider -->
+    <div class="filter-divider"></div>
+
+    <!-- Categories -->
+    <div class="filter-section">
+      <h4 class="filter-label">Danh mục</h4>
+      <ul class="category-list">
+        <li *ngFor="let cat of categories">
+          <button
+            class="category-item"
+            [class.selected]="isCategorySelected(cat.id)"
+            (click)="toggleCategory(cat.id)"
+          >
+            <span class="category-check">{{
+              isCategorySelected(cat.id) ? "✓" : ""
+            }}</span>
+            <span class="category-label">{{ cat.label }}</span>
+            <span class="category-count">{{ cat.count }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Divider -->
+    <div class="filter-divider"></div>
+
+    <!-- Price Range -->
+    <div class="filter-section">
+      <h4 class="filter-label">Khoảng giá</h4>
+      <div class="price-inputs">
+        <div class="price-input-wrap">
+          <label class="price-input-label">Từ</label>
+          <input
+            type="number"
+            class="price-input"
+            [(ngModel)]="priceMin"
+            (change)="emitFilter()"
+            [min]="0"
+            [max]="priceMax"
+            placeholder="0"
+          />
+        </div>
+        <span class="price-sep">—</span>
+        <div class="price-input-wrap">
+          <label class="price-input-label">Đến</label>
+          <input
+            type="number"
+            class="price-input"
+            [(ngModel)]="priceMax"
+            (change)="emitFilter()"
+            [min]="priceMin"
+            placeholder="5,000,000"
+          />
+        </div>
+      </div>
+      <div class="price-display text-muted-custom">
+        {{ formatPrice(priceMin) }} – {{ formatPrice(priceMax) }}
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="filter-divider"></div>
+
+    <!-- In Stock Toggle -->
+    <div class="filter-section">
+      <label class="toggle-row">
+        <span class="toggle-label">Chỉ còn hàng</span>
+        <div
+          class="toggle-switch"
+          [class.active]="onlyInStock"
+          (click)="onlyInStock = !onlyInStock; emitFilter()"
+        >
+          <div class="toggle-thumb"></div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <button
+      class="btn-outline-primary-custom reset-btn"
+      (click)="resetFilters()"
+    >
+      Xóa bộ lọc
+    </button>
+    <button class="btn-primary-custom apply-btn" (click)="emitFilter()">
+      Áp dụng
+    </button>
+  </div>
+</aside>
+
+<!-- Overlay for mobile -->
+<div class="sidebar-overlay" [class.visible]="isOpen" (click)="close()"></div>

@@ -1,0 +1,31 @@
+<div class="full-layout">
+  <app-navbar></app-navbar>
+
+  <main class="full-layout__main">
+    <router-outlet></router-outlet>
+  </main>
+
+  <app-footer></app-footer>
+
+  <!-- Sidebar bên phải -->
+  <!-- <app-sidebar
+    [isOpen]="isSidebarOpen"
+    (closed)="isSidebarOpen = false"
+    (filterChange)="onFilterChange($event)"
+  >
+  </app-sidebar> -->
+
+  <!-- Nút mở Sidebar -->
+  <!-- <button
+    class="full-layout__sidebar-fab"
+    (click)="toggleSidebar()"
+    [class.active]="isSidebarOpen"
+    title="Bộ lọc"
+  >
+    <span class="fab-icon">⚙</span>
+    <span class="fab-label">Bộ lọc</span>
+  </button> -->
+
+  <!-- Chatbot nổi -->
+  <app-chatbot></app-chatbot>
+</div>

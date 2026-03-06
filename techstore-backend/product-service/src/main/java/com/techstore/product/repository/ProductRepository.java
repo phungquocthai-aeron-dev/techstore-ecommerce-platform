@@ -32,6 +32,12 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("SELECT p FROM Product p WHERE p.category.name = :categoryName")
     Page<Product> findByCategoryName(@Param("categoryName") String categoryName, Pageable pageable);
 
+    @Query("SELECT p FROM Product p WHERE p.category.categoryType = :categoryType")
+    Page<Product> findByCategoryType(@Param("categoryType") String categoryType, Pageable pageable);
+
+    @Query("SELECT p FROM Product p WHERE p.category.id = :categoryId")
+    Page<Product> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
+
     /**
      * Lấy n sản phẩm mới nhất
      */

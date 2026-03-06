@@ -78,6 +78,7 @@ public class VariantService {
         }
 
         Variant variant = variantMapper.toEntity(requestDTO);
+        product.setStatus("ACTIVE");
         variant.setProduct(product);
 
         Variant savedVariant = variantRepository.save(variant);

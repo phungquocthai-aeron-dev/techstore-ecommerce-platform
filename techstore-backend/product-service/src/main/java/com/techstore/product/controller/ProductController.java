@@ -124,16 +124,29 @@ public class ProductController {
     /**
      * Lấy danh sách sản phẩm theo category
      */
-    @GetMapping("/category/{categoryName}")
-    public ApiResponse<PageResponseDTO<ProductListResponseDTO>> getByCategory(
-            @PathVariable String categoryName,
+    @GetMapping("/category/type/{categoryType}")
+    public ApiResponse<PageResponseDTO<ProductListResponseDTO>> getByCategoryType(
+            @PathVariable String categoryType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) {
 
         return ApiResponse.<PageResponseDTO<ProductListResponseDTO>>builder()
-                .result(productService.getProductsByCategoryName(categoryName, page, size, sortBy, sortDirection))
+                .result(productService.getProductsByCategoryType(categoryType, page, size, sortBy, sortDirection))
+                .build();
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public ApiResponse<PageResponseDTO<ProductListResponseDTO>> getByCategoryId(
+            @PathVariable Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+
+        return ApiResponse.<PageResponseDTO<ProductListResponseDTO>>builder()
+                .result(productService.getProductsByCategoryId(categoryId, page, size, sortBy, sortDirection))
                 .build();
     }
 

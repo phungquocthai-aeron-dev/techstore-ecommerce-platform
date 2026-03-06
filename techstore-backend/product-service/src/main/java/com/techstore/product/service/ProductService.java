@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.techstore.product.client.FileServiceClient;
+import com.techstore.product.client.WarehouseServiceClient;
 import com.techstore.product.constant.UploadFolder;
 import com.techstore.product.dto.request.ProductCreateRequestDTO;
 import com.techstore.product.dto.request.ProductSearchRequestDTO;
@@ -54,6 +55,9 @@ public class ProductService {
 
     @Autowired
     private FileServiceClient fileServiceClient;
+
+    @Autowired
+    private WarehouseServiceClient warehouseServiceClient;
 
     /**
      * Thêm sản phẩm mới (yêu cầu role ADMIN)
@@ -333,12 +337,29 @@ public class ProductService {
      */
     @Transactional(readOnly = true)
     public ProductResponseDTO getProductById(Long id) {
+
         Product product =
                 productRepository.findDetailById(id).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        return productMapper.toResponseDTO(product);
-    }
+        ProductResponseDTO dto = productMapper.toResponseDTO(product);
 
+        // Nếu DTO có danh sách variants
+        if (dto.getVariants() != null) {
+            dto.getVariants().forEach(variantDTO -> {
+                try {
+                    Long stock = warehouseServiceClient
+                            .getTotalStockByVariant(variantDTO.getId())
+                            .getResult();
+
+                    variantDTO.setStock(stock);
+                } catch (Exception e) {
+                    variantDTO.setStock(null); // UNKNOWN
+                }
+            });
+        }
+
+        return dto;
+    }
     /**
      * Lấy danh sách tất cả sản phẩm (có phân trang)
      */
@@ -367,15 +388,37 @@ public class ProductService {
      * Lấy danh sách sản phẩm theo tên thể loại
      */
     @Transactional(readOnly = true)
-    public PageResponseDTO<ProductListResponseDTO> getProductsByCategoryName(
-            String categoryName, int page, int size, String sortBy, String sortDirection) {
+    public PageResponseDTO<ProductListResponseDTO> getProductsByCategoryType(
+            String categoryType, int page, int size, String sortBy, String sortDirection) {
 
         Sort sort = sortDirection.equalsIgnoreCase("ASC")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Product> productPage = productRepository.findByCategoryName(categoryName, pageable);
+        Page<Product> productPage = productRepository.findByCategoryType(categoryType, pageable);
+
+        List<ProductListResponseDTO> content = productMapper.toListResponseDTOList(productPage.getContent());
+
+        return new PageResponseDTO<>(
+                content,
+                productPage.getNumber(),
+                productPage.getSize(),
+                productPage.getTotalElements(),
+                productPage.getTotalPages(),
+                productPage.isLast());
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDTO<ProductListResponseDTO> getProductsByCategoryId(
+            Long categoryId, int page, int size, String sortBy, String sortDirection) {
+
+        Sort sort = sortDirection.equalsIgnoreCase("ASC")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Product> productPage = productRepository.findByCategoryId(categoryId, pageable);
 
         List<ProductListResponseDTO> content = productMapper.toListResponseDTOList(productPage.getContent());
 

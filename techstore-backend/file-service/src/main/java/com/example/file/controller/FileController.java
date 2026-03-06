@@ -46,13 +46,27 @@ public class FileController {
                 .build();
     }
 
-    @GetMapping("/media/download/**")
+    @GetMapping("/media/download/img/**")
+    ResponseEntity<Resource> downloadImg(HttpServletRequest request) throws IOException {
+
+        String requestUri = request.getRequestURI();
+        String filePath = requestUri.substring(requestUri.indexOf("/media/download/img/") + "/media/download/img/".length());
+        System.out.println("img/" + filePath);
+        var fileData = fileService.download("img/" + filePath);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, fileData.contentType())
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000")
+                .body(fileData.resource());
+    }
+    
+    @GetMapping("/media/download/media/**")
     ResponseEntity<Resource> downloadMedia(HttpServletRequest request) throws IOException {
 
         String requestUri = request.getRequestURI();
-        String filePath = requestUri.substring(requestUri.indexOf("/media/download/") + "/media/download/".length());
-        System.out.println(filePath);
-        var fileData = fileService.download(filePath);
+        String filePath = requestUri.substring(requestUri.indexOf("/media/download/media/") + "/media/download/media/".length());
+        System.out.println("media/" + filePath);
+        var fileData = fileService.download("media/" + filePath);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, fileData.contentType())

@@ -25,9 +25,6 @@ public class FileRepository {
     @Value("${app.file.storage-dir}")
     String storageDir;
 
-    @Value("${app.file.download-prefix}")
-    String urlPrefix;
-
     public FileInfo store(MultipartFile file, UploadFolder folder) throws IOException {
 
         Path baseDir = Paths.get(storageDir, folder.getRelativePath());
@@ -48,7 +45,7 @@ public class FileRepository {
                 .contentType(file.getContentType())
                 .md5Checksum(DigestUtils.md5DigestAsHex(file.getInputStream()))
                 .path(filePath.toString())
-                .url(urlPrefix + folder.getRelativePath() + "/" + fileName)
+                .url(folder.getRelativePath() + "/" + fileName)
                 .build();
     }
 

@@ -49,6 +49,7 @@ public class Review {
     private Long productId;
     private Long orderDetailId;
     private Long variantId;
+    private String type;
 
     private Long customerId;
 

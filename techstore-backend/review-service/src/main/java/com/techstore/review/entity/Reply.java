@@ -42,6 +42,8 @@ public class Reply {
     private String status;
 
     private Long staffId;
+    
+    private String type;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;

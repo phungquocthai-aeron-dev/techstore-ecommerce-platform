@@ -57,8 +57,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                     HttpMethod.GET, List.of(
                             Pattern.compile("/review/reviews.*"),
                             Pattern.compile("/file/media/download/.*"),
-                            Pattern.compile("/order/payment/vnpay/ipn")
-
+                            Pattern.compile("/order/payment/vnpay/ipn"),
+                            Pattern.compile("/product/products/.*")
                     ),
                     HttpMethod.POST, List.of(
                             Pattern.compile("/identity/auth/.*"),

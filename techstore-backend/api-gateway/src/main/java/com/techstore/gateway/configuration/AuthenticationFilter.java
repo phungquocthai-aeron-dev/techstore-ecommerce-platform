@@ -55,7 +55,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private static final Map<HttpMethod, List<Pattern>> PUBLIC_ENDPOINTS =
             Map.of(
                     HttpMethod.GET, List.of(
-                            Pattern.compile("/review/reviews.*"),
+                            Pattern.compile("/review/reviews/.*"),
                             Pattern.compile("/file/media/download/.*"),
                             Pattern.compile("/order/payment/vnpay/ipn"),
                             Pattern.compile("/product/products/.*")

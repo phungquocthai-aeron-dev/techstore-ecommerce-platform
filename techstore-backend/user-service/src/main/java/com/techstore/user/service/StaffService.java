@@ -136,6 +136,15 @@ public class StaffService {
         return staffMapper.toResponse(staff);
     }
 
+    public List<StaffResponse> getByIds(List<Long> ids) {
+
+        if (ids == null || ids.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_KEY);
+        }
+
+        return staffRepo.findAllById(ids).stream().map(staffMapper::toResponse).toList();
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public StaffResponse findOne(Long id, String email, String phone) {
         if (id == null && email == null && phone == null) {

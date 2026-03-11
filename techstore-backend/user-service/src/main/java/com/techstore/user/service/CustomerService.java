@@ -90,6 +90,17 @@ public class CustomerService {
         return customerMapper.toResponse(customerRepo.save(customer));
     }
 
+    public List<CustomerResponse> getByIds(List<Long> ids) {
+
+        if (ids == null || ids.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_KEY);
+        }
+
+        return customerRepo.findAllById(ids).stream()
+                .map(customerMapper::toResponse)
+                .toList();
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN','CUSTOMER')")
     public void updateAvatar(Long id, MultipartFile file) {
         Customer customer = getCustomerAndCheckPermission(id);

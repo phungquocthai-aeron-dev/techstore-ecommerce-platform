@@ -53,8 +53,14 @@ public interface ProductMapper {
     @Mapping(target = "variants", ignore = true)
     void updateEntity(ProductUpdateRequestDTO dto, @MappingTarget Product product);
 
+    /**
+     * Lấy URL ảnh chính của sản phẩm
+     */
     default String getPrimaryImageUrl(Product product) {
-        if (product.getImages() == null || product.getImages().isEmpty()) {
+
+        if (product == null
+                || product.getImages() == null
+                || product.getImages().isEmpty()) {
             return null;
         }
 
@@ -62,6 +68,6 @@ public interface ProductMapper {
                 .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
                 .map(ProductImage::getUrl)
                 .findFirst()
-                .orElse(product.getImages().get(0).getUrl());
+                .orElseGet(() -> product.getImages().iterator().next().getUrl());
     }
 }

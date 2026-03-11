@@ -2,6 +2,7 @@ package com.techstore.product.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,7 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private static final String[] PUBLIC_ENDPOINTS = {"/internal/auth/**"};
+    private static final String[] PUBLIC_ENDPOINTS = {"/products/**"};
 
     private final CustomJwtDecoder customJwtDecoder;
 
@@ -30,7 +31,7 @@ public class SecurityConfig {
 
         httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
                 .permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/products/*")
+                .requestMatchers(HttpMethod.GET, "/products/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated());

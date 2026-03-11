@@ -1,7 +1,9 @@
 package com.techstore.product.service;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -80,7 +82,8 @@ public class ProductService {
         product.setStatus("DRAFT");
 
         if (req.getSpecs() != null && !req.getSpecs().isEmpty()) {
-            List<ProductSpec> specs = req.getSpecs().stream()
+
+            Set<ProductSpec> specs = req.getSpecs().stream()
                     .map(dto -> {
                         ProductSpec spec = new ProductSpec();
                         spec.setSpecKey(dto.getSpecKey());
@@ -88,7 +91,7 @@ public class ProductService {
                         spec.setProduct(product);
                         return spec;
                     })
-                    .toList();
+                    .collect(Collectors.toSet());
 
             product.setSpecs(specs);
         }
@@ -108,7 +111,7 @@ public class ProductService {
         Product product =
                 productRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        // 1. Update field đơn (null không ghi đè)
+        // 1. Update field đơn
         productMapper.updateEntity(req, product);
 
         // 2. Brand
@@ -131,7 +134,7 @@ public class ProductService {
         if (req.getSpecs() != null) {
 
             if (product.getSpecs() == null) {
-                product.setSpecs(new ArrayList<>());
+                product.setSpecs(new HashSet<>());
             } else {
                 product.getSpecs().clear();
             }
@@ -141,11 +144,13 @@ public class ProductService {
                 spec.setSpecKey(dto.getSpecKey());
                 spec.setSpecValue(dto.getSpecValue());
                 spec.setProduct(product);
+
                 product.getSpecs().add(spec);
             }
         }
 
-        return productMapper.toResponseDTO(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        return productMapper.toResponseDTO(saved);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -156,9 +161,10 @@ public class ProductService {
         Product product =
                 productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        List<ProductImage> existingImages = product.getImages();
+        Set<ProductImage> existingImages = product.getImages();
+
         if (existingImages == null) {
-            existingImages = new ArrayList<>();
+            existingImages = new HashSet<>();
             product.setImages(existingImages);
         }
 
@@ -478,19 +484,20 @@ public class ProductService {
         return productMapper.toResponseDTO(product);
     }
 
-    private void ensurePrimaryImage(List<ProductImage> images) {
+    private void ensurePrimaryImage(Set<ProductImage> images) {
 
         List<ProductImage> primaries = images.stream()
                 .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
                 .toList();
 
         if (primaries.isEmpty() && !images.isEmpty()) {
-            images.get(0).setIsPrimary(true);
+            images.iterator().next().setIsPrimary(true);
             return;
         }
 
         if (primaries.size() > 1) {
             boolean first = true;
+
             for (ProductImage img : primaries) {
                 if (first) {
                     first = false;

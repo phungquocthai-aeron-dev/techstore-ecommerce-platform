@@ -1,0 +1,400 @@
+<section class="product-detail-section" *ngIf="!loading; else loadingTpl">
+  <div class="mt-5 pt-4"></div>
+  <!-- Error -->
+  <div *ngIf="error" class="error-banner">
+    <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+  </div>
+
+  <div class="container" *ngIf="product">
+    <div class="row">
+      <!-- ═══════════════════════════════════════════════ -->
+      <!--  GALLERY                                        -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div class="col-lg-6">
+        <div class="product-gallery">
+          <!-- Main Image -->
+          <img
+            [src]="selectedMainImage"
+            class="main-image"
+            [alt]="product.name"
+            (click)="openModal(selectedMainImage)"
+          />
+
+          <!-- Thumbnails -->
+          <div class="thumbnail-grid">
+            <img
+              *ngFor="let img of product.images"
+              [src]="img.url"
+              [class.active]="img.url === selectedMainImage"
+              class="thumbnail"
+              [alt]="product.name"
+              (click)="selectMainImage(img.url)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!--  PRODUCT INFO                                   -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div class="col-lg-6">
+        <div class="product-info">
+          <!-- Category badge -->
+          <div class="product-category">{{ product.category.name }}</div>
+
+          <!-- Name -->
+          <h1 class="product-name">{{ product.name }}</h1>
+
+          <!-- Meta -->
+          <div class="product-meta">
+            <div class="meta-item">
+              <i class="bi bi-star-fill"></i>
+              <span
+                ><strong>{{ averageRating }}</strong> ({{ reviewTotal }} đánh
+                giá)</span
+              >
+            </div>
+            <div class="meta-item">
+              <i class="bi bi-tag"></i>
+              <span>{{ product.brand.name }}</span>
+            </div>
+            <div class="meta-item">
+              <i class="bi bi-shield-check"></i>
+              <span>Bảo hành chính hãng</span>
+            </div>
+          </div>
+
+          <!-- Price -->
+          <div class="product-price">
+            {{ formatPrice(currentPrice) }}
+            <span class="old-price">{{ formatPrice(oldPrice) }}</span>
+            <span class="discount-badge">-18%</span>
+          </div>
+
+          <!-- ─── Variants ─── -->
+          <div class="section-label">Cấu hình / Phiên bản</div>
+          <div class="variant-grid">
+            <button
+              *ngFor="let v of product.variants; trackBy: trackByVariant"
+              class="variant-btn"
+              [class.active]="selectedVariant?.id === v.id"
+              [class.disabled]="isVariantOutOfStock(v)"
+              [disabled]="isVariantOutOfStock(v)"
+              (click)="selectVariant(v)"
+            >
+              <img *ngIf="v.imageUrl" [src]="v.imageUrl" [alt]="v.name" />
+              <div class="variant-name">{{ v.name }}</div>
+              <div class="variant-stock">
+                {{ v.stock > 0 ? "Còn " + v.stock + " máy" : "Hết hàng" }}
+              </div>
+            </button>
+          </div>
+
+          <!-- ─── Specs from product.specs ─── -->
+          <ng-container *ngIf="product.specs.length">
+            <div class="section-label">Thông số nổi bật</div>
+            <div class="specs-grid">
+              <div class="spec-btn" *ngFor="let s of product.specs.slice(0, 4)">
+                <div class="spec-label">{{ s.specKey }}</div>
+                <div class="spec-value">{{ s.specValue }}</div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- ─── Quantity ─── -->
+          <div class="section-label">Số lượng</div>
+          <div class="quantity-selector">
+            <button class="qty-btn" (click)="decreaseQty()">−</button>
+            <input
+              type="number"
+              class="qty-input"
+              [(ngModel)]="quantity"
+              [min]="1"
+              [max]="maxStock"
+            />
+            <button class="qty-btn" (click)="increaseQty()">+</button>
+            <span class="stock-info" [ngClass]="stockClass">{{
+              stockLabel
+            }}</span>
+          </div>
+
+          <!-- Cart Message -->
+          <div
+            *ngIf="cartMessage"
+            class="cart-message"
+            [class.error]="cartMessage.includes('thất')"
+          >
+            <i
+              class="bi"
+              [class.bi-check-circle-fill]="!cartMessage.includes('thất')"
+              [class.bi-x-circle-fill]="cartMessage.includes('thất')"
+            ></i>
+            {{ cartMessage }}
+          </div>
+
+          <!-- ─── Action Buttons ─── -->
+          <div class="action-buttons">
+            <button
+              class="btn-add-cart"
+              [disabled]="
+                !selectedVariant || selectedVariant.stock === 0 || cartLoading
+              "
+              (click)="addToCart()"
+            >
+              <i class="bi bi-cart-plus me-2"></i>
+              {{ cartLoading ? "Đang thêm..." : "Thêm vào giỏ" }}
+            </button>
+            <button
+              class="btn-buy-now"
+              [disabled]="!selectedVariant || selectedVariant.stock === 0"
+              (click)="buyNow()"
+            >
+              Mua ngay
+            </button>
+          </div>
+        </div>
+        <!-- /product-info -->
+      </div>
+      <!-- /col -->
+    </div>
+    <!-- /row -->
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  DETAIL TABS                                        -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="product-details">
+          <div class="detail-tabs">
+            <button
+              class="tab-btn"
+              [class.active]="activeTab === 'specs'"
+              (click)="switchTab('specs')"
+            >
+              Thông số kỹ thuật
+            </button>
+            <button
+              class="tab-btn"
+              [class.active]="activeTab === 'description'"
+              (click)="switchTab('description')"
+            >
+              Mô tả chi tiết
+            </button>
+            <button
+              class="tab-btn"
+              [class.active]="activeTab === 'warranty'"
+              (click)="switchTab('warranty')"
+            >
+              Bảo hành & Vận chuyển
+            </button>
+          </div>
+
+          <!-- Specs Tab -->
+          <div class="tab-content" [class.active]="activeTab === 'specs'">
+            <div class="spec-table">
+              <div class="spec-row" *ngFor="let s of product.specs">
+                <div class="spec-row-label">{{ s.specKey }}</div>
+                <div class="spec-row-value">{{ s.specValue }}</div>
+              </div>
+              <div *ngIf="!product.specs.length" class="no-data">
+                Chưa có thông số kỹ thuật.
+              </div>
+            </div>
+          </div>
+
+          <!-- Description Tab -->
+          <div class="tab-content" [class.active]="activeTab === 'description'">
+            <div
+              class="description-content"
+              [innerHTML]="product.description"
+            ></div>
+          </div>
+
+          <!-- Warranty Tab -->
+          <div class="tab-content" [class.active]="activeTab === 'warranty'">
+            <h6 class="warranty-heading">Chính sách bảo hành</h6>
+            <ul class="warranty-list">
+              <li>Bảo hành trọn bộ PC: 36 tháng</li>
+              <li>Bảo hành linh kiện theo chính sách nhà sản xuất</li>
+              <li>
+                Hỗ trợ vệ sinh, bảo dưỡng miễn phí trong thời gian bảo hành
+              </li>
+              <li>Đổi mới trong 7 ngày nếu có lỗi từ nhà sản xuất</li>
+              <li>Hỗ trợ kỹ thuật 24/7 qua hotline và online</li>
+            </ul>
+
+            <h6 class="warranty-heading">Chính sách vận chuyển</h6>
+            <ul class="warranty-list">
+              <li>Miễn phí vận chuyển toàn quốc cho đơn hàng từ 10 triệu</li>
+              <li>Đóng gói cẩn thận với thùng carton chuyên dụng</li>
+              <li>Giao hàng trong vòng 2-3 ngày nội thành, 4-7 ngày tỉnh</li>
+              <li>Hỗ trợ cài đặt và setup tại nhà (nội thành)</li>
+              <li>Kiểm tra sản phẩm trước khi thanh toán</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  REVIEWS                                            -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="reviews-section">
+      <!-- Header -->
+      <div class="reviews-header">
+        <div class="reviews-summary">
+          <div class="rating-big">
+            <div class="score">{{ averageRating }}</div>
+            <div class="stars">
+              <i
+                class="bi"
+                *ngFor="let filled of getStarArray(round(averageRating))"
+              ></i>
+            </div>
+            <div class="count">{{ reviewTotal }} đánh giá</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="review-filters">
+          <button
+            class="filter-btn"
+            [class.active]="reviewFilter === undefined"
+            (click)="filterReviews(undefined)"
+          >
+            Tất cả
+          </button>
+          <button
+            class="filter-btn"
+            [class.active]="reviewFilter === 5"
+            (click)="filterReviews(5)"
+          >
+            5 sao
+          </button>
+          <button
+            class="filter-btn"
+            [class.active]="reviewFilter === 4"
+            (click)="filterReviews(4)"
+          >
+            4 sao
+          </button>
+          <button
+            class="filter-btn"
+            [class.active]="reviewFilter === 3"
+            (click)="filterReviews(3)"
+          >
+            3 sao
+          </button>
+          <button
+            class="filter-btn"
+            [class.active]="reviewFilter === 2"
+            (click)="filterReviews(2)"
+          >
+            2 sao
+          </button>
+          <button
+            class="filter-btn"
+            [class.active]="reviewFilter === 1"
+            (click)="filterReviews(1)"
+          >
+            1 sao
+          </button>
+        </div>
+      </div>
+
+      <!-- Review Items -->
+      <div id="reviewsContainer">
+        <div
+          *ngIf="reviewLoading && reviews.length === 0"
+          class="review-loading"
+        >
+          <i class="bi bi-arrow-clockwise spin"></i> Đang tải đánh giá...
+        </div>
+
+        <div *ngIf="!reviewLoading && reviews.length === 0" class="no-data">
+          Chưa có đánh giá nào.
+        </div>
+
+        <div
+          class="review-item"
+          *ngFor="let r of reviews; trackBy: trackByReview"
+        >
+          <div class="review-header">
+            <img
+              [src]="
+                r.customer?.avatarUrl ||
+                'https://i.pravatar.cc/150?u=' + r.customerId
+              "
+              class="review-avatar"
+              [alt]="r.customer?.fullName"
+            />
+            <div class="review-info">
+              <div class="review-name">
+                {{ r.customer?.fullName || "Khách hàng" }}
+                <span class="review-verified">
+                  <i class="bi bi-patch-check-fill"></i> Đã mua hàng
+                </span>
+              </div>
+              <div class="review-stars">
+                <i
+                  class="bi"
+                  *ngFor="let filled of getStarArray(r.rating)"
+                  [class.bi-star-fill]="filled"
+                  [class.bi-star]="!filled"
+                ></i>
+                <span class="review-date ms-2">{{
+                  r.createdAt | date: "dd/MM/yyyy"
+                }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-content">{{ r.content }}</div>
+
+          <!-- Seller Reply -->
+          <div class="seller-reply" *ngIf="r.reply">
+            <div class="seller-reply-header">
+              <i class="bi bi-shop me-2"></i>Phản hồi từ Shop
+            </div>
+            <div class="seller-reply-content">{{ r.reply.content }}</div>
+          </div>
+        </div>
+      </div>
+      <!-- /reviewsContainer -->
+
+      <!-- Load More -->
+      <div class="load-more-wrapper" *ngIf="hasMoreReviews">
+        <button
+          class="btn-load-more"
+          (click)="loadMoreReviews()"
+          [disabled]="reviewLoading"
+        >
+          <i class="bi bi-arrow-down-circle me-2"></i>
+          {{ reviewLoading ? "Đang tải..." : "Xem thêm đánh giá" }}
+        </button>
+      </div>
+    </div>
+    <!-- /reviews-section -->
+  </div>
+  <!-- /container -->
+</section>
+
+<!-- Loading Skeleton -->
+<ng-template #loadingTpl>
+  <div class="container py-5 text-center">
+    <div class="loading-spinner">
+      <i class="bi bi-arrow-clockwise spin"></i>
+    </div>
+    <p class="mt-3" style="color: #9ca3af">Đang tải sản phẩm...</p>
+  </div>
+</ng-template>
+
+<!-- Image Modal -->
+<div class="image-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="image-modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close-btn" (click)="closeModal()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+    <img [src]="modalImageSrc" alt="Product Image" />
+  </div>
+</div>

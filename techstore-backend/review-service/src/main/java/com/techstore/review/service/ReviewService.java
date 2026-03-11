@@ -1,5 +1,10 @@
 package com.techstore.review.service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import jakarta.transaction.Transactional;
 
 import org.springframework.data.domain.Page;
@@ -13,13 +18,16 @@ import org.springframework.stereotype.Service;
 
 import com.techstore.review.client.OrderServiceClient;
 import com.techstore.review.client.ProductServiceClient;
+import com.techstore.review.client.UserServiceClient;
 import com.techstore.review.dto.request.CreateReplyRequest;
 import com.techstore.review.dto.request.CreateReviewRequest;
 import com.techstore.review.dto.request.UpdateReplyRequest;
 import com.techstore.review.dto.request.UpdateReviewRequest;
+import com.techstore.review.dto.response.CustomerResponse;
 import com.techstore.review.dto.response.PageResponse;
 import com.techstore.review.dto.response.ReplyResponse;
 import com.techstore.review.dto.response.ReviewResponse;
+import com.techstore.review.dto.response.StaffResponse;
 import com.techstore.review.entity.Reply;
 import com.techstore.review.entity.Review;
 import com.techstore.review.exception.AppException;
@@ -41,6 +49,7 @@ public class ReviewService {
 
     private final OrderServiceClient orderClient;
     private final ProductServiceClient productClient;
+    private final UserServiceClient userClient;
 
     // ===================== CREATE REVIEW =====================
 
@@ -107,10 +116,57 @@ public class ReviewService {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Review> reviewPage = reviewRepo.findActiveByProductId(productId, rating, pageable);
+        List<ReviewResponse> responses =
+                reviewPage.getContent().stream().map(mapper::toResponse).toList();
+
+        if (responses.isEmpty()) {
+            return PageResponse.<ReviewResponse>builder()
+                    .content(responses)
+                    .page(reviewPage.getNumber())
+                    .size(reviewPage.getSize())
+                    .totalElements(reviewPage.getTotalElements())
+                    .totalPages(reviewPage.getTotalPages())
+                    .last(reviewPage.isLast())
+                    .build();
+        }
+
+        // ================= COLLECT IDS =================
+
+        List<Long> customerIds =
+                responses.stream().map(ReviewResponse::getCustomerId).distinct().toList();
+
+        List<Long> staffIds = responses.stream()
+                .map(ReviewResponse::getReply)
+                .filter(r -> r != null)
+                .map(ReplyResponse::getStaffId)
+                .distinct()
+                .toList();
+
+        // ================= CALL USER SERVICE =================
+
+        Map<Long, CustomerResponse> customerMap = userClient.getCustomerByIds(customerIds).getResult().stream()
+                .collect(Collectors.toMap(CustomerResponse::getId, c -> c));
+
+        Map<Long, StaffResponse> staffMap = new HashMap<>();
+
+        if (!staffIds.isEmpty()) {
+            staffMap = userClient.getStaffByIds(staffIds).getResult().stream()
+                    .collect(Collectors.toMap(StaffResponse::getId, s -> s));
+        }
+
+        // ================= MAP BACK =================
+
+        for (ReviewResponse review : responses) {
+
+            review.setCustomer(customerMap.get(review.getCustomerId()));
+
+            if (review.getReply() != null) {
+                review.getReply().setStaff(staffMap.get(review.getReply().getStaffId()));
+            }
+        }
 
         return PageResponse.<ReviewResponse>builder()
-                .content(
-                        reviewPage.getContent().stream().map(mapper::toResponse).toList())
+                .content(responses)
                 .page(reviewPage.getNumber())
                 .size(reviewPage.getSize())
                 .totalElements(reviewPage.getTotalElements())

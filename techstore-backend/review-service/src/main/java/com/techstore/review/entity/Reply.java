@@ -14,6 +14,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,7 +44,7 @@ public class Reply {
     private String status;
 
     private Long staffId;
-    
+
     private String type;
 
     @UpdateTimestamp
@@ -50,5 +52,6 @@ public class Reply {
 
     @OneToOne
     @JoinColumn(name = "review_id", unique = true)
+    @JsonBackReference
     private Review review;
 }

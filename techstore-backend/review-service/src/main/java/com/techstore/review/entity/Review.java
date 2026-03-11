@@ -14,6 +14,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -54,5 +56,6 @@ public class Review {
     private Long customerId;
 
     @OneToOne(mappedBy = "review", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private Reply reply;
 }

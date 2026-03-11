@@ -21,6 +21,7 @@ public class ReviewResponse {
     private Long variantId;
     private Long orderDetailId;
     private Long customerId;
+    private CustomerResponse customer;
 
     private ReplyResponse reply;
 }

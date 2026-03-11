@@ -4,8 +4,10 @@ import java.time.LocalDateTime;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Builder
 public class ReplyResponse {
 
@@ -14,4 +16,6 @@ public class ReplyResponse {
     private LocalDateTime createdAt;
     private String status;
     private Long staffId;
+
+    private StaffResponse staff;
 }

@@ -30,7 +30,10 @@ public class CouponService {
             throw new AppException(ErrorCode.COUPON_EXISTED);
         }
 
+        validateDiscountType(request.getDiscountType());
+
         Coupon coupon = couponMapper.toEntity(request);
+        coupon.setDiscountType(request.getDiscountType().toUpperCase());
         coupon.setStatus("ACTIVE");
         coupon.setUsedCount(0);
 
@@ -38,8 +41,9 @@ public class CouponService {
     }
 
     public CouponResponse getById(Long id) {
-        return couponMapper.toResponse(
-                couponRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_EXISTED)));
+        Coupon coupon = couponRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_EXISTED));
+
+        return couponMapper.toResponse(coupon);
     }
 
     public List<CouponResponse> getAll() {
@@ -51,24 +55,41 @@ public class CouponService {
 
         Coupon coupon = couponRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_EXISTED));
 
+        validateDiscountType(request.getDiscountType());
+
         couponMapper.updateEntity(request, coupon);
+        coupon.setDiscountType(request.getDiscountType().toUpperCase());
 
         return couponMapper.toResponse(couponRepo.save(coupon));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(Long id) {
+
         Coupon coupon = couponRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_EXISTED));
 
         couponRepo.delete(coupon);
     }
 
     public boolean isValid(Coupon coupon) {
+
         LocalDateTime now = LocalDateTime.now();
 
-        return coupon.getStatus().equals("ACTIVE")
+        return "ACTIVE".equalsIgnoreCase(coupon.getStatus())
                 && now.isAfter(coupon.getStartDate())
                 && now.isBefore(coupon.getEndDate())
-                && coupon.getUsedCount() < coupon.getUsageLimit();
+                && (coupon.getUsageLimit() == null || coupon.getUsedCount() < coupon.getUsageLimit());
+    }
+
+    private void validateDiscountType(String type) {
+
+        if (type == null) {
+            throw new AppException(ErrorCode.INVALID_DISCOUNT_TYPE);
+        }
+
+        if (!type.equalsIgnoreCase("PERCENT") && !type.equalsIgnoreCase("FIXED")) {
+
+            throw new AppException(ErrorCode.INVALID_DISCOUNT_TYPE);
+        }
     }
 }

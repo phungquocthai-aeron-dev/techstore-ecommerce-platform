@@ -79,6 +79,13 @@ public enum ErrorCode {
 
     INVALID_SHIPPING_TYPE(6003, "Invalid shipping type", HttpStatus.BAD_REQUEST),
     PAYMENT_METHOD_NOT_FOUND(6004, "Payment method not found", HttpStatus.BAD_REQUEST),
+    INVALID_DISCOUNT_TYPE(6005, "Invalid discount type", HttpStatus.BAD_REQUEST),
+
+    COUPON_NOT_FOUND(6006, "Coupon not found", HttpStatus.NOT_FOUND),
+    COUPON_INVALID(6007, "Coupon is not active", HttpStatus.BAD_REQUEST),
+    COUPON_EXPIRED(6008, "Coupon has expired or not started yet", HttpStatus.BAD_REQUEST),
+    COUPON_LIMIT_REACHED(6009, "Coupon usage limit reached", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_ELIGIBLE_FOR_COUPON(6010, "Order does not meet coupon minimum value", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

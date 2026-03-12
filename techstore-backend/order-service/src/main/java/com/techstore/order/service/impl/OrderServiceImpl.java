@@ -1,5 +1,6 @@
 package com.techstore.order.service.impl;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +23,7 @@ import com.techstore.order.dto.response.OrderResponse;
 import com.techstore.order.dto.response.ShippingInfo;
 import com.techstore.order.dto.response.VariantInfo;
 import com.techstore.order.entity.Address;
+import com.techstore.order.entity.Coupon;
 import com.techstore.order.entity.Order;
 import com.techstore.order.entity.OrderDetail;
 import com.techstore.order.entity.PaymentMethod;
@@ -31,6 +33,7 @@ import com.techstore.order.exception.AppException;
 import com.techstore.order.exception.ErrorCode;
 import com.techstore.order.mapper.OrderMapper;
 import com.techstore.order.repository.AddressRepository;
+import com.techstore.order.repository.CouponRepository;
 import com.techstore.order.repository.OrderDetailRepository;
 import com.techstore.order.repository.OrderRepository;
 import com.techstore.order.repository.PaymentMethodRepository;
@@ -63,6 +66,7 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentMethodRepository paymentMethodRepository;
+    private final CouponRepository couponRepository;
 
     @Override
     public OrderResponse createOrder(OrderCreateRequest request, String ipAddress) {
@@ -104,8 +108,58 @@ public class OrderServiceImpl implements OrderService {
             details.add(detail);
         }
 
-        order.setTotalPrice(total);
+        double discount = 0;
+
+        if (request.getCouponId() != null) {
+
+            Coupon coupon = couponRepository
+                    .findById(request.getCouponId())
+                    .orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_FOUND));
+
+            LocalDateTime now = LocalDateTime.now();
+
+            if (!"ACTIVE".equalsIgnoreCase(coupon.getStatus())) {
+                throw new AppException(ErrorCode.COUPON_INVALID);
+            }
+
+            if (now.isBefore(coupon.getStartDate()) || now.isAfter(coupon.getEndDate())) {
+                throw new AppException(ErrorCode.COUPON_EXPIRED);
+            }
+
+            if (coupon.getUsageLimit() != null && coupon.getUsedCount() >= coupon.getUsageLimit()) {
+                throw new AppException(ErrorCode.COUPON_LIMIT_REACHED);
+            }
+
+            if (coupon.getMinOrderValue() != null && total < coupon.getMinOrderValue()) {
+                throw new AppException(ErrorCode.ORDER_NOT_ELIGIBLE_FOR_COUPON);
+            }
+
+            if ("PERCENT".equalsIgnoreCase(coupon.getDiscountType())) {
+
+                discount = total * coupon.getDiscountValue() / 100;
+
+                if (coupon.getMaxDiscount() != null) {
+                    discount = Math.min(discount, coupon.getMaxDiscount());
+                }
+
+            } else if ("FIXED".equalsIgnoreCase(coupon.getDiscountType())) {
+
+                discount = coupon.getDiscountValue();
+            }
+
+            discount = Math.min(discount, total);
+
+            total = total - discount;
+
+            order.setCoupon(coupon);
+
+            coupon.setUsedCount(coupon.getUsedCount() + 1);
+            couponRepository.save(coupon);
+        }
+
         order.setVat(total * 0.1);
+        order.setTotalPrice(total + order.getVat());
+
         order.setOrderDetails(details);
 
         ShippingProvider shippingProvider = shippingProviderRepository

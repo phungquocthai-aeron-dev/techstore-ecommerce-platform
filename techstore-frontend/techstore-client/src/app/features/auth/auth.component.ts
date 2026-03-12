@@ -4,6 +4,8 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerRegisterRequest } from '../../features/customer/models/customer-register.model';
+import { CustomerService } from '../user/customer.service';
+import { TokenService } from '../../core/services/token.service';
 
 @Component({
   selector: 'app-auth',
@@ -36,8 +38,12 @@ export class LoginComponent {
   isLoginLoading = false;
   isRegisterLoading = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
-
+constructor(
+  private authService: AuthService,
+  private router: Router,
+  private tokenService: TokenService,
+  private customerService: CustomerService
+) {}
   switchTab(tab: 'login' | 'register') {
     this.activeTab = tab;
     this.loginAlert = null;
@@ -66,27 +72,42 @@ export class LoginComponent {
   }
 
   handleLogin(form: NgForm) {
-    if (form.invalid) {
-      form.form.markAllAsTouched();
-      return;
-    }
-    this.isLoginLoading = true;
-
-    this.authService
-      .loginCustomer({ username: this.loginData.identifier, password: this.loginData.password })
-      .subscribe({
-        next: () => {
-          this.isLoginLoading = false;
-          this.showAlert('login', 'Đăng nhập thành công! Đang chuyển hướng...', 'success');
-          setTimeout(() => this.router.navigate(['/home']), 1500);
-        },
-        error: (err) => {
-          this.isLoginLoading = false;
-          const msg = err?.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
-          this.showAlert('login', msg, 'error');
-        }
-      });
+  if (form.invalid) {
+    form.form.markAllAsTouched();
+    return;
   }
+  this.isLoginLoading = true;
+
+  this.authService
+    .loginCustomer({ username: this.loginData.identifier, password: this.loginData.password })
+    .subscribe({
+      next: () => {
+        // Decode token lấy customer ID rồi load user vào state
+        const token = this.tokenService.getToken()!;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const customerId = Number(payload.sub); // sub = "1" → 1
+
+        this.customerService.loadCurrentUser(customerId).subscribe({
+          next: () => {
+            this.isLoginLoading = false;
+            this.showAlert('login', 'Đăng nhập thành công! Đang chuyển hướng...', 'success');
+            setTimeout(() => this.router.navigate(['/home']), 1500);
+          },
+          error: () => {
+            // Vẫn navigate dù load user lỗi
+            this.isLoginLoading = false;
+            this.showAlert('login', 'Đăng nhập thành công! Đang chuyển hướng...', 'success');
+            setTimeout(() => this.router.navigate(['/home']), 1500);
+          }
+        });
+      },
+      error: (err) => {
+        this.isLoginLoading = false;
+        const msg = err?.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        this.showAlert('login', msg, 'error');
+      }
+    });
+}
 
   handleRegister(form: NgForm) {
     if (form.invalid) {

@@ -1,16 +1,18 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { ProductService } from '../product/product.service';
-import { CartService } from '../cart/cart.service'; 
+import { CartService } from '../cart/cart.service';
 import { ReviewService } from '../review/review.service';
 
 import { ProductResponse, VariantResponse } from '../product//models/product.model';
 import { ReviewResponse } from '../review/models/review.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
+import { OrderItem } from '../order/order.component';
 
 @Component({
   selector: 'app-product-detail',
@@ -49,6 +51,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   // ─── Constructor ─────────────────────────────────────────
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private productService: ProductService,
     private cartService: CartService,
     private reviewService: ReviewService
@@ -201,9 +204,27 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Mua ngay — không qua giỏ hàng, navigate thẳng đến /checkout
+   * với item hiện tại được truyền qua router state.
+   */
   buyNow(): void {
-    this.addToCart();
-    // Navigate to cart/checkout after adding
+    if (!this.selectedVariant || !this.product) return;
+
+    const item: OrderItem = {
+      productId:   this.product.id,
+      variantId:   this.selectedVariant.id,
+      productName: this.product.name,
+      variantName: `${this.selectedVariant.name} — ${this.selectedVariant.color}`,
+      imageUrl:    this.selectedVariant.imageUrl || this.selectedMainImage,
+      quantity:    this.quantity,
+      price:       this.currentPrice,
+      weight:      this.selectedVariant.weight ?? 300
+    };
+
+    this.router.navigate(['/checkout'], {
+      state: { items: [item] }
+    });
   }
 
   // ─── Reviews ─────────────────────────────────────────────
@@ -224,15 +245,11 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     ).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-        const content = res.result?.content ?? [];
-
-        this.reviews = reset
-                ? content
-                : [...this.reviews, ...content];
-
-        this.reviewTotal = res.result?.totalElements ?? 0;
-        this.reviewLoading = false;
-      },
+          const content = res.result?.content ?? [];
+          this.reviews = reset ? content : [...this.reviews, ...content];
+          this.reviewTotal = res.result?.totalElements ?? 0;
+          this.reviewLoading = false;
+        },
         error: err => {
           console.error(err);
           this.reviewLoading = false;

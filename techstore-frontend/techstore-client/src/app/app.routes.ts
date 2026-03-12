@@ -1,11 +1,13 @@
 import { Routes } from '@angular/router';
-import { BaseLayoutComponent } from './layouts/base-layout/base-layout.component';
 import { FullLayoutComponent } from './layouts/full-layout/full-layout.component';
 import { BlankLayoutComponent } from './layouts/blank-layout/blank-layout.component';
 
+import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
+
 export const routes: Routes = [
 
-   // ─── Base layout (Navbar + Footer) ──────────────────────────────
+  // ─── Full layout (Navbar + Footer) ──────────────────────────────
   {
     path: '',
     component: FullLayoutComponent,
@@ -18,7 +20,8 @@ export const routes: Routes = [
       {
         path: 'home',
         loadComponent: () =>
-          import('./features/home/home.component').then(m => m.HomeComponent)
+          import('./features/home/home.component')
+            .then(m => m.HomeComponent)
       },
       {
         path: 'product/:id',
@@ -29,44 +32,51 @@ export const routes: Routes = [
       {
         path: 'search',
         loadComponent: () =>
-          import('./features/search/search.component').then(m => m.SearchComponent)
+          import('./features/search/search.component')
+            .then(m => m.SearchComponent)
       },
-      
+      {
+        path: 'cart',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/cart/cart.component')
+            .then(m => m.CartComponent)
+      },
+      {
+        path: 'order',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/order/order.component')
+            .then(m => m.OrderComponent)
+      },
+      {
+        path: 'profile',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/user/profile.component')
+            .then(m => m.ProfileComponent)
+      }
     ]
   },
 
-  
-  // ─── Auth layout (chỉ content) ──────────────────────────────────
+  // ─── Blank layout (Auth) ─────────────────────────────────────────
   {
     path: '',
     component: BlankLayoutComponent,
     children: [
       {
         path: 'auth',
+        canActivate: [guestGuard],
         loadComponent: () =>
-          import('./features/auth/auth.component').then(m => m.LoginComponent)
+          import('./features/auth/auth.component')
+            .then(m => m.LoginComponent)
       }
     ]
   },
 
- 
-
-  // ─── Full layout (Navbar + Footer + Sidebar + Chatbot) ──────────
-  // {
-  //   path: '',
-  //   component: FullLayoutComponent,
-  //   children: [
-  //     {
-  //       path: 'dashboard',
-  //       loadComponent: () =>
-  //         import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
-  //     }
-  //   ]
-  // },
-
-  // ─── Fallback ───────────────────────────────────────────────────
+  // ─── Fallback ────────────────────────────────────────────────────
   {
     path: '**',
-    redirectTo: ''
+    redirectTo: 'home'
   }
 ];

@@ -8,59 +8,40 @@
       data-bs-dismiss="offcanvas"
     ></button>
   </div>
-
   <div class="offcanvas-body">
     <ul class="sidebar-nav">
       <li>
-        <a href="#" class="nav-link active">
-          <i class="bi bi-house"></i>
-          Trang chủ
-        </a>
+        <a routerLink="/home" routerLinkActive="active" class="nav-link"
+          ><i class="bi bi-house"></i>Trang chủ</a
+        >
       </li>
       <li>
-        <a href="#products" class="nav-link">
-          <i class="bi bi-laptop"></i>
-          Laptop
-        </a>
+        <a routerLink="/products" routerLinkActive="active" class="nav-link"
+          ><i class="bi bi-laptop"></i>Laptop</a
+        >
       </li>
       <li>
-        <a href="#" class="nav-link">
-          <i class="bi bi-phone"></i>
-          Điện thoại
-        </a>
+        <a href="#" class="nav-link"><i class="bi bi-phone"></i>Điện thoại</a>
       </li>
       <li>
-        <a href="#" class="nav-link">
-          <i class="bi bi-cpu"></i>
-          Linh kiện PC
-        </a>
+        <a href="#" class="nav-link"><i class="bi bi-cpu"></i>Linh kiện PC</a>
       </li>
       <li>
-        <a href="#" class="nav-link">
-          <i class="bi bi-headphones"></i>
-          Gaming Gear
-        </a>
+        <a href="#" class="nav-link"
+          ><i class="bi bi-headphones"></i>Gaming Gear</a
+        >
       </li>
-
       <div class="sidebar-divider"></div>
-
       <li>
-        <a href="#" class="nav-link">
-          <i class="bi bi-tag"></i>
-          Khuyến mãi
-        </a>
+        <a href="#" class="nav-link"><i class="bi bi-tag"></i>Khuyến mãi</a>
       </li>
       <li>
-        <a href="#" class="nav-link">
-          <i class="bi bi-info-circle"></i>
-          Về chúng tôi
-        </a>
+        <a href="#" class="nav-link"
+          ><i class="bi bi-info-circle"></i>Về chúng tôi</a
+        >
       </li>
       <li>
-        <a href="#" class="nav-link">
-          <i class="bi bi-envelope"></i>
-          Liên hệ
-        </a>
+        <a href="#" class="nav-link"><i class="bi bi-envelope"></i>Liên hệ</a>
       </li>
     </ul>
   </div>
@@ -70,6 +51,7 @@
 <nav class="navbar shadow-sm fixed-top navbar-fixed-custom">
   <div class="container-fluid navbar-container">
     <div class="row w-100 align-items-center">
+      <!-- Left: Menu + Search -->
       <div class="col-md-4 d-flex align-items-center gap-4">
         <button
           class="btn d-flex align-items-center"
@@ -80,7 +62,6 @@
           <span>Menu</span>
         </button>
 
-        <!-- Input search thay cho div Tìm kiếm -->
         <div class="position-relative w-100">
           <i class="bi bi-search search-icon fs-4" (click)="goSearch()"></i>
           <input
@@ -90,70 +71,105 @@
             [(ngModel)]="searchKeyword"
             (keydown.enter)="goSearch()"
           />
-          <div id="searchDropdown" class="search-dropdown d-none"></div>
         </div>
       </div>
 
+      <!-- Center: Logo -->
       <div class="col-md-4 text-center">
-        <img
-          src="images/brand.png"
-          style="width: 150px; margin-bottom: 12px"
-          alt=""
-        />
+        <a routerLink="/">
+          <img
+            src="images/brand.png"
+            style="width: 150px; margin-bottom: 12px"
+            alt="TechStore"
+        /></a>
       </div>
 
-      <div class="col-md-4 d-flex justify-content-end align-items-center gap-4">
-        <div class="d-flex align-items-center" style="cursor: pointer">
+      <!-- Right: Actions -->
+      <div class="col-md-4 d-flex justify-content-end align-items-center gap-3">
+        <!-- Support -->
+        <div
+          class="d-flex align-items-center nav-support"
+          style="cursor: pointer"
+        >
           <i class="bi bi-headset fs-4 me-2"></i>
           <span>Hỗ trợ</span>
         </div>
 
-        <a href="#" class="d-flex align-items-center position-relative">
-          <i class="bi bi-bag fs-4"></i>
-        </a>
+        <!-- ── CHƯA ĐĂNG NHẬP ── -->
+        <ng-container *ngIf="!isLoggedIn">
+          <button class="btn-auth btn-auth--outline" (click)="goLogin()">
+            Đăng nhập
+          </button>
+          <button class="btn-auth btn-auth--fill" (click)="goRegister()">
+            Đăng ký
+          </button>
+        </ng-container>
 
-        <div class="dropdown">
+        <!-- ── ĐÃ ĐĂNG NHẬP ── -->
+        <ng-container *ngIf="isLoggedIn">
+          <!-- Cart -->
           <a
-            href="#"
-            class="d-flex align-items-center"
-            data-bs-toggle="dropdown"
+            routerLink="/cart"
+            class="d-flex align-items-center position-relative nav-icon-btn mx-3"
           >
-            <img
-              src="https://i.pravatar.cc/150?img=8"
-              alt="Avatar"
-              class="avatar-img"
-            />
+            <i class="bi bi-bag fs-4"></i>
           </a>
-          <ul
-            class="dropdown-menu dropdown-menu-end"
-            style="
-              background: #111827;
-              border: 1px solid rgba(56, 189, 248, 0.2);
-            "
-          >
-            <li>
-              <a class="dropdown-item" href="#" style="color: #e5e7eb"
-                >Tài khoản</a
-              >
-            </li>
-            <li>
-              <a class="dropdown-item" href="#" style="color: #e5e7eb"
-                >Đơn hàng</a
-              >
-            </li>
-            <li>
-              <hr
-                class="dropdown-divider"
-                style="border-color: rgba(56, 189, 248, 0.2)"
+          <div class="dropdown">
+            <a
+              href="#"
+              class="d-flex align-items-center"
+              data-bs-toggle="dropdown"
+            >
+              <img
+                [src]="avatarUrl"
+                (error)="handleImageError($event)"
+                alt="Avatar"
+                class="avatar-img"
               />
-            </li>
-            <li>
-              <a class="dropdown-item" href="#" style="color: #ef4444"
-                >Đăng xuất</a
-              >
-            </li>
-          </ul>
-        </div>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
+              <li class="dropdown-user-info">
+                <img
+                  [src]="avatarUrl"
+                  (error)="handleImageError($event)"
+                  alt="Avatar"
+                  class="dropdown-avatar"
+                />
+                <div>
+                  <p class="dropdown-username">
+                    {{ customerName || "Tài khoản" }}
+                  </p>
+                </div>
+              </li>
+              <li><hr class="dropdown-divider dropdown-divider-custom" /></li>
+              <li>
+                <a
+                  class="dropdown-item dropdown-item-custom"
+                  (click)="goProfile()"
+                >
+                  <i class="bi bi-person-circle"></i> Hồ sơ cá nhân
+                </a>
+              </li>
+              <li>
+                <a
+                  class="dropdown-item dropdown-item-custom"
+                  (click)="goOrders()"
+                >
+                  <i class="bi bi-bag-check"></i> Đơn hàng của tôi
+                </a>
+              </li>
+              <li><hr class="dropdown-divider dropdown-divider-custom" /></li>
+              <li>
+                <a
+                  class="dropdown-item dropdown-item-custom dropdown-item-danger"
+                  (click)="handleLogout()"
+                >
+                  <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </a>
+              </li>
+            </ul>
+          </div>
+        </ng-container>
       </div>
     </div>
   </div>

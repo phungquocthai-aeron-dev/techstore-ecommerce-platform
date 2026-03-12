@@ -274,9 +274,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     return `${min} – ${max}`;
   }
 
-  formatPrice(price: number): string {
-    return price.toLocaleString('vi-VN') + 'đ';
-  }
+  formatPrice(price?: number): string {
+  return (price ?? 0).toLocaleString('vi-VN') + 'đ';
+}
 
   trackByProductId(_: number, p: ProductListResponse): number { return p.id; }
   trackByCategoryId(_: number, c: CategoryResponse): number   { return c.id; }

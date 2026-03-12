@@ -1,0 +1,263 @@
+<div class="profile-container mt-5 pt-5">
+  <!-- Alert -->
+  <div
+    *ngIf="alert"
+    class="alert"
+    [ngClass]="alert.type === 'success' ? 'alert-success' : 'alert-error'"
+  >
+    <i
+      class="bi"
+      [ngClass]="
+        alert.type === 'success'
+          ? 'bi-check-circle-fill'
+          : 'bi-exclamation-triangle-fill'
+      "
+    ></i>
+    {{ alert.message }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Đang tải dữ liệu...</p>
+  </div>
+
+  <ng-container *ngIf="!loading && customer">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="header-inner">
+        <div class="avatar-section">
+          <img
+            [src]="avatarUrl"
+            (error)="handleImageError($event)"
+            alt="Avatar"
+            class="avatar-img"
+          />
+          <button class="btn-upload" (click)="triggerAvatarInput()">
+            <i class="bi bi-camera"></i> Đổi ảnh đại diện
+          </button>
+          <input
+            type="file"
+            id="avatarInput"
+            class="d-none"
+            accept="image/*"
+            (change)="onAvatarChange($event)"
+          />
+        </div>
+        <div class="header-info">
+          <h2>{{ customer.fullName }}</h2>
+          <p><i class="bi bi-envelope"></i> {{ customer.email }}</p>
+          <p><i class="bi bi-telephone"></i> {{ customer.phone }}</p>
+          <span class="badge-vip"
+            ><i class="bi bi-shield-check"></i> Khách hàng</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Thông tin cá nhân -->
+    <div class="card">
+      <h4><i class="bi bi-person-circle"></i> Thông Tin Cá Nhân</h4>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Họ và tên</label>
+          <input
+            type="text"
+            [(ngModel)]="profileForm.fullName"
+            placeholder="Họ và tên"
+          />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input
+            type="email"
+            [value]="customer.email"
+            disabled
+            class="disabled"
+          />
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại</label>
+          <input
+            type="tel"
+            [(ngModel)]="profileForm.phone"
+            placeholder="Số điện thoại"
+          />
+        </div>
+        <div class="form-group">
+          <label>Ngày sinh</label>
+          <input type="date" [(ngModel)]="profileForm.dob" />
+        </div>
+      </div>
+
+      <div class="info-rows">
+        <div class="info-row">
+          <span class="info-label">Mã khách hàng</span>
+          <span class="info-value">#{{ customer.id }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Trạng thái</span>
+          <span class="info-value status-badge">{{ customer.status }}</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          class="btn-primary"
+          (click)="saveProfile()"
+          [disabled]="savingProfile"
+        >
+          <i class="bi bi-check-circle"></i>
+          {{ savingProfile ? "Đang lưu..." : "Lưu Thay Đổi" }}
+        </button>
+        <button class="btn-outline" (click)="resetProfile()">
+          <i class="bi bi-arrow-counterclockwise"></i> Hủy
+        </button>
+      </div>
+    </div>
+
+    <!-- Sổ Địa Chỉ -->
+    <div class="card">
+      <div class="card-header-row">
+        <h4><i class="bi bi-geo-alt"></i> Sổ Địa Chỉ</h4>
+        <button class="btn-primary btn-sm" (click)="openAddAddress()">
+          <i class="bi bi-plus-circle"></i> Thêm địa chỉ
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="addresses.length === 0" class="empty-state">
+        <i class="bi bi-geo-alt"></i>
+        <p>Chưa có địa chỉ nào</p>
+      </div>
+
+      <!-- Address List -->
+      <div class="address-list">
+        <div
+          *ngFor="let addr of addresses"
+          class="address-card"
+          [class.address-card--default]="addr.status"
+        >
+          <span *ngIf="addr.status" class="default-badge">Mặc định</span>
+          <p class="addr-name">{{ addr.address }}</p>
+          <p class="addr-detail">
+            {{ addr.wardName }}, {{ addr.districtName }},
+            {{ addr.provinceName }}
+          </p>
+          <div class="address-actions">
+            <button class="btn-outline btn-sm" (click)="openEditAddress(addr)">
+              <i class="bi bi-pencil"></i> Sửa
+            </button>
+            <button class="btn-danger btn-sm" (click)="deleteAddress(addr.id)">
+              <i class="bi bi-trash"></i> Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Đổi Mật Khẩu -->
+    <div class="card">
+      <h4><i class="bi bi-shield-lock"></i> Đổi Mật Khẩu</h4>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Mật khẩu hiện tại</label>
+          <input
+            type="password"
+            [(ngModel)]="passwordForm.oldPassword"
+            placeholder="Nhập mật khẩu hiện tại"
+          />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu mới</label>
+          <input
+            type="password"
+            [(ngModel)]="passwordForm.newPassword"
+            placeholder="Tối thiểu 6 ký tự"
+          />
+        </div>
+        <div class="form-group">
+          <label>Xác nhận mật khẩu</label>
+          <input
+            type="password"
+            [(ngModel)]="passwordForm.confirmPassword"
+            placeholder="Nhập lại mật khẩu mới"
+          />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button
+          class="btn-primary"
+          (click)="savePassword()"
+          [disabled]="savingPassword"
+        >
+          <i class="bi bi-key"></i>
+          {{ savingPassword ? "Đang lưu..." : "Đổi Mật Khẩu" }}
+        </button>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- Modal Địa Chỉ -->
+<div
+  class="modal-overlay"
+  *ngIf="showAddressModal"
+  (click)="closeAddressModal()"
+>
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <h5><i class="bi bi-geo-alt"></i> {{ addressModalTitle }}</h5>
+      <button class="modal-close" (click)="closeAddressModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Địa chỉ <span class="required">*</span></label>
+        <input
+          type="text"
+          [(ngModel)]="addressForm.address"
+          placeholder="Số nhà, tên đường"
+        />
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Mã tỉnh/thành <span class="required">*</span></label>
+          <input
+            type="number"
+            [(ngModel)]="addressForm.provinceId"
+            placeholder="Province ID"
+          />
+        </div>
+        <div class="form-group">
+          <label>Mã quận/huyện <span class="required">*</span></label>
+          <input
+            type="number"
+            [(ngModel)]="addressForm.districtId"
+            placeholder="District ID"
+          />
+        </div>
+        <div class="form-group full-width">
+          <label>Mã phường/xã</label>
+          <input
+            type="text"
+            [(ngModel)]="addressForm.wardCode"
+            placeholder="Ward Code"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-outline" (click)="closeAddressModal()">Hủy</button>
+      <button
+        class="btn-primary"
+        (click)="saveAddress()"
+        [disabled]="savingAddress"
+      >
+        <i class="bi bi-check-circle"></i>
+        {{ savingAddress ? "Đang lưu..." : "Lưu địa chỉ" }}
+      </button>
+    </div>
+  </div>
+</div>

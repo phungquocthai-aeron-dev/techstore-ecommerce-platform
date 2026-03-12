@@ -1,1 +1,210 @@
-<p>cart works!</p>
+<div class="cart-page">
+  <!-- Alert -->
+  <div
+    *ngIf="alertMsg"
+    class="cart-alert"
+    [class.cart-alert-success]="alertType === 'success'"
+    [class.cart-alert-warn]="alertType === 'warn'"
+  >
+    <i
+      class="bi"
+      [ngClass]="
+        alertType === 'success'
+          ? 'bi-check-circle-fill'
+          : 'bi-exclamation-triangle-fill'
+      "
+    ></i>
+    {{ alertMsg }}
+  </div>
+
+  <!-- Header -->
+  <div class="cart-header">
+    <h1 class="cart-title">Giỏ Hàng</h1>
+    <p class="cart-subtitle">
+      <span *ngIf="!loading">{{ cart?.items?.length || 0 }} sản phẩm</span>
+    </p>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="cart-loading">
+    <div class="cart-spinner"></div>
+    <p>Đang tải giỏ hàng...</p>
+  </div>
+
+  <div *ngIf="!loading" class="cart-body">
+    <!-- Empty -->
+    <div *ngIf="!cart || cart.items.length === 0" class="cart-empty">
+      <i class="bi bi-cart-x"></i>
+      <h3>Giỏ hàng trống</h3>
+      <p>Hãy khám phá và thêm sản phẩm vào giỏ hàng của bạn</p>
+      <button class="cart-btn-explore" (click)="goShopping()">
+        <i class="bi bi-rocket-takeoff-fill"></i> Khám phá ngay
+      </button>
+    </div>
+
+    <div *ngIf="cart && cart.items.length > 0" class="cart-content">
+      <!-- Left: Items -->
+      <div class="cart-items-wrap">
+        <!-- Select all -->
+        <div class="cart-select-all">
+          <label class="cart-checkbox-label">
+            <input
+              type="checkbox"
+              class="cart-checkbox"
+              [checked]="isAllSelected"
+              [indeterminate]="isSomeSelected && !isAllSelected"
+              (change)="toggleSelectAll($event)"
+            />
+            <span class="cart-checkbox-custom"></span>
+            <span class="cart-select-all-text">
+              Chọn tất cả ({{ selectedIds.size }}/{{ cart.items.length }})
+            </span>
+          </label>
+          <button
+            *ngIf="selectedIds.size > 0"
+            class="cart-btn-delete-selected"
+            (click)="removeSelected()"
+          >
+            <i class="bi bi-trash"></i> Xóa đã chọn
+          </button>
+        </div>
+
+        <!-- Items -->
+        <div class="cart-item-list">
+          <div
+            class="cart-item"
+            *ngFor="let item of cart.items"
+            [class.cart-item-selected]="selectedIds.has(item.variantId)"
+          >
+            <!-- Checkbox -->
+            <label class="cart-checkbox-label cart-item-check">
+              <input
+                type="checkbox"
+                class="cart-checkbox"
+                [checked]="selectedIds.has(item.variantId)"
+                (change)="toggleSelect(item.variantId)"
+              />
+              <span class="cart-checkbox-custom"></span>
+            </label>
+
+            <!-- Image -->
+            <img
+              [src]="getVariantImage(item.variantId)"
+              [alt]="getVariantName(item.variantId)"
+              class="cart-item-img"
+            />
+
+            <!-- Info -->
+            <div class="cart-item-info">
+              <div class="cart-item-name">
+                {{ getProductName(item.variantId) }}
+              </div>
+              <div class="cart-item-variant">
+                {{ getVariantName(item.variantId) }}
+              </div>
+              <div class="cart-item-price">
+                {{ item.price | number: "1.0-0" }}đ
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="cart-item-actions">
+              <button
+                class="cart-btn-remove"
+                (click)="removeItem(item.variantId)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+              <div class="cart-qty">
+                <button
+                  class="cart-qty-btn"
+                  (click)="updateQty(item.variantId, item.quantity - 1)"
+                  [disabled]="item.quantity <= 1"
+                >
+                  <i class="bi bi-dash"></i>
+                </button>
+                <span class="cart-qty-val">{{ item.quantity }}</span>
+                <button
+                  class="cart-qty-btn"
+                  (click)="updateQty(item.variantId, item.quantity + 1)"
+                  [disabled]="item.quantity >= 10"
+                >
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+              <div class="cart-item-subtotal">
+                {{ item.subTotal | number: "1.0-0" }}đ
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Summary -->
+      <div class="cart-summary">
+        <h4 class="cart-summary-title">
+          <i class="bi bi-receipt"></i> Tổng Đơn Hàng
+        </h4>
+
+        <!-- Free shipping notice -->
+        <div *ngIf="remainingForFreeShip > 0" class="cart-ship-notice">
+          <i class="bi bi-truck"></i>
+          Mua thêm
+          <strong>{{ remainingForFreeShip | number: "1.0-0" }}đ</strong> để
+          <strong>miễn phí vận chuyển</strong>
+        </div>
+        <div
+          *ngIf="remainingForFreeShip <= 0 && selectedSubtotal > 0"
+          class="cart-ship-notice cart-ship-free"
+        >
+          <i class="bi bi-truck"></i> Bạn được
+          <strong>miễn phí vận chuyển!</strong>
+        </div>
+
+        <div class="cart-sum-row">
+          <span>Đã chọn</span>
+          <span>{{ selectedIds.size }} sản phẩm</span>
+        </div>
+        <div class="cart-sum-row">
+          <span>Tạm tính</span>
+          <span>{{ selectedSubtotal | number: "1.0-0" }}đ</span>
+        </div>
+        <div class="cart-sum-row">
+          <span>Phí vận chuyển</span>
+          <span>{{
+            shippingFee === 0 && selectedSubtotal > 0
+              ? "Miễn phí"
+              : (shippingFee | number: "1.0-0") + "đ"
+          }}</span>
+        </div>
+        <div *ngIf="discount > 0" class="cart-sum-row cart-sum-discount">
+          <span>Giảm giá</span>
+          <span>−{{ discount | number: "1.0-0" }}đ</span>
+        </div>
+        <div class="cart-sum-total">
+          <span>Tổng cộng</span>
+          <span>{{ grandTotal | number: "1.0-0" }}đ</span>
+        </div>
+
+        <!-- Checkout -->
+        <button
+          class="cart-btn-checkout"
+          (click)="goOrder()"
+          [disabled]="selectedIds.size === 0"
+        >
+          <i class="bi bi-credit-card me-2"></i>
+          Thanh Toán ({{ selectedIds.size }})
+        </button>
+
+        <button class="cart-btn-continue" (click)="goShopping()">
+          <i class="bi bi-arrow-left me-2"></i>Tiếp tục mua sắm
+        </button>
+
+        <div class="cart-secure">
+          <i class="bi bi-shield-check"></i>
+          Thanh toán an toàn & bảo mật 100%
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

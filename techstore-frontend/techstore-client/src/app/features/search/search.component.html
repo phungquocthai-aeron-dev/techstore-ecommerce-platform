@@ -359,6 +359,17 @@
 
     <!-- Pagination -->
     <div class="pagination-wrapper" *ngIf="totalPages > 1">
+      <!-- FIRST PAGE -->
+      <button
+        class="page-btn nav"
+        [disabled]="currentPage === 0"
+        (click)="goToPage(0)"
+        title="Trang đầu"
+      >
+        «
+      </button>
+
+      <!-- PREVIOUS -->
       <button
         class="page-btn nav"
         [disabled]="currentPage === 0"
@@ -375,6 +386,8 @@
           <path d="M15 18l-6-6 6-6" />
         </svg>
       </button>
+
+      <!-- PAGE NUMBERS -->
       <ng-container *ngFor="let page of pages">
         <button
           *ngIf="page >= currentPage - 2 && page <= currentPage + 2"
@@ -385,6 +398,8 @@
           {{ page + 1 }}
         </button>
       </ng-container>
+
+      <!-- NEXT -->
       <button
         class="page-btn nav"
         [disabled]="currentPage === totalPages - 1"
@@ -400,6 +415,16 @@
         >
           <path d="M9 18l6-6-6-6" />
         </svg>
+      </button>
+
+      <!-- LAST PAGE -->
+      <button
+        class="page-btn nav"
+        [disabled]="currentPage === totalPages - 1"
+        (click)="goToPage(totalPages - 1)"
+        title="Trang cuối"
+      >
+        »
       </button>
     </div>
   </main>

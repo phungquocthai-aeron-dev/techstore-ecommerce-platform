@@ -31,7 +31,7 @@ public class SecurityConfig {
 
         httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
                 .permitAll()
-                .requestMatchers(HttpMethod.GET, "/products/**")
+                .requestMatchers(HttpMethod.GET, "/products/**", "/brands/**", "/categories/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated());

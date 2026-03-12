@@ -3,9 +3,11 @@ package com.techstore.cart.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -226,7 +228,18 @@ public class CartService {
     private Long getAuthenticatedCustomerId() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        Jwt jwt = jwtAuth.getToken();
 
         String userType = jwt.getClaim("user_type");
 

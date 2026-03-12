@@ -1,0 +1,406 @@
+<div class="search-page mt-5 pt-4">
+  <!-- ═══════════════════════════════════════════════════════════
+       SIDEBAR
+  ═══════════════════════════════════════════════════════════ -->
+  <aside class="search-sidebar">
+    <!-- THƯƠNG HIỆU -->
+    <div class="filter-section">
+      <h6 class="filter-title">
+        <span class="filter-icon">◈</span> Thương hiệu
+      </h6>
+      <div class="scroll-list">
+        <div *ngFor="let brand of brands" class="filter-option">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [checked]="selectedBrands.has(brand.name)"
+              (change)="onBrandToggle(brand.name)"
+            />
+            <span class="checkmark"></span>
+            <span class="option-text">{{ brand.name }}</span>
+          </label>
+        </div>
+        <div *ngIf="brands.length === 0" class="filter-empty">Đang tải...</div>
+      </div>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <!-- DANH MỤC -->
+    <div class="filter-section">
+      <h6 class="filter-title"><span class="filter-icon">◈</span> Danh mục</h6>
+      <div class="scroll-list">
+        <div
+          *ngFor="let cat of categories; trackBy: trackByCategoryId"
+          class="filter-option"
+        >
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [checked]="selectedCategoryIds.has(cat.id)"
+              (change)="onCategoryToggle(cat.id)"
+            />
+            <span class="checkmark"></span>
+            <span class="option-text">{{ cat.name }}</span>
+            <span class="option-sub" *ngIf="cat.categoryType">{{
+              cat.categoryType
+            }}</span>
+          </label>
+        </div>
+        <div *ngIf="categories.length === 0" class="filter-empty">
+          Đang tải...
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <!-- KHOẢNG GIÁ -->
+    <div class="filter-section">
+      <h6 class="filter-title">
+        <span class="filter-icon">◈</span> Khoảng giá
+      </h6>
+
+      <!-- Preset checkboxes -->
+      <div *ngFor="let range of priceRanges" class="filter-option">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [checked]="selectedPriceRange === range.value"
+            (change)="onPriceRangeToggle(range.value)"
+          />
+          <span class="checkmark"></span>
+          <span class="option-text">{{ range.label }}</span>
+        </label>
+      </div>
+
+      <!-- Custom price inputs -->
+      <div class="price-input-block">
+        <div class="price-input-label">Hoặc nhập khoảng giá</div>
+        <div class="price-input-row">
+          <div class="price-input-wrap">
+            <input
+              type="number"
+              class="price-input"
+              placeholder="Từ"
+              [ngModel]="customMinInput"
+              (ngModelChange)="customMinInput = $event; onCustomPriceChange()"
+              min="0"
+            />
+            <span class="price-input-unit">đ</span>
+          </div>
+          <span class="price-input-sep">—</span>
+          <div class="price-input-wrap">
+            <input
+              type="number"
+              class="price-input"
+              placeholder="Đến"
+              [ngModel]="customMaxInput"
+              (ngModelChange)="customMaxInput = $event; onCustomPriceChange()"
+              min="0"
+            />
+            <span class="price-input-unit">đ</span>
+          </div>
+        </div>
+        <div class="price-input-error" *ngIf="priceInputError">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {{ priceInputError }}
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <button class="btn-clear-filters" (click)="clearAllFilters()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+      >
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
+      Xóa tất cả bộ lọc
+    </button>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════════════════ -->
+  <main class="search-content">
+    <!-- Search Header -->
+    <div class="search-header">
+      <div class="search-input-wrapper">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Tìm kiếm sản phẩm công nghệ..."
+          [(ngModel)]="keyword"
+          (ngModelChange)="onKeywordChange()"
+        />
+        <span class="search-icon">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+        </span>
+      </div>
+      <div class="search-meta">
+        <div class="search-meta-text" *ngIf="!isLoading">
+          Tìm thấy <strong>{{ totalElements }}</strong> sản phẩm
+          <ng-container *ngIf="keyword">
+            cho "<em>{{ keyword }}</em
+            >"</ng-container
+          >
+        </div>
+        <div class="search-meta-text loading-pulse" *ngIf="isLoading">
+          Đang tìm kiếm...
+        </div>
+        <div class="sort-wrapper">
+          <label class="sort-label">Sắp xếp:</label>
+          <select
+            class="sort-dropdown"
+            (change)="
+              onSortChange(sortOptions[$any($event.target).selectedIndex])
+            "
+          >
+            <option *ngFor="let opt of sortOptions" [value]="opt.sortBy">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Filter Tags -->
+    <div class="active-filters" *ngIf="activeFilterCount > 0">
+      <div class="filter-tag" *ngFor="let brand of selectedBrands">
+        <span>{{ brand }}</span>
+        <button class="tag-remove" (click)="removeFilter('brand', brand)">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        class="filter-tag category-tag"
+        *ngFor="let catId of selectedCategoryIds"
+      >
+        <span>{{ getCategoryName(catId) }}</span>
+        <button class="tag-remove" (click)="removeFilter('category', catId)">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="filter-tag price-tag" *ngIf="selectedPriceRange">
+        <span>{{ getPriceRangeLabel(selectedPriceRange) }}</span>
+        <button class="tag-remove" (click)="removeFilter('price')">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="filter-tag price-tag" *ngIf="useCustomPrice">
+        <span>{{ customPriceLabel }}</span>
+        <button class="tag-remove" (click)="removeFilter('customPrice')">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-state" *ngIf="errorMessage">
+      <div class="error-icon">⚠</div>
+      <p>{{ errorMessage }}</p>
+      <button class="btn-retry" (click)="loadProducts()">Thử lại</button>
+    </div>
+
+    <!-- Skeleton -->
+    <div class="products-grid" *ngIf="isLoading">
+      <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8]">
+        <div class="skeleton-img"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line medium"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="products-grid" *ngIf="!isLoading && !errorMessage">
+      <div
+        class="product-card"
+        *ngFor="let product of products; trackBy: trackByProductId"
+      >
+        <div class="product-img-wrapper">
+          <img
+            [src]="product.primaryImage || 'assets/images/no-image.png'"
+            (error)="handleImageError($event)"
+            [alt]="product.name"
+            class="product-img"
+            loading="lazy"
+          />
+          <div class="product-overlay">
+            <span class="category-badge">{{ product.categoryName }}</span>
+          </div>
+        </div>
+        <div class="product-body">
+          <div class="brand-name">{{ product.brandName }}</div>
+          <h5 class="product-title">{{ product.name }}</h5>
+          <div class="product-price">{{ formatPrice(product.basePrice) }}</div>
+          <div class="card-actions">
+            <button class="btn-view">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              Xem chi tiết
+            </button>
+            <button class="btn-cart">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path
+                  d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty -->
+    <div
+      class="empty-state"
+      *ngIf="!isLoading && !errorMessage && products.length === 0"
+    >
+      <div class="empty-icon">◎</div>
+      <h3>Không tìm thấy sản phẩm</h3>
+      <p>Thử thay đổi từ khóa hoặc điều chỉnh bộ lọc</p>
+      <button
+        class="btn-clear-filters"
+        style="width: auto; padding: 10px 24px"
+        (click)="clearAllFilters()"
+      >
+        Xóa bộ lọc
+      </button>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-wrapper" *ngIf="totalPages > 1">
+      <button
+        class="page-btn nav"
+        [disabled]="currentPage === 0"
+        (click)="goToPage(currentPage - 1)"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+      <ng-container *ngFor="let page of pages">
+        <button
+          *ngIf="page >= currentPage - 2 && page <= currentPage + 2"
+          class="page-btn"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page + 1 }}
+        </button>
+      </ng-container>
+      <button
+        class="page-btn nav"
+        [disabled]="currentPage === totalPages - 1"
+        (click)="goToPage(currentPage + 1)"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+  </main>
+</div>

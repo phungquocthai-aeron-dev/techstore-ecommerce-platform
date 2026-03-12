@@ -15,6 +15,7 @@
           <!-- Main Image -->
           <img
             [src]="selectedMainImage"
+            (error)="handleImageError($event)"
             class="main-image"
             [alt]="product.name"
             (click)="openModal(selectedMainImage)"
@@ -25,6 +26,7 @@
             <img
               *ngFor="let img of product.images"
               [src]="img.url"
+              (error)="handleImageError($event)"
               [class.active]="img.url === selectedMainImage"
               class="thumbnail"
               [alt]="product.name"
@@ -82,7 +84,11 @@
               [disabled]="isVariantOutOfStock(v)"
               (click)="selectVariant(v)"
             >
-              <img *ngIf="v.imageUrl" [src]="v.imageUrl" [alt]="v.name" />
+              <img
+                [src]="v.imageUrl"
+                (error)="handleImageError($event)"
+                [alt]="v.name"
+              />
               <div class="variant-name">{{ v.name }}</div>
               <div class="variant-stock">
                 {{ v.stock > 0 ? "Còn " + v.stock + " máy" : "Hết hàng" }}

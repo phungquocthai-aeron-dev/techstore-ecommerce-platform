@@ -11,6 +11,11 @@ export const routes: Routes = [
     component: FullLayoutComponent,
     children: [
       {
+        path: '',
+        redirectTo: 'home',
+        pathMatch: 'full'
+      },
+      {
         path: 'home',
         loadComponent: () =>
           import('./features/home/home.component').then(m => m.HomeComponent)
@@ -20,7 +25,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/product-detail/product-detail.component')
             .then(m => m.ProductDetailComponent)
-      }
+      },
+      {
+        path: 'search',
+        loadComponent: () =>
+          import('./features/search/search.component').then(m => m.SearchComponent)
+      },
+      
     ]
   },
 

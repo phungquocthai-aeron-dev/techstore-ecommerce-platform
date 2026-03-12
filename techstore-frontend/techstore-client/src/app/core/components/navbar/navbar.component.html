@@ -82,13 +82,14 @@
 
         <!-- Input search thay cho div Tìm kiếm -->
         <div class="position-relative w-100">
-          <i class="bi bi-search search-icon fs-4"></i>
+          <i class="bi bi-search search-icon fs-4" (click)="goSearch()"></i>
           <input
             type="text"
             class="form-control search-navbar ps-5"
             placeholder="Tìm sản phẩm..."
+            [(ngModel)]="searchKeyword"
+            (keydown.enter)="goSearch()"
           />
-          <!-- Dropdown kết quả search -->
           <div id="searchDropdown" class="search-dropdown d-none"></div>
         </div>
       </div>

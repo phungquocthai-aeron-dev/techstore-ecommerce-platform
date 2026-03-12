@@ -275,4 +275,8 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   round(value: number): number {
     return Math.round(value);
   }
+
+  handleImageError(event: any) {
+    event.target.src = 'images/no-product-image.jpg';
+  }
 }

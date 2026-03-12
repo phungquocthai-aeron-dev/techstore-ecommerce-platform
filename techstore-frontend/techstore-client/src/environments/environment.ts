@@ -7,4 +7,5 @@ export const environment = {
     userUrl: 'http://localhost:8888/techstore/api/v1/user',
     productUrl: 'http://localhost:8888/techstore/api/v1/product',
     cartUrl: 'http://localhost:8888/techstore/api/v1/cart',
+    orderUrl: 'http://localhost:8888/techstore/api/v1/order',
 };

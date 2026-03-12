@@ -1,17 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent implements OnInit {
   isLightTheme = false;
   isMobileMenuOpen = false;
+  searchKeyword = '';
+
+  constructor(private router: Router) {}
 
   navLinks = [
     { label: 'Trang chủ', path: '/', icon: '⌂' },
@@ -31,5 +35,14 @@ export class NavbarComponent implements OnInit {
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+    goSearch(): void {
+    const kw = this.searchKeyword.trim();
+    if (kw) {
+      this.router.navigate(['/search'], { queryParams: { keyword: kw } });
+    } else {
+      this.router.navigate(['/search']);
+    }
   }
 }

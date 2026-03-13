@@ -1,4 +1,4 @@
-<div class="cart-page">
+<div class="cart-page mt-5 pt-5">
   <!-- Alert -->
   <div
     *ngIf="alertMsg"
@@ -45,7 +45,6 @@
     <div *ngIf="cart && cart.items.length > 0" class="cart-content">
       <!-- Left: Items -->
       <div class="cart-items-wrap">
-        <!-- Select all -->
         <div class="cart-select-all">
           <label class="cart-checkbox-label">
             <input
@@ -56,9 +55,11 @@
               (change)="toggleSelectAll($event)"
             />
             <span class="cart-checkbox-custom"></span>
-            <span class="cart-select-all-text">
-              Chọn tất cả ({{ selectedIds.size }}/{{ cart.items.length }})
-            </span>
+            <span class="cart-select-all-text"
+              >Chọn tất cả ({{ selectedIds.size }}/{{
+                cart.items.length
+              }})</span
+            >
           </label>
           <button
             *ngIf="selectedIds.size > 0"
@@ -69,14 +70,12 @@
           </button>
         </div>
 
-        <!-- Items -->
         <div class="cart-item-list">
           <div
             class="cart-item"
             *ngFor="let item of cart.items"
             [class.cart-item-selected]="selectedIds.has(item.variantId)"
           >
-            <!-- Checkbox -->
             <label class="cart-checkbox-label cart-item-check">
               <input
                 type="checkbox"
@@ -86,15 +85,11 @@
               />
               <span class="cart-checkbox-custom"></span>
             </label>
-
-            <!-- Image -->
             <img
               [src]="getVariantImage(item.variantId)"
               [alt]="getVariantName(item.variantId)"
               class="cart-item-img"
             />
-
-            <!-- Info -->
             <div class="cart-item-info">
               <div class="cart-item-name">
                 {{ getProductName(item.variantId) }}
@@ -106,8 +101,6 @@
                 {{ item.price | number: "1.0-0" }}đ
               </div>
             </div>
-
-            <!-- Actions -->
             <div class="cart-item-actions">
               <button
                 class="cart-btn-remove"
@@ -146,39 +139,187 @@
           <i class="bi bi-receipt"></i> Tổng Đơn Hàng
         </h4>
 
-        <!-- Free shipping notice -->
-        <div *ngIf="remainingForFreeShip > 0" class="cart-ship-notice">
-          <i class="bi bi-truck"></i>
-          Mua thêm
-          <strong>{{ remainingForFreeShip | number: "1.0-0" }}đ</strong> để
-          <strong>miễn phí vận chuyển</strong>
-        </div>
-        <div
-          *ngIf="remainingForFreeShip <= 0 && selectedSubtotal > 0"
-          class="cart-ship-notice cart-ship-free"
-        >
-          <i class="bi bi-truck"></i> Bạn được
-          <strong>miễn phí vận chuyển!</strong>
-        </div>
+        <!-- ── Coupon block ── -->
+        <div class="cart-coupon-block">
+          <!-- Header row -->
+          <div class="cart-coupon-header">
+            <div class="cart-coupon-header-left">
+              <i class="bi bi-ticket-perforated-fill"></i>
+              Mã giảm giá
+            </div>
+            <button
+              *ngIf="applicableCoupons.length > 0"
+              class="cart-coupon-best-pill"
+              (click)="applyBestCoupon()"
+            >
+              <i class="bi bi-stars"></i> Tốt nhất
+            </button>
+          </div>
 
+          <!-- Applied bar -->
+          <div *ngIf="selectedCoupon" class="cart-coupon-applied-bar">
+            <div class="cart-coupon-ab-left">
+              <span class="cart-coupon-ab-tag">{{ selectedCoupon.name }}</span>
+              <span class="cart-coupon-ab-type">
+                {{
+                  selectedCoupon.discountType === "PERCENT"
+                    ? selectedCoupon.discountValue + "%"
+                    : (selectedCoupon.discountValue | number: "1.0-0") + "đ"
+                }}
+              </span>
+              <span class="cart-coupon-ab-save"
+                >Tiết kiệm {{ discount | number: "1.0-0" }}đ</span
+              >
+            </div>
+            <button class="cart-coupon-ab-cancel" (click)="removeCoupon()">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div *ngIf="couponsLoading" class="cart-coupon-loading">
+            <div class="cart-spinner cart-spinner-sm"></div>
+            <span>Đang tải mã giảm giá...</span>
+          </div>
+
+          <!-- Scroll list -->
+          <ng-container *ngIf="!couponsLoading">
+            <!-- Empty -->
+            <div
+              *ngIf="availableCoupons.length === 0"
+              class="cart-coupon-empty"
+            >
+              <i class="bi bi-ticket-perforated"></i>
+              <span>Không có mã giảm giá nào</span>
+            </div>
+
+            <div
+              *ngIf="availableCoupons.length > 0"
+              class="cart-coupon-list"
+              [class.cart-coupon-list-scroll]="availableCoupons.length > 3"
+            >
+              <!-- Applicable group -->
+              <div
+                *ngIf="applicableCoupons.length > 0"
+                class="cart-coupon-group-sep"
+              >
+                <hr />
+                <span class="ok">Có thể áp dụng</span>
+                <hr />
+              </div>
+
+              <div
+                class="cart-cp-card"
+                *ngFor="let c of applicableCoupons"
+                [class.selected]="selectedCoupon?.id === c.id"
+                (click)="selectCoupon(c)"
+              >
+                <div
+                  class="cart-cp-stripe"
+                  [ngClass]="getCouponStripeClass(c)"
+                ></div>
+                <div class="cart-cp-ico">
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      c.discountType === 'PERCENT'
+                        ? 'bi-percent'
+                        : 'bi-tag-fill'
+                    "
+                  ></i>
+                </div>
+                <div class="cart-cp-body">
+                  <div class="cart-cp-name">{{ c.name }}</div>
+                  <div class="cart-cp-desc">
+                    <span *ngIf="c.discountType === 'PERCENT'"
+                      >Giảm {{ c.discountValue }}% · Tối đa
+                      {{ c.maxDiscount | number: "1.0-0" }}đ</span
+                    >
+                    <span *ngIf="c.discountType === 'FIXED'"
+                      >Giảm thẳng {{ c.discountValue | number: "1.0-0" }}đ</span
+                    >
+                  </div>
+                  <div class="cart-cp-cond">
+                    Đơn tối thiểu {{ c.minOrderValue | number: "1.0-0" }}đ · HSD
+                    {{ c.endDate | date: "dd/MM/yyyy" }}
+                  </div>
+                  <div class="cart-cp-save">
+                    ✦ Tiết kiệm: {{ calcCouponDiscount(c) | number: "1.0-0" }}đ
+                  </div>
+                </div>
+                <div class="cart-cp-radio">
+                  <div class="cart-cp-rring">
+                    <div class="cart-cp-rdot"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Inapplicable group -->
+              <div
+                *ngIf="inapplicableCoupons.length > 0"
+                class="cart-coupon-group-sep"
+                style="margin-top: 4px"
+              >
+                <hr />
+                <span class="no">Chưa đủ điều kiện</span>
+                <hr />
+              </div>
+
+              <div
+                class="cart-cp-card locked"
+                *ngFor="let c of inapplicableCoupons"
+              >
+                <div class="cart-cp-stripe gray"></div>
+                <div class="cart-cp-ico muted">
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      c.discountType === 'PERCENT' ? 'bi-percent' : 'bi-tag'
+                    "
+                  ></i>
+                </div>
+                <div class="cart-cp-body">
+                  <div class="cart-cp-name">{{ c.name }}</div>
+                  <div class="cart-cp-desc muted">
+                    <span *ngIf="c.discountType === 'PERCENT'"
+                      >Giảm {{ c.discountValue }}% · Tối đa
+                      {{ c.maxDiscount | number: "1.0-0" }}đ</span
+                    >
+                    <span *ngIf="c.discountType === 'FIXED'"
+                      >Giảm thẳng {{ c.discountValue | number: "1.0-0" }}đ</span
+                    >
+                  </div>
+                  <div class="cart-cp-need">
+                    Cần thêm
+                    <strong
+                      >{{
+                        c.minOrderValue - selectedSubtotal | number: "1.0-0"
+                      }}đ</strong
+                    >
+                    để dùng
+                  </div>
+                </div>
+                <div class="cart-cp-radio">
+                  <div class="cart-cp-rring"></div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+        <!-- ── End coupon block ── -->
+
+        <!-- Summary rows -->
         <div class="cart-sum-row">
-          <span>Đã chọn</span>
-          <span>{{ selectedIds.size }} sản phẩm</span>
+          <span>Đã chọn</span><span>{{ selectedIds.size }} sản phẩm</span>
         </div>
         <div class="cart-sum-row">
-          <span>Tạm tính</span>
-          <span>{{ selectedSubtotal | number: "1.0-0" }}đ</span>
-        </div>
-        <div class="cart-sum-row">
-          <span>Phí vận chuyển</span>
-          <span>{{
-            shippingFee === 0 && selectedSubtotal > 0
-              ? "Miễn phí"
-              : (shippingFee | number: "1.0-0") + "đ"
-          }}</span>
+          <span>Tạm tính</span
+          ><span>{{ selectedSubtotal | number: "1.0-0" }}đ</span>
         </div>
         <div *ngIf="discount > 0" class="cart-sum-row cart-sum-discount">
-          <span>Giảm giá</span>
+          <span
+            >Giảm giá <em>({{ selectedCoupon?.name }})</em></span
+          >
           <span>−{{ discount | number: "1.0-0" }}đ</span>
         </div>
         <div class="cart-sum-total">
@@ -186,23 +327,20 @@
           <span>{{ grandTotal | number: "1.0-0" }}đ</span>
         </div>
 
-        <!-- Checkout -->
         <button
           class="cart-btn-checkout"
           (click)="goOrder()"
           [disabled]="selectedIds.size === 0"
         >
-          <i class="bi bi-credit-card me-2"></i>
-          Thanh Toán ({{ selectedIds.size }})
+          <i class="bi bi-credit-card me-2"></i> Thanh Toán ({{
+            selectedIds.size
+          }})
         </button>
-
         <button class="cart-btn-continue" (click)="goShopping()">
           <i class="bi bi-arrow-left me-2"></i>Tiếp tục mua sắm
         </button>
-
         <div class="cart-secure">
-          <i class="bi bi-shield-check"></i>
-          Thanh toán an toàn & bảo mật 100%
+          <i class="bi bi-shield-check"></i> Thanh toán an toàn & bảo mật 100%
         </div>
       </div>
     </div>

@@ -30,9 +30,8 @@ export class CartService {
   // ===============================
 
   getCart(): Observable<ApiResponse<CartResponse>> {
-
     return this.http.get<ApiResponse<CartResponse>>(
-      `${this.baseUrl}`
+      `${this.baseUrl}/mycart`
     );
   }
 

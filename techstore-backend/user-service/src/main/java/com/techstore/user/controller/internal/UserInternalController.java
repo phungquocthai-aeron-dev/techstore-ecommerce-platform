@@ -27,13 +27,22 @@ public class UserInternalController {
 
     @GetMapping("/staff")
     public StaffAuthResponse getStaff(@RequestParam String email) {
-        System.err.println("AAAAAAA");
         return userInternalService.getStaffForAuth(email);
     }
 
     @GetMapping("/customer")
     public CustomerAuthResponse getCustomer(@RequestParam String email) {
         return userInternalService.getCustomerForAuth(email);
+    }
+
+    @GetMapping("/staff/{id}")
+    public StaffAuthResponse getStaffById(@PathVariable Long id) {
+        return userInternalService.getStaffForAuth(id);
+    }
+
+    @GetMapping("/customer/{id}")
+    public CustomerAuthResponse getCustomerById(@PathVariable Long id) {
+        return userInternalService.getCustomerForAuth(id);
     }
 
     @PostMapping("/customer/google")

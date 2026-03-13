@@ -48,6 +48,35 @@ public class UserInternalService {
                 .build();
     }
 
+    public StaffAuthResponse getStaffForAuth(Long id) {
+        Staff staff = staffRepository.findById(id).orElseThrow(() -> new RuntimeException("STAFF_NOT_FOUND"));
+
+        String scope = staff.getRoles().stream()
+                .map(role -> "ROLE_" + role.getName())
+                .reduce((a, b) -> a + " " + b)
+                .orElse("");
+
+        return StaffAuthResponse.builder()
+                .id(staff.getId())
+                .email(staff.getEmail())
+                .password(staff.getPassword())
+                .status(staff.getStatus())
+                .scope(scope)
+                .build();
+    }
+
+    public CustomerAuthResponse getCustomerForAuth(Long id) {
+        Customer customer =
+                customerRepository.findById(id).orElseThrow(() -> new RuntimeException("CUSTOMER_NOT_FOUND"));
+
+        return CustomerAuthResponse.builder()
+                .id(customer.getId())
+                .email(customer.getEmail())
+                .password(customer.getPassword())
+                .status(customer.getStatus())
+                .build();
+    }
+
     public CustomerAuthResponse handleGoogleCustomer(GoogleAuthRequest request) {
 
         Customer customer = customerRepository.findByEmail(request.getEmail()).orElse(null);

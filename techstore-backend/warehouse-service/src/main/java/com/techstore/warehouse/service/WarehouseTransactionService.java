@@ -249,7 +249,12 @@ public class WarehouseTransactionService {
                 items.stream().map(OrderItemRequest::getVariantId).toList();
 
         List<Inventory> inventories = inventoryRepo.findByVariantIdsForUpdate(variantIds);
-
+        System.out.println("AAAAAAAAAAA");
+        System.out.println(items.getFirst().getVariantId());
+        System.out.println("Inventories size: " + inventories.size());
+        
+        if(inventories.size() == 0) throw new AppException(ErrorCode.VARIANT_NOT_FOUND);
+        
         // ===== 1. Validate =====
         for (OrderItemRequest item : items) {
 
@@ -262,7 +267,10 @@ public class WarehouseTransactionService {
             if (totalStock < item.getQuantity()) {
                 throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
             }
+            System.out.println("Item variant: " + item.getVariantId());
+            System.out.println("Total stock: " + totalStock);
         }
+        System.out.println("BBBBBBB");
 
         // ===== 2. Group transaction theo warehouse =====
         Map<Long, WarehouseTransaction> transactionMap = new HashMap<Long, WarehouseTransaction>();
@@ -315,6 +323,7 @@ public class WarehouseTransactionService {
                 remaining -= deduct;
             }
         }
+        System.out.println("CCCCCCCCCCCC");
 
         // ===== 4. Save tất cả transaction 1 lần =====
         List<WarehouseTransaction> savedTransactions = transactionRepo.saveAll(transactionMap.values());

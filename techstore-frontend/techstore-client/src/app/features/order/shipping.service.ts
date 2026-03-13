@@ -15,7 +15,7 @@ import {
   providedIn: 'root'
 })
 export class ShippingService {
-
+  // ONLY GHN
   private baseUrl = environment.orderUrl + '/shipping';
 
   constructor(private http: HttpClient) {}

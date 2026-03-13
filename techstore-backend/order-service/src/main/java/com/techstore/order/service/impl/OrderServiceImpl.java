@@ -73,12 +73,11 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
         order.setStatus("CREATED");
-
-        List<Long> variantIds =
+        
+         List<Long> variantIds =
                 request.getItems().stream().map(OrderItemRequest::getVariantId).toList();
 
         ApiResponse<List<VariantInfo>> response = productClient.getVariantsByIds(variantIds);
-
         List<VariantInfo> variants = response.getResult();
 
         Map<Long, VariantInfo> variantMap = variants.stream().collect(Collectors.toMap(VariantInfo::getId, v -> v));

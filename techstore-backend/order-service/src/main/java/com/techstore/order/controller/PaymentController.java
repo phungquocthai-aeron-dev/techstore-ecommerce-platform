@@ -1,9 +1,10 @@
 package com.techstore.order.controller;
 
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -20,16 +21,14 @@ public class PaymentController {
     private final PaymentStrategyFactory paymentFactory;
 
     @GetMapping("/vnpay/ipn")
-    public Map<String, String> handleVNPayIPN(@RequestParam Map<String, String> allParams, HttpServletRequest request) {
+    public void handleVNPayIPN(
+            @RequestParam Map<String, String> allParams, HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
 
         PaymentStrategy strategy = paymentFactory.getStrategy("VNPAY");
 
         strategy.handleCallback(allParams);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("RspCode", "00");
-        response.put("Message", "Confirm Success");
-
-        return response;
+        response.sendRedirect("http://localhost:4200/order-success?txnRef=" + allParams.get("vnp_TxnRef"));
     }
 }

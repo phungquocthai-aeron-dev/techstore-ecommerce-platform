@@ -13,11 +13,16 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.techstore.order.client.ProductServiceClient;
+import com.techstore.order.client.UserServiceClient;
 import com.techstore.order.client.WarehouseServiceClient;
 import com.techstore.order.dto.request.InventoryExportRequest;
 import com.techstore.order.dto.request.OrderCreateRequest;
 import com.techstore.order.dto.request.OrderItemRequest;
+import com.techstore.order.dto.response.AdminOrderResponse;
 import com.techstore.order.dto.response.ApiResponse;
+import com.techstore.order.dto.response.CustomerOrderItemResponse;
+import com.techstore.order.dto.response.CustomerOrderResponse;
+import com.techstore.order.dto.response.CustomerResponse;
 import com.techstore.order.dto.response.OrderDetailResponse;
 import com.techstore.order.dto.response.OrderResponse;
 import com.techstore.order.dto.response.ShippingInfo;
@@ -58,6 +63,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailRepository orderDetailRepository;
     private final WarehouseServiceClient warehouseClient;
     private final ProductServiceClient productClient;
+    private final UserServiceClient userClient;
     private final OrderMapper mapper;
     private final PaymentStrategyFactory paymentFactory;
     private final ShippingFactory shippingFactory;
@@ -69,12 +75,166 @@ public class OrderServiceImpl implements OrderService {
     private final CouponRepository couponRepository;
 
     @Override
+    public List<CustomerOrderResponse> getOrdersByCustomer(Long customerId, String status) {
+
+        List<Order> orders;
+
+        if (status == null || status.isBlank() || status.equalsIgnoreCase("ALL")) {
+            orders = orderRepository.findByCustomerId(customerId);
+        } else {
+            orders = orderRepository.findByCustomerIdAndStatus(customerId, status);
+        }
+
+        return orders.stream()
+                .map(order -> {
+                    List<Long> variantIds = order.getOrderDetails().stream()
+                            .map(OrderDetail::getVariantId)
+                            .toList();
+
+                    List<VariantInfo> variants =
+                            productClient.getVariantsByIds(variantIds).getResult();
+
+                    Map<Long, VariantInfo> variantMap =
+                            variants.stream().collect(Collectors.toMap(VariantInfo::getId, v -> v));
+
+                    List<CustomerOrderItemResponse> items = order.getOrderDetails().stream()
+                            .map(detail -> {
+                                VariantInfo variant = variantMap.get(detail.getVariantId());
+
+                                return CustomerOrderItemResponse.builder()
+                                        .orderDetailId(detail.getId())
+                                        .variantId(detail.getVariantId())
+                                        .name(detail.getName())
+                                        .image(variant != null ? variant.getImageUrl() : null)
+                                        .quantity(detail.getQuantity())
+                                        .price(detail.getPrice())
+                                        .reviewed(detail.getReviewed())
+                                        .build();
+                            })
+                            .toList();
+
+                    return CustomerOrderResponse.builder()
+                            .orderId(order.getId())
+                            .totalPrice(order.getTotalPrice())
+                            .shippingFee(order.getShippingFee())
+                            .vat(order.getVat())
+                            .status(order.getStatus())
+                            .shippingCode(order.getShippingCode())
+                            .createdAt(order.getCreatedAt())
+                            .expectedDeliveryTime(order.getExpectedDeliveryTime())
+                            .shippingProviderName(
+                                    order.getShippingProvider() != null
+                                            ? order.getShippingProvider().getName()
+                                            : null)
+                            .couponName(
+                                    order.getCoupon() != null
+                                            ? order.getCoupon().getName()
+                                            : null)
+                            .address(
+                                    order.getAddress() != null
+                                            ? order.getAddress().getAddress()
+                                                    + ", "
+                                                    + order.getAddress().getWardName()
+                                                    + ", "
+                                                    + order.getAddress().getDistrictName()
+                                                    + ", "
+                                                    + order.getAddress().getProvinceName()
+                                            : null)
+                            .items(items)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    public List<AdminOrderResponse> getAllOrders(String status) {
+
+        List<Order> orders;
+
+        if (status == null || status.isBlank() || status.equalsIgnoreCase("ALL")) {
+            orders = orderRepository.findAll();
+        } else {
+            orders = orderRepository.findByStatus(status);
+        }
+
+        return orders.stream()
+                .map(order -> {
+
+                    // ===== Lấy customer info =====
+                    CustomerResponse customer =
+                            userClient.getCustomerById(order.getCustomerId()).getResult();
+
+                    // ===== Lấy variant info =====
+                    List<Long> variantIds = order.getOrderDetails().stream()
+                            .map(OrderDetail::getVariantId)
+                            .toList();
+
+                    List<VariantInfo> variants =
+                            productClient.getVariantsByIds(variantIds).getResult();
+
+                    Map<Long, VariantInfo> variantMap =
+                            variants.stream().collect(Collectors.toMap(VariantInfo::getId, v -> v));
+
+                    List<CustomerOrderItemResponse> items = order.getOrderDetails().stream()
+                            .map(detail -> {
+                                VariantInfo variant = variantMap.get(detail.getVariantId());
+
+                                return CustomerOrderItemResponse.builder()
+                                        .orderDetailId(detail.getId())
+                                        .variantId(detail.getVariantId())
+                                        .name(detail.getName())
+                                        .image(variant != null ? variant.getImageUrl() : null)
+                                        .quantity(detail.getQuantity())
+                                        .reviewed(detail.getReviewed())
+                                        .price(detail.getPrice())
+                                        .build();
+                            })
+                            .toList();
+
+                    return AdminOrderResponse.builder()
+                            .orderId(order.getId())
+                            .customerId(order.getCustomerId())
+                            .customerName(customer.getFullName())
+                            .customerEmail(customer.getEmail())
+                            .customerPhone(customer.getPhone())
+                            .totalPrice(order.getTotalPrice())
+                            .shippingFee(order.getShippingFee())
+                            .vat(order.getVat())
+                            .status(order.getStatus())
+                            .shippingCode(order.getShippingCode())
+                            .createdAt(order.getCreatedAt())
+                            .expectedDeliveryTime(order.getExpectedDeliveryTime())
+                            .shippingProviderName(
+                                    order.getShippingProvider() != null
+                                            ? order.getShippingProvider().getName()
+                                            : null)
+                            .couponName(
+                                    order.getCoupon() != null
+                                            ? order.getCoupon().getName()
+                                            : null)
+                            .address(
+                                    order.getAddress() != null
+                                            ? order.getAddress().getAddress()
+                                                    + ", "
+                                                    + order.getAddress().getWardName()
+                                                    + ", "
+                                                    + order.getAddress().getDistrictName()
+                                                    + ", "
+                                                    + order.getAddress().getProvinceName()
+                                            : null)
+                            .items(items)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
     public OrderResponse createOrder(OrderCreateRequest request, String ipAddress) {
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
         order.setStatus("CREATED");
-        
-         List<Long> variantIds =
+
+        List<Long> variantIds =
                 request.getItems().stream().map(OrderItemRequest::getVariantId).toList();
 
         ApiResponse<List<VariantInfo>> response = productClient.getVariantsByIds(variantIds);
@@ -99,6 +259,7 @@ public class OrderServiceImpl implements OrderService {
                     .quantity(item.getQuantity().intValue())
                     .price(variant.getPrice())
                     .totalWeight(variant.getWeight() * item.getQuantity().intValue())
+                    .reviewed(false)
                     .status("ACTIVE")
                     .order(order)
                     .build();
@@ -331,5 +492,19 @@ public class OrderServiceImpl implements OrderService {
                 .totalWeight(orderDetail.getTotalWeight())
                 .variantId(orderDetail.getVariantId())
                 .build();
+    }
+
+    @Override
+    public void markOrderDetailReviewed(Long orderDetailId) {
+
+        OrderDetail detail = orderDetailRepository
+                .findById(orderDetailId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_DETAIL_NOT_FOUND));
+
+        if (Boolean.TRUE.equals(detail.getReviewed())) {
+            return;
+        }
+
+        detail.setReviewed(true);
     }
 }

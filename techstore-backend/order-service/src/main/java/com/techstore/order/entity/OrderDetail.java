@@ -35,6 +35,7 @@ public class OrderDetail {
     private String status;
     private Double totalWeight;
     private String name;
+    private Boolean reviewed;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")

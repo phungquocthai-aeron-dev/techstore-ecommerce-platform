@@ -1,10 +1,18 @@
 package com.techstore.order.service;
 
+import java.util.List;
+
 import com.techstore.order.dto.request.OrderCreateRequest;
+import com.techstore.order.dto.response.AdminOrderResponse;
+import com.techstore.order.dto.response.CustomerOrderResponse;
 import com.techstore.order.dto.response.OrderDetailResponse;
 import com.techstore.order.dto.response.OrderResponse;
 
 public interface OrderService {
+
+    List<CustomerOrderResponse> getOrdersByCustomer(Long customerId, String status);
+
+    List<AdminOrderResponse> getAllOrders(String status);
 
     OrderResponse createOrder(OrderCreateRequest request, String ipAddress);
 
@@ -19,4 +27,6 @@ public interface OrderService {
     public String printLabel(Long orderId);
 
     public OrderDetailResponse getOrderDetail(Long detailId);
+
+    void markOrderDetailReviewed(Long orderDetailId);
 }

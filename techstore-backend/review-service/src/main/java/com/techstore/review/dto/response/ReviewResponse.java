@@ -22,6 +22,7 @@ public class ReviewResponse {
     private Long orderDetailId;
     private Long customerId;
     private CustomerResponse customer;
+    private Boolean reviewed;
 
     private ReplyResponse reply;
 }

@@ -83,6 +83,8 @@ public class ReviewService {
                 .customerId(getCurrentUserId())
                 .build();
 
+        orderClient.markOrderDetailReviewed(orderDetail.getId());
+
         return mapper.toResponse(reviewRepo.save(review));
     }
 

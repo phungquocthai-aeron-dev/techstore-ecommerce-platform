@@ -461,7 +461,8 @@ public class ProductService {
 
         Page<Product> productPage = productRepository.searchProducts(
                 searchDTO.getKeyword(),
-                searchDTO.getBrandName(),
+                normalize(searchDTO.getBrandNames()),
+                normalize(searchDTO.getCategoryIds()),
                 searchDTO.getMinPrice(),
                 searchDTO.getMaxPrice(),
                 pageable);
@@ -506,6 +507,10 @@ public class ProductService {
                 }
             }
         }
+    }
+
+    private <T> List<T> normalize(List<T> list) {
+        return (list == null || list.isEmpty()) ? null : list;
     }
 
     private String normalizeImagePath(String fullPath) {

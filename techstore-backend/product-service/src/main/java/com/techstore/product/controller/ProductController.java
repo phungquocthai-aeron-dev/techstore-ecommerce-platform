@@ -167,7 +167,8 @@ public class ProductController {
     @GetMapping("/search")
     public ApiResponse<PageResponseDTO<ProductListResponseDTO>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String brandName,
+            @RequestParam(required = false) List<String> brandNames,
+            @RequestParam(required = false) List<Long> categoryIds,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(defaultValue = "0") int page,
@@ -177,7 +178,8 @@ public class ProductController {
 
         ProductSearchRequestDTO req = new ProductSearchRequestDTO();
         req.setKeyword(keyword);
-        req.setBrandName(brandName);
+        req.setBrandNames(brandNames);
+        req.setCategoryIds(categoryIds);
         req.setMinPrice(minPrice);
         req.setMaxPrice(maxPrice);
         req.setPage(page);

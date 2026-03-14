@@ -56,19 +56,38 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             """
 			SELECT p FROM Product p
 			WHERE p.status = 'ACTIVE'
+
 			AND (
 				:keyword IS NULL OR
-				LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-				LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-				LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+				LOWER(p.name) LIKE CONCAT('%', LOWER(:keyword), '%') OR
+				LOWER(p.category.name) LIKE CONCAT('%', LOWER(:keyword), '%') OR
+				LOWER(p.brand.name) LIKE CONCAT('%', LOWER(:keyword), '%')
 			)
-			AND (:brandName IS NULL OR p.brand.name = :brandName)
-			AND (:minPrice IS NULL OR p.basePrice >= :minPrice)
-			AND (:maxPrice IS NULL OR p.basePrice <= :maxPrice)
+
+			AND (
+				:brandNames IS NULL OR
+				LOWER(p.brand.name) IN :brandNames
+			)
+
+			AND (
+				:categoryIds IS NULL OR
+				p.category.id IN :categoryIds
+			)
+
+			AND (
+				:minPrice IS NULL OR
+				p.basePrice >= :minPrice
+			)
+
+			AND (
+				:maxPrice IS NULL OR
+				p.basePrice <= :maxPrice
+			)
 		""")
     Page<Product> searchProducts(
             @Param("keyword") String keyword,
-            @Param("brandName") String brandName,
+            @Param("brandNames") List<String> brandNames,
+            @Param("categoryIds") List<Long> categoryIds,
             @Param("minPrice") Double minPrice,
             @Param("maxPrice") Double maxPrice,
             Pageable pageable);

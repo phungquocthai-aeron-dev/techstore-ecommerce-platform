@@ -511,6 +511,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.9;
 }
 
+/* ─── Select Wrapper (cascade dropdowns) ─────── */
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px; /* chừa chỗ cho icon */
+  cursor: pointer;
+}
+
+.select-wrapper select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.select-wrapper .select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #38bdf8;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
 /* ─── d-none ─────────────────────────────────── */
 .d-none { display: none !important; }
 

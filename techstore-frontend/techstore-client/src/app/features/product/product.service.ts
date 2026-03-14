@@ -194,16 +194,26 @@ export class ProductService {
 
   search(req: ProductSearchRequest):
     Observable<ApiResponse<PageResponse<ProductListResponse>>> {
-
+    
     let params = new HttpParams();
-
-    Object.keys(req).forEach(key => {
-      const value = (req as any)[key];
-      if (value !== undefined && value !== null) {
+    
+    Object.entries(req).forEach(([key, value]) => {
+    
+      if (value === undefined || value === null) return;
+    
+      // nếu là array
+      if (Array.isArray(value)) {
+        value.forEach(v => {
+          params = params.append(key, v);
+        });
+      }
+      // nếu là value thường
+      else {
         params = params.set(key, value);
       }
+    
     });
-
+  
     return this.http.get<ApiResponse<PageResponse<ProductListResponse>>>(
       `${this.baseUrl}/search`,
       { params }

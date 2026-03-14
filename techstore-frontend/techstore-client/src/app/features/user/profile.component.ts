@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CustomerService } from './customer.service'; 
+import { CustomerService } from './customer.service';
 import { AddressService } from './address.service';
-import { CustomerResponse, CustomerUpdateRequest } from './models/customer.model'; 
+import { ShippingService } from '../check-out/shipping.service';
+import { CustomerResponse, CustomerUpdateRequest } from './models/customer.model';
 import { AddressResponse, AddressRequest } from './models/address.model';
-import { environment } from '../../../environments/environment'; 
+import { ProvinceData, DistrictData, WardData } from '../check-out/models/shipping.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile',
@@ -34,6 +36,15 @@ export class ProfileComponent implements OnInit {
   showAddressModal = false;
   addressModalTitle = 'Thêm Địa Chỉ Mới';
 
+  // Shipping dropdowns
+  readonly SHIPPING_TYPE = 'ghn';
+  provinces: ProvinceData[] = [];
+  districts: DistrictData[] = [];
+  wards: WardData[] = [];
+  loadingProvinces = false;
+  loadingDistricts = false;
+  loadingWards = false;
+
   // Alert
   alert: { type: 'success' | 'error'; message: string } | null = null;
 
@@ -49,7 +60,8 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private customerService: CustomerService,
-    private addressService: AddressService
+    private addressService: AddressService,
+    private shippingService: ShippingService
   ) {}
 
   ngOnInit(): void {
@@ -64,7 +76,8 @@ export class ProfileComponent implements OnInit {
     this.customerService.getById(this.customerId).subscribe({
       next: res => {
         this.customer = res.result ?? null;
-        this.avatarUrl =  this.imageBaseUrl + res.result?.avatarUrl;
+        this.avatarUrl = res.result?.avatarUrl ? res.result.avatarUrl : 'images/avatar_men.png';
+        console.log(this.avatarUrl)
         this.profileForm = {
           fullName: res.result?.fullName ?? '',
           phone: res.result?.phone ?? '',
@@ -83,6 +96,65 @@ export class ProfileComponent implements OnInit {
     this.addressService.getByCustomerId(this.customerId).subscribe({
       next: res => { this.addresses = res.result ?? []; },
       error: () => { this.showAlert('error', 'Không thể tải danh sách địa chỉ!'); }
+    });
+  }
+
+  // ─── Shipping dropdowns ───────────────────────────────
+
+  loadProvinces(): void {
+    this.loadingProvinces = true;
+    this.shippingService.getProvinces(this.SHIPPING_TYPE).subscribe({
+      next: res => {
+        this.provinces = res.result ?? [];
+        console.log(res.result)
+        this.loadingProvinces = false;
+      },
+      error: () => {
+        this.showAlert('error', 'Không thể tải danh sách tỉnh/thành!');
+        this.loadingProvinces = false;
+      }
+    });
+  }
+
+  onProvinceChange(): void {
+    // Reset district & ward
+    this.addressForm.districtId = 0;
+    this.addressForm.wardCode = '';
+    this.districts = [];
+    this.wards = [];
+
+    if (!this.addressForm.provinceId) return;
+
+    this.loadingDistricts = true;
+    this.shippingService.getDistricts(this.SHIPPING_TYPE, this.addressForm.provinceId).subscribe({
+      next: res => {
+        this.districts = res.result ?? [];
+        this.loadingDistricts = false;
+      },
+      error: () => {
+        this.showAlert('error', 'Không thể tải danh sách quận/huyện!');
+        this.loadingDistricts = false;
+      }
+    });
+  }
+
+  onDistrictChange(): void {
+    // Reset ward
+    this.addressForm.wardCode = '';
+    this.wards = [];
+
+    if (!this.addressForm.districtId) return;
+
+    this.loadingWards = true;
+    this.shippingService.getWards(this.SHIPPING_TYPE, this.addressForm.districtId).subscribe({
+      next: res => {
+        this.wards = res.result ?? [];
+        this.loadingWards = false;
+      },
+      error: () => {
+        this.showAlert('error', 'Không thể tải danh sách phường/xã!');
+        this.loadingWards = false;
+      }
     });
   }
 
@@ -136,12 +208,10 @@ export class ProfileComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
 
-    // Preview tức thì
     const reader = new FileReader();
     reader.onload = e => { this.avatarUrl = e.target?.result as string; };
     reader.readAsDataURL(file);
 
-    // Upload lên server
     this.customerService.uploadAvatar(this.customerId, file).subscribe({
       next: () => { this.showAlert('success', 'Cập nhật ảnh đại diện thành công!'); },
       error: () => { this.showAlert('error', 'Upload ảnh thất bại!'); }
@@ -188,8 +258,14 @@ export class ProfileComponent implements OnInit {
   openAddAddress(): void {
     this.editingAddressId = null;
     this.addressForm = { address: '', provinceId: 0, districtId: 0, wardCode: '' };
+    this.districts = [];
+    this.wards = [];
     this.addressModalTitle = 'Thêm Địa Chỉ Mới';
     this.showAddressModal = true;
+    // Load provinces khi mở modal
+    if (this.provinces.length === 0) {
+      this.loadProvinces();
+    }
   }
 
   openEditAddress(addr: AddressResponse): void {
@@ -202,6 +278,43 @@ export class ProfileComponent implements OnInit {
     };
     this.addressModalTitle = 'Sửa Địa Chỉ';
     this.showAddressModal = true;
+
+    // Load provinces, rồi cascade load districts & wards theo giá trị hiện tại
+    if (this.provinces.length === 0) {
+      this.loadingProvinces = true;
+      this.shippingService.getProvinces(this.SHIPPING_TYPE).subscribe({
+        next: res => {
+          this.provinces = res.result ?? [];
+          this.loadingProvinces = false;
+          this.preloadDistrictsAndWards(addr.provinceId, addr.districtId);
+        },
+        error: () => { this.loadingProvinces = false; }
+      });
+    } else {
+      this.preloadDistrictsAndWards(addr.provinceId, addr.districtId);
+    }
+  }
+
+  /** Dùng khi mở edit: load districts theo province, rồi wards theo district */
+  private preloadDistrictsAndWards(provinceId: number, districtId: number): void {
+    this.loadingDistricts = true;
+    this.shippingService.getDistricts(this.SHIPPING_TYPE, provinceId).subscribe({
+      next: res => {
+        this.districts = res.result ?? [];
+        this.loadingDistricts = false;
+        if (districtId) {
+          this.loadingWards = true;
+          this.shippingService.getWards(this.SHIPPING_TYPE, districtId).subscribe({
+            next: wRes => {
+              this.wards = wRes.result ?? [];
+              this.loadingWards = false;
+            },
+            error: () => { this.loadingWards = false; }
+          });
+        }
+      },
+      error: () => { this.loadingDistricts = false; }
+    });
   }
 
   closeAddressModal(): void {

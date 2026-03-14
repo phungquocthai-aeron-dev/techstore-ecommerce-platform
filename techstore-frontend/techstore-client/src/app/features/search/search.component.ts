@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { ProductService } from '../product/product.service';
 import { BrandService } from '../product/brand.service';
@@ -14,7 +15,7 @@ import { CategoryResponse } from '../product/models/category.model';
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css']
 })
@@ -72,12 +73,24 @@ export class SearchComponent implements OnInit, OnDestroy {
   constructor(
     private productService:  ProductService,
     private brandService:    BrandService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.loadBrands();
     this.loadCategories();
+
+    this.route.queryParams
+  .pipe(takeUntil(this.destroy$))
+  .subscribe(params => {
+    const keyword = params['keyword'] || '';
+
+    this.keyword = keyword;
+    this.currentPage = 0;
+
+    this.loadProducts();
+  });
 
     this.searchInput$.pipe(
       debounceTime(400),
@@ -128,13 +141,23 @@ export class SearchComponent implements OnInit, OnDestroy {
     }
 
     const req: ProductSearchRequest = {
-      keyword:       this.keyword.trim() || undefined,
-      brandName:     this.selectedBrands.size === 1 ? [...this.selectedBrands][0] : undefined,
+      keyword: this.keyword.trim() || undefined,
+        
+      brandNames: this.selectedBrands.size
+        ? Array.from(this.selectedBrands)
+        : undefined,
+        
+      categoryIds: this.selectedCategoryIds.size
+        ? Array.from(this.selectedCategoryIds)
+        : undefined,
+        
       minPrice,
       maxPrice,
-      page:          this.currentPage,
-      size:          this.pageSize,
-      sortBy:        this.selectedSort.sortBy,
+        
+      page: this.currentPage,
+      size: this.pageSize,
+        
+      sortBy: this.selectedSort.sortBy,
       sortDirection: this.selectedSort.dir,
     };
 

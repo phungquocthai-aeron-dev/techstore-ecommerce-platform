@@ -43,11 +43,18 @@ export const routes: Routes = [
             .then(m => m.CartComponent)
       },
       {
-        path: 'order',
+        path: 'checkout',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/check-out/order.component')
+            .then(m => m.CheckoutComponent)
+      },
+      {
+        path: 'orders',
         canActivate: [authGuard],
         loadComponent: () =>
           import('./features/order/order.component')
-            .then(m => m.OrderComponent)
+            .then(m => m.OrdersComponent)
       },
       {
         path: 'profile',

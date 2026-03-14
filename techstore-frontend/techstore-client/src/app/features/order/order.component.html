@@ -1,279 +1,580 @@
-<div class="co-page">
-  <!-- Steps -->
-  <div class="co-steps">
-    <div class="co-step done">
-      <div class="co-dot"><i class="bi bi-check-lg"></i></div>
-      <span>Giỏ hàng</span>
+<div class="orders-page mt-5 pt-4">
+  <!-- ─── Alert ─────────────────────────────────────── -->
+  <div
+    *ngIf="alert"
+    class="orders-alert"
+    [class.orders-alert--success]="alert.type === 'success'"
+    [class.orders-alert--error]="alert.type === 'error'"
+  >
+    <i
+      class="bi"
+      [class.bi-check-circle-fill]="alert.type === 'success'"
+      [class.bi-exclamation-triangle-fill]="alert.type === 'error'"
+    ></i>
+    {{ alert.message }}
+  </div>
+
+  <!-- ─── Page Hero ───────────────────────────────── -->
+  <div class="page-hero">
+    <div class="page-hero__glow"></div>
+    <div class="page-hero__content">
+      <h1 class="page-hero__title">
+        <span class="page-hero__icon"><i class="bi bi-bag-check"></i></span>
+        Đơn Hàng Của Tôi
+      </h1>
+      <p class="page-hero__sub">Theo dõi và quản lý toàn bộ đơn hàng của bạn</p>
     </div>
-    <div class="co-step-line"></div>
-    <div class="co-step active">
-      <div class="co-dot">2</div>
-      <span>Thanh toán</span>
-    </div>
-    <div class="co-step-line"></div>
-    <div class="co-step">
-      <div class="co-dot">3</div>
-      <span>Hoàn tất</span>
+    <div class="page-hero__stat">
+      <span class="stat-num">{{ allOrders.length }}</span>
+      <span class="stat-label">đơn hàng</span>
     </div>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="loading" class="co-loading">
-    <div class="co-spinner"></div>
-    <p>Đang tải dữ liệu...</p>
+  <!-- ─── Tab Bar ─────────────────────────────────── -->
+  <div class="tab-bar">
+    <button
+      *ngFor="let tab of tabs"
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab === tab.key"
+      (click)="selectTab(tab.key)"
+    >
+      <i class="bi {{ tab.icon }}"></i>
+      <span>{{ tab.label }}</span>
+      <span *ngIf="countByStatus(tab.key) > 0" class="tab-badge">
+        {{ countByStatus(tab.key) }}
+      </span>
+    </button>
   </div>
 
-  <div *ngIf="!loading" class="co-grid">
-    <!-- ══ LEFT COLUMN ══ -->
-    <div class="co-left">
-      <!-- 1. Thông tin khách hàng -->
-      <div class="co-card">
-        <div class="co-card-title">
-          <i class="bi bi-person-circle"></i> Thông tin khách hàng
+  <!-- ─── Loading ─────────────────────────────────── -->
+  <div *ngIf="loading" class="loading-block">
+    <div class="spinner-ring"></div>
+    <p>Đang tải đơn hàng...</p>
+  </div>
+
+  <!-- ─── Empty State ─────────────────────────────── -->
+  <div *ngIf="!loading && filteredOrders.length === 0" class="empty-block">
+    <div class="empty-block__icon"><i class="bi bi-bag-x"></i></div>
+    <h3>Không có đơn hàng nào</h3>
+    <p>Bạn chưa có đơn hàng nào trong mục này</p>
+  </div>
+
+  <!-- ─── Order List ───────────────────────────────── -->
+  <div *ngIf="!loading && filteredOrders.length > 0" class="order-list">
+    <div
+      *ngFor="let order of filteredOrders; let i = index"
+      class="order-card"
+      [style.animation-delay]="i * 60 + 'ms'"
+    >
+      <!-- Card Head -->
+      <div class="order-card__head">
+        <div class="order-card__meta">
+          <span class="order-id">#{{ order.orderId }}</span>
+          <span class="order-time">
+            <i class="bi bi-clock"></i> {{ formatDate(order.createdAt) }}
+          </span>
+          <span *ngIf="order.shippingProviderName" class="order-provider">
+            <i class="bi bi-truck"></i> {{ order.shippingProviderName }}
+          </span>
         </div>
-        <div *ngIf="currentUser" class="co-user-row">
-          <div class="co-avatar-wrap">
+        <span class="order-status {{ getStatusClass(order.status) }}">
+          {{ getStatusLabel(order.status) }}
+        </span>
+      </div>
+
+      <!-- Card Body -->
+      <div class="order-card__body">
+        <ng-container *ngIf="firstItem(order) as item">
+          <div class="product-thumb">
             <img
-              *ngIf="currentUser.avatarUrl"
-              [src]="currentUser.avatarUrl"
-              class="co-avatar"
-              alt="avatar"
+              [src]="item.image"
+              [alt]="item.name"
+              (error)="handleImgError($event)"
+              class="product-thumb__img"
             />
-            <div
-              *ngIf="!currentUser.avatarUrl"
-              class="co-avatar co-avatar-fallback"
-            >
-              {{ currentUser.fullName.charAt(0) | uppercase }}
-            </div>
+            <span *ngIf="extraItemCount(order) > 0" class="product-thumb__more">
+              +{{ extraItemCount(order) }}
+            </span>
           </div>
-          <div class="co-user-info">
-            <div class="co-user-name">{{ currentUser.fullName }}</div>
-            <div class="co-user-email">{{ currentUser.email }}</div>
-            <div class="co-user-phone" *ngIf="currentUser.phone">
-              <i class="bi bi-telephone"></i> {{ currentUser.phone }}
-            </div>
+          <div class="product-details">
+            <p class="product-name">{{ item.name }}</p>
+            <p class="product-meta">
+              <i class="bi bi-box-seam"></i> Số lượng: {{ item.quantity }}
+              <span *ngIf="extraItemCount(order) > 0" class="more-items-hint">
+                &nbsp;+ {{ extraItemCount(order) }} sản phẩm khác
+              </span>
+            </p>
+            <p *ngIf="order.address" class="product-addr">
+              <i class="bi bi-geo-alt"></i> {{ order.address }}
+            </p>
+            <p *ngIf="order.shippingCode" class="product-meta shipping-code">
+              <i class="bi bi-upc-scan"></i> Mã vận đơn:
+              <strong>{{ order.shippingCode }}</strong>
+            </p>
+            <p *ngIf="order.expectedDeliveryTime" class="product-meta">
+              <i class="bi bi-calendar-check"></i>
+              Dự kiến: {{ formatDate(order.expectedDeliveryTime) }}
+            </p>
+            <p *ngIf="order.couponName" class="product-meta coupon-chip">
+              <i class="bi bi-tag"></i> {{ order.couponName }}
+            </p>
           </div>
-        </div>
+        </ng-container>
       </div>
 
-      <!-- 2. Địa chỉ giao hàng -->
-      <div class="co-card">
-        <div class="co-card-title">
-          <i class="bi bi-geo-alt-fill"></i> Địa chỉ giao hàng
+      <!-- Card Footer -->
+      <div class="order-card__foot">
+        <div class="order-pricing">
+          <div class="pricing-row">
+            <span>Phí vận chuyển</span>
+            <span>{{ formatCurrency(order.shippingFee) }}</span>
+          </div>
+          <div class="pricing-row pricing-row--total">
+            <span>Tổng cộng</span>
+            <strong>{{ formatCurrency(grandTotal(order)) }}</strong>
+          </div>
         </div>
 
-        <div *ngIf="addresses.length === 0" class="co-empty">
-          <i class="bi bi-map"></i>
-          <p>Bạn chưa có địa chỉ nào.</p>
-          <button class="co-btn-link" (click)="goAddAddress()">
-            + Thêm địa chỉ mới
+        <div class="order-actions">
+          <!-- Chi tiết — luôn hiển thị -->
+          <button class="btn-act btn-act--outline" (click)="openDetail(order)">
+            <i class="bi bi-eye"></i> Chi tiết
+          </button>
+
+          <!-- Hủy đơn — chỉ PROCESSING -->
+          <button
+            *ngIf="order.status === 'PROCESSING'"
+            class="btn-act btn-act--danger"
+            (click)="openCancel(order.orderId)"
+          >
+            <i class="bi bi-x-circle"></i> Hủy đơn
+          </button>
+
+          <!-- Đã nhận hàng — chỉ SHIPPING -->
+          <button
+            *ngIf="order.status === 'SHIPPING'"
+            class="btn-act btn-act--confirm"
+            (click)="openConfirmDelivered(order.orderId)"
+          >
+            <i class="bi bi-check2-circle"></i> Đã nhận hàng
+          </button>
+
+          <!-- Đánh giá — DELIVERED, còn item chưa đánh giá -->
+          <button
+            *ngIf="order.status === 'DELIVERED' && hasUnreviewedItems(order)"
+            class="btn-act btn-act--review"
+            (click)="openDetail(order)"
+          >
+            <i class="bi bi-star"></i> Đánh giá
+          </button>
+
+          <!-- Đã đánh giá hết — DELIVERED -->
+          <span
+            *ngIf="order.status === 'DELIVERED' && !hasUnreviewedItems(order)"
+            class="reviewed-badge"
+          >
+            <i class="bi bi-patch-check-fill"></i> Đã đánh giá
+          </span>
+
+          <!-- Trả hàng — DELIVERED -->
+          <button
+            *ngIf="order.status === 'DELIVERED'"
+            class="btn-act btn-act--outline"
+            (click)="openReturn(order.orderId)"
+          >
+            <i class="bi bi-arrow-return-left"></i> Trả hàng
+          </button>
+
+          <!-- Mua lại — DELIVERED / RETURNED / CANCELLED -->
+          <button
+            *ngIf="
+              order.status === 'DELIVERED' ||
+              order.status === 'RETURNED' ||
+              order.status === 'CANCELLED'
+            "
+            class="btn-act btn-act--primary"
+            (click)="reorder(order)"
+          >
+            <i class="bi bi-bag-plus"></i> Mua lại
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        <div *ngIf="addresses.length > 0" class="co-addr-list">
-          <div
-            *ngFor="let addr of addresses"
-            class="co-addr-card"
-            [class.co-addr-selected]="selectedAddressId === addr.id"
-            (click)="selectAddress(addr)"
+<!-- ═══════════════════════════════════════════════════
+     MODAL: Chi tiết đơn hàng
+════════════════════════════════════════════════════ -->
+<div
+  class="modal-backdrop mt-5 pt-4"
+  *ngIf="showDetailModal"
+  (click)="closeDetail()"
+>
+  <div class="modal-box modal-box--lg" (click)="$event.stopPropagation()">
+    <div class="modal-hd">
+      <h5><i class="bi bi-receipt"></i> Chi tiết đơn hàng</h5>
+      <button class="modal-close" (click)="closeDetail()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="modal-bd" *ngIf="selectedOrder as o">
+      <!-- Thông tin chung -->
+      <div class="detail-grid">
+        <div class="detail-cell">
+          <span class="dc-label">Mã đơn hàng</span>
+          <span class="dc-value text-sky">#{{ o.orderId }}</span>
+        </div>
+        <div class="detail-cell">
+          <span class="dc-label">Trạng thái</span>
+          <span class="order-status {{ getStatusClass(o.status) }}">{{
+            getStatusLabel(o.status)
+          }}</span>
+        </div>
+        <div class="detail-cell">
+          <span class="dc-label">Ngày đặt</span>
+          <span class="dc-value">{{ formatDate(o.createdAt) }}</span>
+        </div>
+        <div class="detail-cell">
+          <span class="dc-label">Dự kiến giao</span>
+          <span class="dc-value">{{
+            o.expectedDeliveryTime ? formatDate(o.expectedDeliveryTime) : "—"
+          }}</span>
+        </div>
+        <div class="detail-cell" *ngIf="o.shippingCode">
+          <span class="dc-label">Mã vận đơn</span>
+          <span class="dc-value text-sky">{{ o.shippingCode }}</span>
+        </div>
+        <div class="detail-cell" *ngIf="o.shippingProviderName">
+          <span class="dc-label">Đơn vị vận chuyển</span>
+          <span class="dc-value">{{ o.shippingProviderName }}</span>
+        </div>
+        <div class="detail-cell detail-cell--full" *ngIf="o.address">
+          <span class="dc-label">Địa chỉ giao hàng</span>
+          <span class="dc-value">{{ o.address }}</span>
+        </div>
+        <div class="detail-cell" *ngIf="o.couponName">
+          <span class="dc-label">Mã giảm giá</span>
+          <span class="dc-value coupon-chip"
+            ><i class="bi bi-tag"></i> {{ o.couponName }}</span
           >
-            <div
-              class="co-radio"
-              [class.co-radio-on]="selectedAddressId === addr.id"
-            ></div>
-            <div class="co-addr-body">
-              <div class="co-addr-main">{{ addr.address }}</div>
-              <div class="co-addr-sub">
-                {{ addr.wardName }}, {{ addr.districtName }},
-                {{ addr.provinceName }}
-              </div>
-            </div>
-            <i
-              *ngIf="selectedAddressId === addr.id"
-              class="bi bi-check-circle-fill co-addr-check"
-            ></i>
-          </div>
         </div>
       </div>
 
-      <!-- 3. Phương thức vận chuyển -->
-      <div class="co-card">
-        <div class="co-card-title">
-          <i class="bi bi-truck"></i> Phương thức vận chuyển
-        </div>
-        <div class="co-method co-method-selected">
-          <div class="co-radio co-radio-on"></div>
-          <i class="bi bi-lightning-charge-fill co-method-icon"></i>
-          <div class="co-method-body">
-            <div class="co-method-name">Giao hàng nhanh — GHN</div>
-            <div class="co-method-desc">Giao trong 1–3 ngày làm việc</div>
+      <!-- Danh sách sản phẩm (có nút đánh giá từng item) -->
+      <h6 class="section-label">Sản phẩm trong đơn</h6>
+      <div class="item-list">
+        <div
+          *ngFor="let item of o.items"
+          class="item-row"
+          [class.item-row--reviewed]="item.reviewed"
+        >
+          <img
+            [src]="item.image"
+            [alt]="item.name"
+            (error)="handleImgError($event)"
+            class="item-row__img"
+          />
+          <div class="item-row__info">
+            <p class="item-row__name">{{ item.name }}</p>
+            <p class="item-row__qty">x{{ item.quantity }}</p>
           </div>
-          <div class="co-method-fee">
-            <span *ngIf="loadingFee" class="co-fee-loading">
-              <span class="co-fee-dots"></span>
-            </span>
-            <span *ngIf="!loadingFee"
-              >{{ shippingFee | number: "1.0-0" }}đ</span
+          <span class="item-row__price">{{
+            formatCurrency(item.price * item.quantity)
+          }}</span>
+
+          <!-- Nút đánh giá từng sản phẩm — chỉ khi DELIVERED và chưa reviewed -->
+          <ng-container *ngIf="o.status === 'DELIVERED'">
+            <button
+              *ngIf="!item.reviewed"
+              class="btn-act btn-act--review btn-act--sm"
+              (click)="openReview(item)"
             >
-          </div>
+              <i class="bi bi-star"></i> Đánh giá
+            </button>
+            <span *ngIf="item.reviewed" class="item-reviewed-tag">
+              <i class="bi bi-patch-check-fill"></i> Đã đánh giá
+            </span>
+          </ng-container>
         </div>
       </div>
 
-      <!-- 4. Phương thức thanh toán -->
-      <div class="co-card">
-        <div class="co-card-title">
-          <i class="bi bi-credit-card-2-front"></i> Phương thức thanh toán
+      <!-- Pricing summary -->
+      <div class="pricing-summary">
+        <div class="ps-row">
+          <span>Tiền hàng</span>
+          <span>{{ formatCurrency(o.totalPrice) }}</span>
         </div>
-        <div class="co-pm-list">
-          <div
-            *ngFor="let pm of paymentMethods"
-            class="co-method"
-            [class.co-method-selected]="selectedPaymentMethodId === pm.id"
-            (click)="selectedPaymentMethodId = pm.id"
-          >
-            <div
-              class="co-radio"
-              [class.co-radio-on]="selectedPaymentMethodId === pm.id"
-            ></div>
-            <i
-              class="bi co-method-icon"
-              [ngClass]="getPaymentIcon(pm.name)"
-            ></i>
-            <div class="co-method-body">
-              <div class="co-method-name">{{ pm.name }}</div>
-            </div>
-          </div>
+        <div class="ps-row">
+          <span>Phí vận chuyển</span>
+          <span>{{ formatCurrency(o.shippingFee) }}</span>
+        </div>
+        <div class="ps-row ps-row--total">
+          <strong>Tổng thanh toán</strong>
+          <strong class="text-green">{{
+            formatCurrency(grandTotal(o))
+          }}</strong>
         </div>
       </div>
     </div>
 
-    <!-- ══ RIGHT COLUMN ══ -->
-    <div class="co-right">
-      <!-- Sản phẩm -->
-      <div class="co-card">
-        <div class="co-card-title">
-          <i class="bi bi-box-seam"></i> Sản phẩm ({{ items.length }})
-        </div>
+    <div class="modal-ft">
+      <button class="btn-act btn-act--outline" (click)="closeDetail()">
+        Đóng
+      </button>
+      <button
+        *ngIf="selectedOrder?.status === 'PROCESSING'"
+        class="btn-act btn-act--danger"
+        (click)="openCancel(selectedOrder!.orderId); closeDetail()"
+      >
+        <i class="bi bi-x-circle"></i> Hủy đơn
+      </button>
+      <button
+        *ngIf="selectedOrder?.status === 'SHIPPING'"
+        class="btn-act btn-act--confirm"
+        (click)="openConfirmDelivered(selectedOrder!.orderId); closeDetail()"
+      >
+        <i class="bi bi-check2-circle"></i> Đã nhận hàng
+      </button>
+    </div>
+  </div>
+</div>
 
-        <div *ngIf="items.length === 0" class="co-empty">
-          <i class="bi bi-cart-x"></i>
-          <p>Không có sản phẩm nào.</p>
-        </div>
-
-        <div class="co-items">
-          <div
-            class="co-item"
-            *ngFor="let item of items; let last = last"
-            [class.co-item-last]="last"
+<!-- ═══════════════════════════════════════════════════
+     MODAL: Hủy đơn (chỉ PROCESSING)
+════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="showCancelModal" (click)="closeCancel()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-hd modal-hd--danger">
+      <h5><i class="bi bi-x-circle"></i> Xác nhận hủy đơn</h5>
+      <button class="modal-close" (click)="closeCancel()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-bd">
+      <p class="modal-desc">
+        Bạn đang hủy đơn hàng
+        <strong class="text-sky">#{{ cancellingOrderId }}</strong
+        >. Vui lòng cho chúng tôi biết lý do.
+      </p>
+      <div class="form-group">
+        <label class="form-label-dark"
+          >Lý do hủy <span class="req">*</span></label
+        >
+        <div class="radio-group">
+          <label
+            *ngFor="let r of cancelReasons"
+            class="radio-item"
+            [class.radio-item--active]="cancelReason === r"
           >
-            <div class="co-item-img-wrap">
-              <img
-                [src]="item.imageUrl"
-                [alt]="item.productName"
-                class="co-item-img"
-              />
-              <span class="co-item-qty-badge">{{ item.quantity }}</span>
-            </div>
-            <div class="co-item-info">
-              <div class="co-item-name">{{ item.productName }}</div>
-              <div *ngIf="item.variantName" class="co-item-variant">
-                {{ item.variantName }}
-              </div>
-              <div class="co-item-unit">
-                {{ item.price | number: "1.0-0" }}đ / cái
-              </div>
-            </div>
-            <div class="co-item-price">
-              {{ item.price * item.quantity | number: "1.0-0" }}đ
-            </div>
-          </div>
+            <input type="radio" [(ngModel)]="cancelReason" [value]="r" />
+            <span>{{ r }}</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label-dark">Ghi chú thêm</label>
+        <textarea
+          [(ngModel)]="cancelNote"
+          rows="3"
+          placeholder="Nhập ghi chú (không bắt buộc)"
+        ></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-act btn-act--outline" (click)="closeCancel()">
+        Quay lại
+      </button>
+      <button
+        class="btn-act btn-act--danger"
+        (click)="confirmCancel()"
+        [disabled]="cancelling"
+      >
+        <i class="bi bi-x-circle"></i>
+        {{ cancelling ? "Đang xử lý..." : "Xác nhận hủy" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL: Xác nhận đã nhận hàng
+════════════════════════════════════════════════════ -->
+<div
+  class="modal-backdrop"
+  *ngIf="showConfirmDeliveredModal"
+  (click)="closeConfirmDelivered()"
+>
+  <div class="modal-box modal-box--sm" (click)="$event.stopPropagation()">
+    <div class="modal-hd modal-hd--confirm">
+      <h5><i class="bi bi-check2-circle"></i> Xác nhận đã nhận hàng</h5>
+      <button class="modal-close" (click)="closeConfirmDelivered()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-bd">
+      <div class="confirm-delivered-body">
+        <div class="confirm-icon"><i class="bi bi-box2-heart"></i></div>
+        <p>
+          Bạn xác nhận đã nhận được đơn hàng
+          <strong class="text-sky">#{{ confirmingOrderId }}</strong
+          >?
+        </p>
+        <p class="confirm-note">
+          Sau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái
+          <strong>Đã giao</strong> và bạn có thể đánh giá sản phẩm.
+        </p>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button
+        class="btn-act btn-act--outline"
+        (click)="closeConfirmDelivered()"
+      >
+        Chưa nhận
+      </button>
+      <button
+        class="btn-act btn-act--confirm"
+        (click)="confirmDelivered()"
+        [disabled]="confirmingDelivered"
+      >
+        <i class="bi bi-check2-circle"></i>
+        {{ confirmingDelivered ? "Đang xử lý..." : "Đã nhận hàng" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL: Trả hàng
+════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="showReturnModal" (click)="closeReturn()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-hd">
+      <h5><i class="bi bi-arrow-return-left"></i> Yêu cầu trả hàng</h5>
+      <button class="modal-close" (click)="closeReturn()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-bd">
+      <div class="info-banner">
+        <i class="bi bi-info-circle"></i>
+        Yêu cầu trả hàng sẽ được xử lý trong vòng
+        <strong>1–3 ngày làm việc</strong>.
+      </div>
+      <div class="form-group">
+        <label class="form-label-dark"
+          >Lý do trả hàng <span class="req">*</span></label
+        >
+        <div class="radio-group">
+          <label
+            *ngFor="let r of returnReasons"
+            class="radio-item"
+            [class.radio-item--active]="returnReason === r"
+          >
+            <input type="radio" [(ngModel)]="returnReason" [value]="r" />
+            <span>{{ r }}</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label-dark">Mô tả chi tiết</label>
+        <textarea
+          [(ngModel)]="returnNote"
+          rows="3"
+          placeholder="Mô tả tình trạng sản phẩm..."
+        ></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-act btn-act--outline" (click)="closeReturn()">
+        Quay lại
+      </button>
+      <button
+        class="btn-act btn-act--primary"
+        (click)="confirmReturn()"
+        [disabled]="returning"
+      >
+        <i class="bi bi-send"></i>
+        {{ returning ? "Đang gửi..." : "Gửi yêu cầu" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL: Đánh giá sản phẩm
+════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="showReviewModal" (click)="closeReview()">
+  <div class="modal-box modal-box--sm" (click)="$event.stopPropagation()">
+    <div class="modal-hd modal-hd--review">
+      <h5><i class="bi bi-star-half"></i> Đánh giá sản phẩm</h5>
+      <button class="modal-close" (click)="closeReview()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="modal-bd" *ngIf="reviewingItem as item">
+      <!-- Sản phẩm đang đánh giá -->
+      <div class="review-product">
+        <img
+          [src]="item.image"
+          [alt]="item.name"
+          (error)="handleImgError($event)"
+          class="review-product__img"
+        />
+        <div>
+          <p class="review-product__name">{{ item.name }}</p>
+          <p class="review-product__qty">Số lượng: {{ item.quantity }}</p>
         </div>
       </div>
 
-      <!-- Mã giảm giá đã chọn từ cart -->
-      <div *ngIf="appliedCoupon" class="co-card co-coupon-card">
-        <div class="co-card-title">
-          <i class="bi bi-tag-fill"></i> Mã giảm giá
-        </div>
-        <div class="co-coupon-applied">
-          <div class="co-coupon-left">
-            <span class="co-coupon-tag">{{ appliedCoupon.name }}</span>
-            <div class="co-coupon-detail">
-              <span *ngIf="appliedCoupon.discountType === 'PERCENT'">
-                Giảm {{ appliedCoupon.discountValue }}% · Tối đa
-                {{ appliedCoupon.maxDiscount | number: "1.0-0" }}đ
-              </span>
-              <span *ngIf="appliedCoupon.discountType === 'FIXED'">
-                Giảm thẳng {{ appliedCoupon.discountValue | number: "1.0-0" }}đ
-              </span>
-            </div>
-          </div>
-          <div class="co-coupon-saving">
-            −{{ discountAmount | number: "1.0-0" }}đ
-          </div>
-        </div>
-      </div>
-
-      <!-- Tóm tắt đơn hàng -->
-      <div class="co-card co-summary-card">
-        <div class="co-card-title">
-          <i class="bi bi-receipt"></i> Tóm tắt đơn hàng
-        </div>
-        <div class="co-sum-rows">
-          <div class="co-sum-row">
-            <span>Tạm tính ({{ items.length }} sản phẩm)</span>
-            <span>{{ subtotal | number: "1.0-0" }}đ</span>
-          </div>
-          <div class="co-sum-row">
-            <span>Phí vận chuyển (GHN)</span>
-            <span *ngIf="!loadingFee"
-              >{{ shippingFee | number: "1.0-0" }}đ</span
-            >
-            <span *ngIf="loadingFee" class="co-fee-loading"
-              ><span class="co-fee-dots"></span
-            ></span>
-          </div>
-          <div *ngIf="discountAmount > 0" class="co-sum-row co-sum-discount">
-            <span
-              >Giảm giá <em>({{ appliedCoupon?.name }})</em></span
-            >
-            <span>−{{ discountAmount | number: "1.0-0" }}đ</span>
-          </div>
-        </div>
-        <div class="co-sum-total">
-          <span>Tổng cộng</span>
-          <span>{{ total | number: "1.0-0" }}đ</span>
-        </div>
-
-        <!-- Error -->
-        <div *ngIf="orderError" class="co-order-error">
-          <i class="bi bi-exclamation-triangle-fill"></i> {{ orderError }}
-        </div>
-
-        <!-- Actions -->
-        <div class="co-actions">
-          <button class="co-btn-back" (click)="goBack()">
-            <i class="bi bi-arrow-left"></i> Quay lại
-          </button>
+      <!-- Star picker -->
+      <div class="form-group">
+        <label class="form-label-dark"
+          >Chất lượng sản phẩm <span class="req">*</span></label
+        >
+        <div class="star-picker">
           <button
-            class="co-btn-order"
-            (click)="placeOrder()"
-            [disabled]="placing || !canOrder"
+            *ngFor="let s of [1, 2, 3, 4, 5]"
+            type="button"
+            class="star-btn"
+            [class.star-btn--active]="s <= activeRating"
+            (mouseenter)="hoverRating = s"
+            (mouseleave)="hoverRating = 0"
+            (click)="setRating(s)"
           >
-            <span *ngIf="!placing"
-              >Đặt hàng <i class="bi bi-arrow-right"></i
-            ></span>
-            <span *ngIf="placing" class="co-placing">
-              <span class="co-btn-spinner"></span> Đang xử lý...
-            </span>
+            <i class="bi bi-star-fill"></i>
           </button>
-        </div>
-
-        <div class="co-secure">
-          <i class="bi bi-shield-lock-fill"></i>
-          Thanh toán được mã hóa & bảo mật
+          <span class="star-label">{{ ratingLabels[activeRating] }}</span>
         </div>
       </div>
+
+      <!-- Nội dung -->
+      <div class="form-group">
+        <label class="form-label-dark">Nhận xét của bạn</label>
+        <textarea
+          [(ngModel)]="reviewContent"
+          rows="4"
+          placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+        ></textarea>
+        <span class="char-count">{{ reviewContent.length }} / 500</span>
+      </div>
+    </div>
+
+    <div class="modal-ft">
+      <button class="btn-act btn-act--outline" (click)="closeReview()">
+        Hủy
+      </button>
+      <button
+        class="btn-act btn-act--review-submit"
+        (click)="submitReview()"
+        [disabled]="submittingReview"
+      >
+        <i class="bi bi-send"></i>
+        {{ submittingReview ? "Đang gửi..." : "Gửi đánh giá" }}
+      </button>
     </div>
   </div>
 </div>

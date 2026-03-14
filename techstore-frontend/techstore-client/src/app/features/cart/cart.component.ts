@@ -16,7 +16,7 @@ import { CartResponse, CartItemResponse } from './models/cart.model';
 import { VariantResponse } from '../product/models/product.model';
 import { CouponResponse } from '../coupon/models/coupon.model';
 
-import { OrderItem } from '../order/order.component';
+import { OrderItem } from '../check-out/order.component';
 
 @Component({
   selector: 'app-cart',
@@ -308,7 +308,7 @@ export class CartComponent implements OnInit, OnDestroy {
         weight: variant?.weight ?? 300
       };
     });
-    this.router.navigate(['/order'], {
+    this.router.navigate(['/checkout'], {
       state: { items: orderItems, coupon: this.selectedCoupon }
     });
   }

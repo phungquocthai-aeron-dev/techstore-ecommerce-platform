@@ -43,6 +43,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (user) {
           this.customerName = user.fullName;
           this.avatarUrl = user.avatarUrl;
+          console.log(user.avatarUrl)
           this.isLoggedIn = true;
         } else {
           this.isLoggedIn = this.tokenService.isLoggedIn();
@@ -95,14 +96,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
-  goSearch(): void {
-    const kw = this.searchKeyword.trim();
-    if (kw) {
-      this.router.navigate(['/search'], { queryParams: { keyword: kw } });
-    } else {
-      this.router.navigate(['/search']);
-    }
-  }
+ goSearch(): void {
+  const kw = this.searchKeyword.trim();
+
+  this.router.navigate(['/search'], {
+    queryParams: { keyword: kw || null },
+    queryParamsHandling: 'merge'
+  });
+}
 
   goProfile(): void { this.router.navigate(['/profile']); }
   goOrders(): void { this.router.navigate(['/orders']); }

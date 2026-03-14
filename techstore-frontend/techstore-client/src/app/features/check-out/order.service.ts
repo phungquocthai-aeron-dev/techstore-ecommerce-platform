@@ -8,7 +8,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
 
 import {
   OrderResponse,
-  OrderDetailResponse
+  OrderDetailResponse,
+  CustomerOrderResponse
 } from './models/order.model';
 
 import {
@@ -23,6 +24,27 @@ export class OrderService {
   private baseUrl = environment.orderUrl + '/orders';
 
   constructor(private http: HttpClient) {}
+
+  // ===============================
+  // GET ORDERS BY CUSTOMER
+  // ===============================
+  
+  getOrdersByCustomer(
+    customerId: number,
+    status?: string
+  ): Observable<ApiResponse<CustomerOrderResponse[]>> {
+  
+    let params = new HttpParams();
+  
+    if (status) {
+      params = params.set('status', status);
+    }
+  
+    return this.http.get<ApiResponse<CustomerOrderResponse[]>>(
+      `${this.baseUrl}/customer/${customerId}`,
+      { params }
+    );
+  }
 
   // ===============================
   // CREATE ORDER

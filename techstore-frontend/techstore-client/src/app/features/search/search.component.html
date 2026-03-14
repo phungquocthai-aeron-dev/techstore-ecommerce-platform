@@ -143,28 +143,6 @@
   <main class="search-content">
     <!-- Search Header -->
     <div class="search-header">
-      <div class="search-input-wrapper">
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Tìm kiếm sản phẩm công nghệ..."
-          [(ngModel)]="keyword"
-          (ngModelChange)="onKeywordChange()"
-        />
-        <span class="search-icon">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-        </span>
-      </div>
       <div class="search-meta">
         <div class="search-meta-text" *ngIf="!isLoading">
           Tìm thấy <strong>{{ totalElements }}</strong> sản phẩm
@@ -305,35 +283,8 @@
           <h5 class="product-title">{{ product.name }}</h5>
           <div class="product-price">{{ formatPrice(product.basePrice) }}</div>
           <div class="card-actions">
-            <button class="btn-view">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+            <button class="btn-view" [routerLink]="['/product', product.id]">
               Xem chi tiết
-            </button>
-            <button class="btn-cart">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path
-                  d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
-                />
-              </svg>
             </button>
           </div>
         </div>
@@ -348,13 +299,13 @@
       <div class="empty-icon">◎</div>
       <h3>Không tìm thấy sản phẩm</h3>
       <p>Thử thay đổi từ khóa hoặc điều chỉnh bộ lọc</p>
-      <button
+      <!-- <button
         class="btn-clear-filters"
         style="width: auto; padding: 10px 24px"
         (click)="clearAllFilters()"
       >
         Xóa bộ lọc
-      </button>
+      </button> -->
     </div>
 
     <!-- Pagination -->

@@ -24,7 +24,8 @@ export interface ProductStatusUpdateRequest {
 
 export interface ProductSearchRequest {
   keyword?: string;
-  brandName?: string;
+  brandNames?: string[];
+  categoryIds?: number[];
   minPrice?: number;
   maxPrice?: number;
   page?: number;

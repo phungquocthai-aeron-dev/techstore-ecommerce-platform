@@ -6,6 +6,9 @@ server:
 spring:
   application:
     name: user-service
+  mvc:
+      servlet:
+        load-on-startup: 1
   datasource:
     url: "jdbc:mysql://localhost:3307/techstore_user"
     driverClassName: "com.mysql.cj.jdbc.Driver"
@@ -29,3 +32,4 @@ app:
   services:
     identity: http://localhost:8080/identity
     file: http://localhost:8082/file
+    notification: http://localhost:8088/notification

@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.techstore.user.dto.request.CustomerRegisterRequest;
 import com.techstore.user.dto.request.CustomerUpdateRequest;
+import com.techstore.user.dto.request.ResetPasswordRequest;
 import com.techstore.user.dto.response.ApiResponse;
 import com.techstore.user.dto.response.CustomerResponse;
 import com.techstore.user.service.CustomerService;
@@ -94,5 +95,21 @@ public class CustomerController {
 
         customerService.updateStatus(id, status);
         return ApiResponse.<Void>builder().build();
+    }
+
+    // Dùng OTP
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@RequestParam String email) {
+        customerService.forgotPassword(email);
+        return ApiResponse.<Void>builder()
+                .message("OTP đã được gửi đến email của bạn")
+                .build();
+    }
+
+    @PutMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@RequestBody ResetPasswordRequest req) {
+        customerService.resetPassword(req);
+        return ApiResponse.<Void>builder().message("Đổi mật khẩu thành công").build();
     }
 }

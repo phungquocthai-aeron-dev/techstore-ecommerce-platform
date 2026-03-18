@@ -35,6 +35,7 @@ public enum ErrorCode {
     PASSWORD_EMPTY(1014, "Password empty", HttpStatus.BAD_REQUEST),
     PASSWORD_CONFIRM_NOT_MATCH(1015, "Password confirm not match", HttpStatus.BAD_REQUEST),
     PASSWORD_DUPLICATE(1016, "Password duplicate", HttpStatus.BAD_REQUEST),
+    INVALID_OTP(1016, "Mã OTP không hợp lệ", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

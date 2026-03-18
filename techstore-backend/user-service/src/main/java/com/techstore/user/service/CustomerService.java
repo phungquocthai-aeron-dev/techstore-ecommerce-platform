@@ -11,10 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.techstore.user.client.FileServiceClient;
+import com.techstore.user.client.NotificationClient;
 import com.techstore.user.constant.AccountStatus;
 import com.techstore.user.constant.UploadFolder;
 import com.techstore.user.dto.request.CustomerRegisterRequest;
 import com.techstore.user.dto.request.CustomerUpdateRequest;
+import com.techstore.user.dto.request.ResetPasswordRequest;
+import com.techstore.user.dto.response.ApiResponse;
 import com.techstore.user.dto.response.CustomerResponse;
 import com.techstore.user.entity.Customer;
 import com.techstore.user.exception.AppException;
@@ -30,6 +33,8 @@ public class CustomerService {
 
     private final CustomerRepository customerRepo;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationClient notificationClient;
+    private final OtpEventProducer otpEventProducer;
     private final FileServiceClient fileClient;
     private final CustomerMapper customerMapper;
 
@@ -157,6 +162,41 @@ public class CustomerService {
         }
 
         throw new AppException(ErrorCode.UNAUTHORIZED);
+    }
+
+    public void forgotPassword(String email) {
+        // Kiểm tra email tồn tại
+        Customer customer =
+                customerRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Kiểm tra tài khoản có active không
+        if (!"ACTIVE".equalsIgnoreCase(customer.getStatus())) {
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        }
+
+        // Publish event → notification-service lắng nghe, sinh OTP, gửi email
+        otpEventProducer.sendOtpEvent(email, "CUSTOMER");
+    }
+
+    public void resetPassword(ResetPasswordRequest req) {
+        // Validate mật khẩu khớp nhau
+        if (!req.getNewPassword().equals(req.getPasswordConfirm())) {
+            throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
+
+        // Gọi notification-service verify OTP qua Feign
+        ApiResponse<Boolean> response = notificationClient.verifyOtp(req.getEmail(), req.getOtp());
+        if (response.getResult() == null || !response.getResult()) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+
+        // Cập nhật mật khẩu
+        Customer customer = customerRepo
+                .findByEmail(req.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        customer.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        customerRepo.save(customer);
     }
 
     private Customer getCustomerAndCheckPermission(Long id) {

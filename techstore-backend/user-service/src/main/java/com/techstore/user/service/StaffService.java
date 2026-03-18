@@ -10,9 +10,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import com.techstore.user.client.NotificationClient;
 import com.techstore.user.constant.AccountStatus;
+import com.techstore.user.dto.request.ResetPasswordRequest;
 import com.techstore.user.dto.request.StaffRequest;
 import com.techstore.user.dto.request.StaffRoleUpdateRequest;
+import com.techstore.user.dto.response.ApiResponse;
 import com.techstore.user.dto.response.StaffResponse;
 import com.techstore.user.entity.Role;
 import com.techstore.user.entity.Staff;
@@ -33,6 +36,8 @@ public class StaffService {
     private final RoleRepository roleRepo;
     private final StaffMapper staffMapper;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationClient notificationClient;
+    private final OtpEventProducer otpEventProducer;
     private final MailService mailService;
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -92,6 +97,38 @@ public class StaffService {
         }
 
         staff.setPassword(passwordEncoder.encode(newPw));
+        staffRepo.save(staff);
+    }
+
+    public void forgotPassword(String email) {
+        Staff staff = staffRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!AccountStatus.ACTIVE.name().equals(staff.getStatus())) {
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        }
+
+        otpEventProducer.sendOtpEvent(email, "STAFF");
+    }
+
+    public void resetPasswordByOtp(ResetPasswordRequest req) {
+        if (!req.getNewPassword().equals(req.getPasswordConfirm())) {
+            throw new AppException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
+
+        ApiResponse<Boolean> response = notificationClient.verifyOtp(req.getEmail(), req.getOtp());
+
+        if (response.getResult() == null || !response.getResult()) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+
+        Staff staff =
+                staffRepo.findByEmail(req.getEmail()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (passwordEncoder.matches(req.getNewPassword(), staff.getPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_DUPLICATE);
+        }
+
+        staff.setPassword(passwordEncoder.encode(req.getNewPassword()));
         staffRepo.save(staff);
     }
 

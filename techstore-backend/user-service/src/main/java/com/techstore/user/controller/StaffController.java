@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.techstore.user.dto.request.ResetPasswordRequest;
 import com.techstore.user.dto.request.StaffRequest;
 import com.techstore.user.dto.request.StaffRoleUpdateRequest;
 import com.techstore.user.dto.response.ApiResponse;
@@ -83,6 +84,20 @@ public class StaffController {
 
         staffService.updatePassword(id, oldPassword, newPassword, passwordConfirm);
         return ApiResponse.<Void>builder().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@RequestParam String email) {
+        staffService.forgotPassword(email);
+        return ApiResponse.<Void>builder()
+                .message("OTP đã được gửi đến email của bạn")
+                .build();
+    }
+
+    @PutMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@RequestBody ResetPasswordRequest req) {
+        staffService.resetPasswordByOtp(req);
+        return ApiResponse.<Void>builder().message("Đổi mật khẩu thành công").build();
     }
 
     @PutMapping("/{id}/roles")

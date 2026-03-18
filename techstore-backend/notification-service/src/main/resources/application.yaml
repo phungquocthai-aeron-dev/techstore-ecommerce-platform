@@ -1,0 +1,37 @@
+server:
+  port: 8088
+  servlet:
+    context-path: /notification
+spring:
+  application:
+    name: notification-service
+  data:
+    mongodb:
+      uri: mongodb://root:root@localhost:27018/techstore-notification?authSource=admin
+    redis:
+      host: localhost
+      port: 6380
+
+  kafka:
+    bootstrap-servers: localhost:9094
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: phungquocthai0027@gmail.com
+    password: uzgg dycm ybls pzua
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+app:
+  services:
+    user: http://localhost:8081/user

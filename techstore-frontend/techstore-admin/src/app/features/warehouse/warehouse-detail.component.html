@@ -1,0 +1,418 @@
+<div class="page">
+  <!-- ── BREADCRUMB + BACK ── -->
+  <div class="breadcrumb-bar">
+    <button class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <span class="breadcrumb-link" (click)="goBack()">Kho hàng</span>
+    <i class="bi bi-chevron-right bc-sep"></i>
+    <span class="breadcrumb-cur">{{ warehouse?.name ?? "..." }}</span>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state full">
+      <div class="spinner"></div>
+      <span>Đang tải...</span>
+    </div>
+  }
+
+  @if (!isLoading && warehouse) {
+    <!-- ── HEADER ── -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon page-icon-teal">
+          <i class="bi bi-building-fill"></i>
+        </div>
+        <div>
+          <h1 class="page-title">{{ warehouse.name }}</h1>
+          <p class="page-sub">
+            ID: {{ warehouse.id }} &nbsp;·&nbsp; Địa chỉ:
+            {{ warehouse.addressId }}
+          </p>
+        </div>
+        <span
+          class="badge ml-8"
+          [class.badge-active]="warehouse.status === 'ACTIVE'"
+          [class.badge-inactive]="warehouse.status !== 'ACTIVE'"
+        >
+          {{ warehouse.status === "ACTIVE" ? "Hoạt động" : "Tạm dừng" }}
+        </span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-ghost" (click)="openEditModal()">
+          <i class="bi bi-pencil"></i> Chỉnh sửa
+        </button>
+        <button class="btn-primary" (click)="openInboundModal()">
+          <i class="bi bi-box-arrow-in-down"></i> Nhập kho
+        </button>
+      </div>
+    </div>
+
+    <!-- ── INFO CARDS ── -->
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="info-card-icon ic-blue">
+          <i class="bi bi-box-seam-fill"></i>
+        </div>
+        <div>
+          <div class="info-card-val">{{ warehouse.maxCapacity }}</div>
+          <div class="info-card-lbl">
+            Sức chứa tối đa ({{ warehouse.unitCapacity }})
+          </div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon ic-teal"><i class="bi bi-stack"></i></div>
+        <div>
+          <div class="info-card-val">{{ inventories.length }}</div>
+          <div class="info-card-lbl">Mặt hàng đang lưu trữ</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon ic-green">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+          <div class="info-card-val">{{ activeInventoryCount }}</div>
+          <div class="info-card-lbl">Lô hàng đang hoạt động</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon ic-amber">
+          <i class="bi bi-arrow-left-right"></i>
+        </div>
+        <div>
+          <div class="info-card-val">{{ transactions.length }}</div>
+          <div class="info-card-lbl">Giao dịch kho</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TABS ── -->
+    <div class="tab-bar">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'inventory'"
+        (click)="activeTab = 'inventory'"
+      >
+        <i class="bi bi-box-seam"></i> Tồn kho
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'transactions'"
+        (click)="activeTab = 'transactions'"
+      >
+        <i class="bi bi-arrow-left-right"></i> Giao dịch
+      </button>
+    </div>
+
+    <!-- ── TAB: INVENTORY ── -->
+    @if (activeTab === "inventory") {
+      <div class="toolbar">
+        <div class="search-wrap">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            placeholder="Tìm theo batch code, trạng thái..."
+            [(ngModel)]="invSearch"
+          />
+        </div>
+      </div>
+
+      <div class="table-card">
+        @if (isLoadingInv) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Đang tải tồn kho...</span>
+          </div>
+        } @else if (filteredInventories.length === 0) {
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>Chưa có tồn kho nào</p>
+          </div>
+        } @else {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 50px">#</th>
+                <th>Sản phẩm / Màu</th>
+                <th>Batch Code</th>
+                <th style="text-align: center">Số lượng</th>
+                <th>Cập nhật lúc</th>
+                <th style="width: 120px">Trạng thái</th>
+                <th style="width: 100px; text-align: right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inv of filteredInventories; track inv.id; let i = $index) {
+                <tr>
+                  <td class="text-muted">{{ i + 1 }}</td>
+                  <td>
+                    <div class="product-cell">
+                      @if (inv.variantInfo.imageUrl) {
+                        <img
+                          class="product-thumb"
+                          [src]="inv.variantInfo.imageUrl"
+                          [alt]="inv.variantInfo.color"
+                        />
+                      } @else {
+                        <div class="product-thumb-placeholder">
+                          <i class="bi bi-image"></i>
+                        </div>
+                      }
+                      <div>
+                        <div class="font-medium">
+                          Variant #{{ inv.variantId }}
+                        </div>
+                        <div class="text-muted text-sm">
+                          {{ inv.variantInfo.color }}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="mono">{{ inv.batchCode }}</td>
+                  <td style="text-align: center">
+                    <span
+                      class="stock-pill"
+                      [class.stock-low]="inv.stock <= 10"
+                      >{{ inv.stock }}</span
+                    >
+                  </td>
+                  <td class="text-muted text-sm">
+                    {{ inv.updatedAt | date: "dd/MM/yyyy HH:mm" }}
+                  </td>
+                  <td>
+                    <span
+                      class="badge"
+                      [class.badge-active]="inv.status === 'ACTIVE'"
+                      [class.badge-inactive]="inv.status !== 'ACTIVE'"
+                    >
+                      {{ inv.status === "ACTIVE" ? "Hoạt động" : "Hết hàng" }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <button
+                      class="btn-icon-sm"
+                      title="Chỉnh sửa lô hàng"
+                      (click)="openUpdateInvModal(inv)"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+
+    <!-- ── TAB: TRANSACTIONS ── -->
+    @if (activeTab === "transactions") {
+      <div class="toolbar">
+        <div class="filter-group">
+          <label class="filter-label">Loại</label>
+          <select [(ngModel)]="txTypeFilter" (change)="onTxFilter()">
+            <option value="">Tất cả</option>
+            <option value="INBOUND">Nhập kho</option>
+            <option value="OUTBOUND">Xuất kho</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Trạng thái</label>
+          <select [(ngModel)]="txStatusFilter" (change)="onTxFilter()">
+            <option value="">Tất cả</option>
+            <option value="PENDING">Chờ xử lý</option>
+            <option value="COMPLETED">Hoàn thành</option>
+            <option value="CANCELLED">Đã huỷ</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-card">
+        @if (isLoadingTx) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Đang tải giao dịch...</span>
+          </div>
+        } @else if (filteredTransactions.length === 0) {
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>Chưa có giao dịch nào</p>
+          </div>
+        } @else {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 50px">#</th>
+                <th style="width: 120px">Loại</th>
+                <th>Nhà cung cấp</th>
+                <th>Ghi chú</th>
+                <th>Ngày tạo</th>
+                <th style="width: 130px">Trạng thái</th>
+                <th style="width: 80px; text-align: right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (tx of filteredTransactions; track tx.id; let i = $index) {
+                <tr>
+                  <td class="text-muted">{{ i + 1 }}</td>
+                  <td>
+                    <span
+                      class="tx-type-badge"
+                      [class.tx-inbound]="tx.transactionType === 'INBOUND'"
+                      [class.tx-outbound]="tx.transactionType === 'OUTBOUND'"
+                    >
+                      <i
+                        class="bi"
+                        [class.bi-box-arrow-in-down]="
+                          tx.transactionType === 'INBOUND'
+                        "
+                        [class.bi-box-arrow-up]="
+                          tx.transactionType === 'OUTBOUND'
+                        "
+                      ></i>
+                      {{
+                        tx.transactionType === "INBOUND"
+                          ? "Nhập kho"
+                          : "Xuất kho"
+                      }}
+                    </span>
+                  </td>
+                  <td>{{ tx.supplier.name }}</td>
+                  <td class="text-muted">{{ tx.note }}</td>
+                  <td class="text-sm">
+                    {{ tx.createdAt | date: "dd/MM/yyyy HH:mm" }}
+                  </td>
+                  <td>
+                    <span
+                      class="badge"
+                      [class.badge-active]="tx.status === 'COMPLETED'"
+                      [class.badge-pending]="tx.status === 'PENDING'"
+                      [class.badge-inactive]="tx.status === 'CANCELLED'"
+                    >
+                      {{
+                        tx.status === "COMPLETED"
+                          ? "Hoàn thành"
+                          : tx.status === "PENDING"
+                            ? "Chờ xử lý"
+                            : "Đã huỷ"
+                      }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    @if (tx.status === "PENDING") {
+                      <button
+                        class="btn-icon-sm btn-icon-danger"
+                        title="Huỷ giao dịch"
+                        (click)="cancelTransaction(tx.id)"
+                      >
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+  }
+</div>
+
+<!-- ── MODAL EDIT WAREHOUSE ── -->
+@if (showEditModal && warehouse) {
+  <div class="modal-backdrop" (click)="showEditModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Chỉnh sửa kho</h3>
+        <button class="modal-close" (click)="showEditModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tên kho</label>
+            <input type="text" [(ngModel)]="editForm.name" />
+          </div>
+          <div class="form-group">
+            <label>Đơn vị</label>
+            <input type="text" [(ngModel)]="editForm.unitCapacity" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sức chứa tối đa</label>
+            <input type="text" [(ngModel)]="editForm.maxCapacity" />
+          </div>
+          <div class="form-group">
+            <label>Trạng thái</label>
+            <select [(ngModel)]="editForm.status">
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="INACTIVE">Tạm dừng</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showEditModal = false">Huỷ</button>
+        <button
+          class="btn-primary"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveEdit()"
+        >
+          <span class="btn-text">Lưu thay đổi</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── MODAL UPDATE INVENTORY ── -->
+@if (showUpdateInvModal && editingInv) {
+  <div class="modal-backdrop" (click)="showUpdateInvModal = false">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Cập nhật lô hàng #{{ editingInv.id }}</h3>
+        <button class="modal-close" (click)="showUpdateInvModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Số lượng</label>
+          <input type="number" [(ngModel)]="invForm.stock" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Batch Code</label>
+          <input type="text" [(ngModel)]="invForm.batchCode" />
+        </div>
+        <div class="form-group">
+          <label>Trạng thái</label>
+          <select [(ngModel)]="invForm.status">
+            <option value="ACTIVE">Hoạt động</option>
+            <option value="OUT_OF_STOCK">Hết hàng</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showUpdateInvModal = false">
+          Huỷ
+        </button>
+        <button
+          class="btn-primary"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveInventory()"
+        >
+          <span class="btn-text">Lưu</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}

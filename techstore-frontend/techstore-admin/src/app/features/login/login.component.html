@@ -1,0 +1,163 @@
+<div class="page-wrap">
+  <!-- ════ LEFT PANEL ════ -->
+  <div class="left-panel">
+    <div
+      class="circle-deco"
+      style="width: 180px; height: 180px; top: 30%; right: 8%"
+    ></div>
+    <div
+      class="circle-deco"
+      style="width: 80px; height: 80px; top: 18%; right: 22%"
+    ></div>
+    <div
+      class="circle-deco"
+      style="width: 300px; height: 300px; bottom: -80px; left: -60px"
+    ></div>
+
+    <!-- brand -->
+    <div class="brand">
+      <div class="brand-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+      <div class="brand-name">
+        TechStore Admin
+        <span>Hệ thống quản trị nội bộ</span>
+      </div>
+    </div>
+
+    <!-- center content -->
+    <div class="left-center">
+      <div class="left-headline">
+        Quản lý toàn diện<br />
+        kinh doanh <em>thông minh</em>
+      </div>
+      <p class="left-desc">
+        Nền tảng quản trị tập trung — từ sản phẩm, đơn hàng đến khách hàng và
+        nhân viên — trên một giao diện duy nhất.
+      </p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon fi-blue">
+            <i class="bi bi-bar-chart-line-fill"></i>
+          </div>
+          <span class="feature-text">Báo cáo & thống kê thời gian thực</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon fi-green">
+            <i class="bi bi-universal-access"></i>
+          </div>
+          <span class="feature-text">Phân quyền vai trò Admin / Nhân viên</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon fi-amber">
+            <i class="bi bi-bell-fill"></i>
+          </div>
+          <span class="feature-text">Thông báo & cảnh báo tức thời</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ RIGHT PANEL ════ -->
+  <div class="right-panel">
+    <div class="login-card" [class.shake]="isShaking">
+      <div class="login-card-header">
+        <h2>Quản trị hệ thống</h2>
+        <p>Đăng nhập vào hệ thống quản trị nội bộ</p>
+      </div>
+
+      <div class="role-divider"><span>Điền thông tin đăng nhập</span></div>
+
+      <!-- ALERT -->
+      @if (alertMsg) {
+        <div
+          class="login-alert"
+          [class.error]="alertType === 'error'"
+          [class.success]="alertType === 'success'"
+        >
+          <i
+            class="bi"
+            [class.bi-exclamation-circle-fill]="alertType === 'error'"
+            [class.bi-check-circle-fill]="alertType === 'success'"
+          ></i>
+          <span>{{ alertMsg }}</span>
+        </div>
+      }
+
+      <!-- FORM -->
+      <form [formGroup]="loginForm" (ngSubmit)="doLogin()" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <div class="input-wrap">
+            <input
+              type="email"
+              id="email"
+              formControlName="username"
+              placeholder="Nhập email..."
+              autocomplete="email"
+              [class.is-invalid]="isFieldInvalid('email')"
+            />
+            <i class="bi bi-envelope lead-icon"></i>
+          </div>
+          @if (isFieldInvalid("email")) {
+            <div class="field-error">
+              @if (loginForm.get("email")?.errors?.["required"]) {
+                Email không được để trống.
+              } @else if (loginForm.get("email")?.errors?.["email"]) {
+                Email không hợp lệ.
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Mật khẩu</label>
+          <div class="input-wrap">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
+              formControlName="password"
+              placeholder="Nhập mật khẩu..."
+              autocomplete="current-password"
+              [class.is-invalid]="isFieldInvalid('password')"
+            />
+            <i class="bi bi-lock lead-icon"></i>
+            <i
+              class="bi toggle-pw"
+              [class.bi-eye]="!showPassword"
+              [class.bi-eye-slash]="showPassword"
+              (click)="togglePassword()"
+            ></i>
+          </div>
+          @if (isFieldInvalid("password")) {
+            <div class="field-error">Mật khẩu không được để trống.</div>
+          }
+        </div>
+
+        <div class="row-meta">
+          <label class="check-label">
+            <input type="checkbox" formControlName="rememberMe" />
+            Ghi nhớ đăng nhập
+          </label>
+          <a href="#" class="forgot-link" (click)="showForgot($event)"
+            >Quên mật khẩu?</a
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="btn-login"
+          [class.loading]="isLoading"
+          [disabled]="isLoading"
+        >
+          <i class="bi bi-box-arrow-in-right btn-icon"></i>
+          <span class="btn-text">Đăng nhập</span>
+          <div class="spinner"></div>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        Cần hỗ trợ? Liên hệ <a href="#">bộ phận IT</a> hoặc
+        <a href="#">quản trị hệ thống</a>
+      </div>
+    </div>
+  </div>
+</div>

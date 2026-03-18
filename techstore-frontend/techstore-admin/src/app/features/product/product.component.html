@@ -1,0 +1,1369 @@
+<div class="pm-root">
+  <!-- ══════════════════════════ TOP BAR ══════════════════════════ -->
+  <div class="pm-topbar">
+    <div class="pm-topbar-left">
+      <div class="pm-logo-mark">
+        <i class="bi bi-box-seam-fill"></i>
+      </div>
+      <div>
+        <div class="pm-topbar-title">Quản lý Sản phẩm</div>
+        <div class="pm-breadcrumb">
+          <span>Trang chủ</span>
+          <span class="sep">/</span>
+          <span class="cur">Sản phẩm</span>
+        </div>
+      </div>
+    </div>
+    <div class="pm-topbar-right">
+      <button class="pm-btn pm-btn-outline" (click)="exportExcel()">
+        <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+      </button>
+      <button class="pm-btn pm-btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ STAT CARDS ══════════════════════════ -->
+  <div class="pm-stats">
+    <div
+      class="pm-stat-card"
+      [class.pm-stat-active]="activeStatFilter === 'all'"
+      (click)="filterByStat('all')"
+      style="--c: #5a67f2; --cb: #eef0ff"
+    >
+      <div class="pm-stat-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+      <div>
+        <div class="pm-stat-num">{{ totalCount }}</div>
+        <div class="pm-stat-lbl">Tổng sản phẩm</div>
+      </div>
+    </div>
+    <div
+      class="pm-stat-card"
+      [class.pm-stat-active]="activeStatFilter === 'ACTIVE'"
+      (click)="filterByStat('ACTIVE')"
+      style="--c: #0daf76; --cb: #eafaf3"
+    >
+      <div class="pm-stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <div>
+        <div class="pm-stat-num">{{ activeCount }}</div>
+        <div class="pm-stat-lbl">Đang bán</div>
+      </div>
+    </div>
+    <div
+      class="pm-stat-card"
+      [class.pm-stat-active]="activeStatFilter === 'INACTIVE'"
+      (click)="filterByStat('INACTIVE')"
+      style="--c: #f0a000; --cb: #fff8e6"
+    >
+      <div class="pm-stat-icon"><i class="bi bi-pause-circle-fill"></i></div>
+      <div>
+        <div class="pm-stat-num">{{ inactiveCount }}</div>
+        <div class="pm-stat-lbl">Ngừng bán</div>
+      </div>
+    </div>
+    <div
+      class="pm-stat-card"
+      [class.pm-stat-active]="activeStatFilter === 'DISCONTINUED'"
+      (click)="filterByStat('DISCONTINUED')"
+      style="--c: #f04848; --cb: #fff0f0"
+    >
+      <div class="pm-stat-icon"><i class="bi bi-x-circle-fill"></i></div>
+      <div>
+        <div class="pm-stat-num">{{ discontinuedCount }}</div>
+        <div class="pm-stat-lbl">Ngừng kinh doanh</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ TOOLBAR ══════════════════════════ -->
+  <div class="pm-toolbar">
+    <div class="pm-toolbar-left">
+      <div class="pm-search-wrap">
+        <i class="bi bi-search pm-search-icon"></i>
+        <input
+          class="pm-search-input"
+          type="text"
+          placeholder="Tìm kiếm sản phẩm..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          *ngIf="searchKeyword"
+          class="pm-search-clear"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <select
+        class="pm-select"
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="onFilterChange()"
+      >
+        <option value="">Tất cả trạng thái</option>
+        <option value="ACTIVE">Đang bán</option>
+        <option value="INACTIVE">Ngừng bán</option>
+        <option value="DISCONTINUED">Ngừng kinh doanh</option>
+      </select>
+
+      <select
+        class="pm-select"
+        [(ngModel)]="sortBy"
+        (ngModelChange)="onSortChange()"
+      >
+        <option value="id">Mới nhất</option>
+        <option value="name">Tên A–Z</option>
+        <option value="basePrice">Giá tăng dần</option>
+      </select>
+    </div>
+
+    <div class="pm-toolbar-right">
+      <span class="pm-total-label"
+        ><i class="bi bi-boxes"></i> {{ totalElements }} sản phẩm</span
+      >
+      <div class="pm-view-toggle">
+        <button
+          class="pm-view-btn"
+          [class.active]="viewMode === 'list'"
+          (click)="viewMode = 'list'"
+          title="Danh sách"
+        >
+          <i class="bi bi-list-ul"></i>
+        </button>
+        <button
+          class="pm-view-btn"
+          [class.active]="viewMode === 'grid'"
+          (click)="viewMode = 'grid'"
+          title="Lưới"
+        >
+          <i class="bi bi-grid-3x3-gap"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ LOADING ══════════════════════════ -->
+  <div class="pm-loading" *ngIf="loading">
+    <div class="pm-spinner"></div>
+    <span>Đang tải dữ liệu...</span>
+  </div>
+
+  <!-- ══════════════════════════ EMPTY STATE ══════════════════════════ -->
+  <div class="pm-empty" *ngIf="!loading && products.length === 0">
+    <div class="pm-empty-icon"><i class="bi bi-inbox"></i></div>
+    <div class="pm-empty-title">Không tìm thấy sản phẩm</div>
+    <div class="pm-empty-sub">Thử thay đổi bộ lọc hoặc thêm sản phẩm mới</div>
+    <button class="pm-btn pm-btn-primary mt-3" (click)="openCreateModal()">
+      <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+    </button>
+  </div>
+
+  <!-- ══════════════════════════ LIST VIEW ══════════════════════════ -->
+  <div
+    class="pm-table-wrap"
+    *ngIf="!loading && products.length > 0 && viewMode === 'list'"
+  >
+    <table class="pm-table">
+      <thead>
+        <tr>
+          <th style="width: 46px; padding-left: 18px">
+            <input
+              type="checkbox"
+              class="pm-checkbox"
+              [(ngModel)]="allChecked"
+              (change)="toggleAll()"
+            />
+          </th>
+          <th>Sản phẩm</th>
+          <th>Danh mục</th>
+          <th>Thương hiệu</th>
+          <th>Giá cơ bản</th>
+          <th>Biến thể</th>
+          <th>Trạng thái</th>
+          <th style="text-align: center; width: 148px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of products" [class.pm-row-selected]="p._checked">
+          <td style="padding-left: 18px">
+            <input
+              type="checkbox"
+              class="pm-checkbox"
+              [(ngModel)]="p._checked"
+            />
+          </td>
+          <td>
+            <div class="pm-prod-cell">
+              <div class="pm-prod-thumb">
+                <img
+                  *ngIf="p.primaryImage"
+                  [src]="p.primaryImage"
+                  [alt]="p.name"
+                />
+                <i *ngIf="!p.primaryImage" class="bi bi-image"></i>
+              </div>
+              <div>
+                <div class="pm-prod-name" [title]="p.name">{{ p.name }}</div>
+                <div class="pm-prod-id">#{{ p.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="pm-tag pm-tag-cat">{{ p.categoryName }}</span>
+          </td>
+          <td>
+            <span class="pm-tag pm-tag-brand">{{ p.brandName }}</span>
+          </td>
+          <td class="pm-price">{{ p.basePrice | number: "1.0-0" }}₫</td>
+          <td>
+            <button class="pm-variants-btn" (click)="toggleVariants(p)">
+              <i class="bi bi-layers-fill"></i>
+              <span>{{ p._variantCount ?? "..." }}</span>
+              <i
+                class="bi"
+                [class.bi-chevron-down]="!p._variantOpen"
+                [class.bi-chevron-up]="p._variantOpen"
+              ></i>
+            </button>
+          </td>
+          <td>
+            <span
+              class="pm-status-badge"
+              [ngClass]="'pm-status-' + p.status.toLowerCase()"
+            >
+              {{ getStatusLabel(p.status) }}
+            </span>
+          </td>
+          <td>
+            <div class="pm-actions" style="justify-content: center">
+              <button
+                class="pm-action-btn pm-action-view"
+                title="Xem chi tiết"
+                (click)="viewProduct(p)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+              <button
+                class="pm-action-btn pm-action-edit"
+                title="Chỉnh sửa"
+                (click)="editProduct(p)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="pm-action-btn pm-action-status"
+                title="Đổi trạng thái"
+                (click)="openStatusModal(p)"
+              >
+                <i class="bi bi-toggle-on"></i>
+              </button>
+              <button
+                class="pm-action-btn pm-action-del"
+                title="Vô hiệu hóa"
+                (click)="confirmDelete(p)"
+              >
+                <i class="bi bi-slash-circle"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- VARIANT EXPAND ROW -->
+        <ng-container *ngFor="let p of products">
+          <tr *ngIf="p._variantOpen">
+            <td colspan="10" class="pm-variant-cell">
+              <div class="pm-variant-panel">
+                <div class="pm-variant-header">
+                  <span
+                    ><i
+                      class="bi bi-layers-fill"
+                      style="color: var(--pm-purple); margin-right: 6px"
+                    ></i
+                    >Biến thể của <strong>{{ p.name }}</strong></span
+                  >
+                  <button
+                    class="pm-btn pm-btn-sm pm-btn-primary"
+                    (click)="openAddVariantModal(p)"
+                  >
+                    <i class="bi bi-plus"></i> Thêm biến thể
+                  </button>
+                </div>
+
+                <div class="pm-variant-loading" *ngIf="p._variantLoading">
+                  <div class="pm-spinner pm-spinner-sm"></div>
+                  Đang tải biến thể...
+                </div>
+
+                <div
+                  class="pm-variant-empty"
+                  *ngIf="
+                    !p._variantLoading &&
+                    (!p._variants || p._variants.length === 0)
+                  "
+                >
+                  <i class="bi bi-inbox"></i>
+                  <span>Chưa có biến thể nào</span>
+                </div>
+
+                <table
+                  class="pm-variant-table"
+                  *ngIf="
+                    !p._variantLoading && p._variants && p._variants.length > 0
+                  "
+                >
+                  <thead>
+                    <tr>
+                      <th>Ảnh</th>
+                      <th>Tên / Màu</th>
+                      <th>Giá bán</th>
+                      <th>Tồn kho</th>
+                      <th>Trọng lượng</th>
+                      <th>Trạng thái</th>
+                      <th style="text-align: center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let v of p._variants">
+                      <td>
+                        <div class="pm-vt-thumb">
+                          <img
+                            *ngIf="v.imageUrl"
+                            [src]="v.imageUrl"
+                            [alt]="v.name"
+                          />
+                          <i *ngIf="!v.imageUrl" class="bi bi-image"></i>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="pm-vt-name">{{ v.name || v.color }}</div>
+                        <div class="pm-vt-color">
+                          <span
+                            class="pm-color-dot"
+                            [style.background]="getColorHex(v.color)"
+                          ></span>
+                          {{ v.color }}
+                        </div>
+                      </td>
+                      <td class="pm-vt-price">
+                        {{ v.price | number: "1.0-0" }}₫
+                      </td>
+                      <td>
+                        <span
+                          class="pm-stock-badge"
+                          [class.pm-stock-low]="v.stock > 0 && v.stock < 10"
+                          [class.pm-stock-out]="v.stock === 0"
+                        >
+                          {{ v.stock }}
+                        </span>
+                      </td>
+                      <td
+                        style="
+                          font-size: 12.5px;
+                          color: var(--pm-sub);
+                          font-weight: 600;
+                        "
+                      >
+                        {{ v.weight }}g
+                      </td>
+                      <td>
+                        <span
+                          class="pm-status-badge pm-status-sm"
+                          [ngClass]="'pm-status-' + v.status.toLowerCase()"
+                        >
+                          {{ getStatusLabel(v.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="pm-actions pm-actions-center">
+                          <button
+                            class="pm-action-btn pm-action-edit"
+                            title="Sửa biến thể"
+                            (click)="editVariant(p, v)"
+                          >
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                          <button
+                            class="pm-action-btn pm-action-view"
+                            title="Cập nhật ảnh"
+                            (click)="openVariantImageModal(p, v)"
+                          >
+                            <i class="bi bi-image"></i>
+                          </button>
+                          <button
+                            class="pm-action-btn pm-action-del"
+                            title="Xóa biến thể"
+                            (click)="confirmDeleteVariant(p, v)"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════ GRID VIEW ══════════════════════════ -->
+  <div
+    class="pm-grid"
+    *ngIf="!loading && products.length > 0 && viewMode === 'grid'"
+  >
+    <div class="pm-grid-card" *ngFor="let p of products">
+      <div class="pm-grid-img">
+        <img *ngIf="p.primaryImage" [src]="p.primaryImage" [alt]="p.name" />
+        <i *ngIf="!p.primaryImage" class="bi bi-box-seam"></i>
+        <span
+          class="pm-grid-badge"
+          [ngClass]="'pm-status-' + p.status.toLowerCase()"
+        >
+          {{ getStatusLabel(p.status) }}
+        </span>
+      </div>
+      <div class="pm-grid-body">
+        <div class="pm-grid-meta">
+          <span class="pm-tag pm-tag-cat">{{ p.categoryName }}</span>
+          <span class="pm-tag pm-tag-brand">{{ p.brandName }}</span>
+        </div>
+        <div class="pm-grid-name" [title]="p.name">{{ p.name }}</div>
+        <div class="pm-grid-price">{{ p.basePrice | number: "1.0-0" }}₫</div>
+        <div class="pm-grid-actions">
+          <button
+            class="pm-action-btn pm-action-view"
+            title="Xem"
+            (click)="viewProduct(p)"
+          >
+            <i class="bi bi-eye"></i>
+          </button>
+          <button
+            class="pm-action-btn pm-action-edit"
+            title="Sửa"
+            (click)="editProduct(p)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button
+            class="pm-action-btn pm-action-status"
+            title="Đổi trạng thái"
+            (click)="openStatusModal(p)"
+          >
+            <i class="bi bi-toggle-on"></i>
+          </button>
+          <button
+            class="pm-action-btn pm-action-del"
+            title="Vô hiệu hóa"
+            (click)="confirmDelete(p)"
+          >
+            <i class="bi bi-slash-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ PAGINATION ══════════════════════════ -->
+  <div class="pm-pagination" *ngIf="!loading && totalPages > 1">
+    <button
+      class="pm-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(0)"
+      title="Trang đầu"
+    >
+      <i class="bi bi-chevron-double-left"></i>
+    </button>
+    <button
+      class="pm-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(currentPage - 1)"
+      title="Trang trước"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <ng-container *ngFor="let pg of pageNumbers">
+      <button
+        class="pm-page-btn"
+        [class.pm-page-active]="pg === currentPage"
+        *ngIf="pg !== -1"
+        (click)="goPage(pg)"
+      >
+        {{ pg + 1 }}
+      </button>
+      <span class="pm-page-ellipsis" *ngIf="pg === -1">…</span>
+    </ng-container>
+    <button
+      class="pm-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(currentPage + 1)"
+      title="Trang sau"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+    <button
+      class="pm-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(totalPages - 1)"
+      title="Trang cuối"
+    >
+      <i class="bi bi-chevron-double-right"></i>
+    </button>
+    <span class="pm-page-info"
+      >Trang {{ currentPage + 1 }} / {{ totalPages }}</span
+    >
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: CREATE / EDIT PRODUCT
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-modal-overlay"
+  *ngIf="showProductModal"
+  (click)="closeProductModal()"
+>
+  <div class="pm-modal pm-modal-lg" (click)="$event.stopPropagation()">
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <div
+          class="pm-modal-icon"
+          [style.background]="isEditMode ? '#fff8e6' : '#eef0ff'"
+        >
+          <i
+            class="bi"
+            [class.bi-pencil-square]="isEditMode"
+            [class.bi-plus-circle-fill]="!isEditMode"
+            [style.color]="isEditMode ? '#f0a000' : '#5a67f2'"
+          ></i>
+        </div>
+        {{ isEditMode ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới" }}
+      </div>
+      <button class="pm-modal-close" (click)="closeProductModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="pm-modal-tabs">
+      <button
+        class="pm-modal-tab"
+        [class.active]="modalTab === 'basic'"
+        (click)="modalTab = 'basic'"
+      >
+        <i class="bi bi-info-circle"></i> Thông tin cơ bản
+      </button>
+      <button
+        class="pm-modal-tab"
+        [class.active]="modalTab === 'specs'"
+        (click)="modalTab = 'specs'"
+      >
+        <i class="bi bi-list-check"></i> Thông số kỹ thuật
+        <span
+          *ngIf="productForm.specs.length > 0"
+          style="
+            background: var(--pm-primary);
+            color: #fff;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 10px;
+            margin-left: 2px;
+          "
+          >{{ productForm.specs.length }}</span
+        >
+      </button>
+      <button
+        class="pm-modal-tab"
+        [class.active]="modalTab === 'images'"
+        (click)="modalTab = 'images'"
+        *ngIf="isEditMode"
+      >
+        <i class="bi bi-images"></i> Hình ảnh
+        <span
+          *ngIf="currentProductImages.length > 0"
+          style="
+            background: var(--pm-primary);
+            color: #fff;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 10px;
+            margin-left: 2px;
+          "
+          >{{ currentProductImages.length }}</span
+        >
+      </button>
+    </div>
+
+    <div class="pm-modal-body">
+      <!-- TAB: BASIC INFO -->
+      <div *ngIf="modalTab === 'basic'">
+        <div class="pm-form-grid">
+          <div class="pm-form-group pm-col-full">
+            <label class="pm-label"
+              >Tên sản phẩm <span class="req">*</span></label
+            >
+            <input
+              class="pm-input"
+              type="text"
+              [(ngModel)]="productForm.name"
+              placeholder="VD: Intel Core i9-14900K"
+            />
+          </div>
+
+          <div class="pm-form-group">
+            <label class="pm-label">Danh mục <span class="req">*</span></label>
+            <select class="pm-input" [(ngModel)]="productForm.categoryId">
+              <option [value]="0">-- Chọn danh mục --</option>
+              <option *ngFor="let c of categories" [value]="c.id">
+                {{ c.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pm-form-group">
+            <label class="pm-label"
+              >Thương hiệu <span class="req">*</span></label
+            >
+            <select class="pm-input" [(ngModel)]="productForm.brandId">
+              <option [value]="0">-- Chọn thương hiệu --</option>
+              <option *ngFor="let b of brands" [value]="b.id">
+                {{ b.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pm-form-group">
+            <label class="pm-label"
+              >Điểm hiệu năng
+              <span
+                style="font-weight: 400; text-transform: none; font-size: 11px"
+                >(0 – 100)</span
+              ></label
+            >
+            <input
+              class="pm-input"
+              type="number"
+              [(ngModel)]="productForm.performanceScore"
+              placeholder="0"
+              min="0"
+              max="100"
+            />
+          </div>
+
+          <div class="pm-form-group">
+            <label class="pm-label">Tiêu thụ điện (W)</label>
+            <input
+              class="pm-input"
+              type="number"
+              [(ngModel)]="productForm.powerConsumption"
+              placeholder="VD: 125"
+            />
+          </div>
+
+          <div class="pm-form-group pm-col-full">
+            <label class="pm-label">Trạng thái</label>
+            <div class="pm-radio-group">
+              <label class="pm-radio-item" *ngFor="let s of statusOptions">
+                <input
+                  type="radio"
+                  [(ngModel)]="productForm.status"
+                  [value]="s.value"
+                />
+                <span
+                  class="pm-radio-label"
+                  [ngClass]="'pm-status-' + s.value.toLowerCase()"
+                  >{{ s.label }}</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <div class="pm-form-group pm-col-full">
+            <label class="pm-label">Mô tả sản phẩm</label>
+            <textarea
+              class="pm-input pm-textarea"
+              [(ngModel)]="productForm.description"
+              rows="4"
+              placeholder="Mô tả chi tiết về sản phẩm, tính năng nổi bật..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: SPECS -->
+      <div *ngIf="modalTab === 'specs'">
+        <div class="pm-specs-header">
+          <span
+            >Thông số kỹ thuật
+            <span style="color: var(--pm-muted); font-weight: 500"
+              >({{ productForm.specs.length }})</span
+            ></span
+          >
+          <button class="pm-btn pm-btn-sm pm-btn-primary" (click)="addSpec()">
+            <i class="bi bi-plus"></i> Thêm thông số
+          </button>
+        </div>
+
+        <div class="pm-spec-empty" *ngIf="productForm.specs.length === 0">
+          <i class="bi bi-clipboard-data"></i>
+          <p>
+            Chưa có thông số nào. Nhấn "Thêm thông số" hoặc chọn nhanh bên dưới.
+          </p>
+        </div>
+
+        <div class="pm-spec-list">
+          <div
+            class="pm-spec-row"
+            *ngFor="let spec of productForm.specs; let i = index"
+          >
+            <input
+              class="pm-input pm-spec-key"
+              type="text"
+              [(ngModel)]="spec.specKey"
+              placeholder="VD: CPU Socket"
+            />
+            <span class="pm-spec-sep">:</span>
+            <input
+              class="pm-input pm-spec-val"
+              type="text"
+              [(ngModel)]="spec.specValue"
+              placeholder="VD: LGA1700"
+            />
+            <button
+              class="pm-spec-del"
+              (click)="removeSpec(i)"
+              title="Xóa thông số"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="pm-spec-presets">
+          <div class="pm-spec-preset-title">Thêm nhanh</div>
+          <button
+            class="pm-spec-preset-btn"
+            *ngFor="let ps of specPresets"
+            (click)="addPresetSpec(ps)"
+          >
+            <i class="bi bi-plus-sm"></i> {{ ps }}
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB: IMAGES -->
+      <div *ngIf="modalTab === 'images' && isEditMode">
+        <div
+          class="pm-img-upload-zone"
+          (click)="imgInput.click()"
+          (dragover)="$event.preventDefault()"
+          (drop)="onDropImages($event)"
+        >
+          <input
+            #imgInput
+            type="file"
+            multiple
+            accept="image/*"
+            style="display: none"
+            (change)="onImagesSelected($event)"
+          />
+          <i class="bi bi-cloud-upload"></i>
+          <p>Kéo thả hoặc <span>nhấn để chọn ảnh</span></p>
+          <small>PNG, JPG, WEBP — Tối đa 5MB/ảnh</small>
+        </div>
+
+        <div class="pm-img-grid" *ngIf="currentProductImages.length > 0">
+          <div class="pm-img-item" *ngFor="let img of currentProductImages">
+            <img [src]="img.url" [alt]="img.id" />
+            <div class="pm-img-overlay">
+              <button
+                *ngIf="!img.isPrimary"
+                class="pm-img-set-primary"
+                (click)="setPrimaryImage(img)"
+                title="Đặt ảnh chính"
+              >
+                <i class="bi bi-star"></i>
+              </button>
+              <span *ngIf="img.isPrimary" class="pm-img-primary-badge"
+                ><i class="bi bi-star-fill"></i
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="currentProductImages.length === 0"
+          style="
+            text-align: center;
+            color: var(--pm-muted);
+            padding: 20px 0;
+            font-size: 13px;
+            font-weight: 500;
+          "
+        >
+          <i
+            class="bi bi-images"
+            style="
+              font-size: 28px;
+              display: block;
+              margin-bottom: 8px;
+              opacity: 0.4;
+            "
+          ></i>
+          Chưa có hình ảnh nào
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-modal-footer">
+      <button class="pm-btn pm-btn-ghost" (click)="closeProductModal()">
+        Hủy
+      </button>
+      <button
+        class="pm-btn pm-btn-primary"
+        [disabled]="saving"
+        (click)="saveProduct()"
+      >
+        <span *ngIf="saving" class="pm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-check-lg"></i>
+        {{ saving ? "Đang lưu..." : isEditMode ? "Cập nhật" : "Thêm sản phẩm" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: VIEW PRODUCT DETAIL
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-modal-overlay"
+  *ngIf="showDetailModal"
+  (click)="showDetailModal = false"
+>
+  <div
+    class="pm-modal pm-modal-xl"
+    (click)="$event.stopPropagation()"
+    *ngIf="selectedProduct"
+  >
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <div class="pm-modal-icon" style="background: #eafaf3">
+          <i class="bi bi-info-circle-fill" style="color: #0daf76"></i>
+        </div>
+        Chi tiết sản phẩm
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <button
+          class="pm-btn pm-btn-sm pm-btn-outline"
+          (click)="editProduct(selectedProduct); showDetailModal = false"
+        >
+          <i class="bi bi-pencil"></i> Chỉnh sửa
+        </button>
+        <button class="pm-modal-close" (click)="showDetailModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="pm-modal-body pm-detail-body">
+      <!-- LEFT: images -->
+      <div>
+        <div class="pm-detail-main-img">
+          <img *ngIf="detailMainImage" [src]="detailMainImage" alt="product" />
+          <i *ngIf="!detailMainImage" class="bi bi-box-seam"></i>
+        </div>
+        <div class="pm-detail-thumbs" *ngIf="selectedProduct.images.length > 0">
+          <div
+            class="pm-detail-thumb"
+            *ngFor="let img of selectedProduct.images"
+            [class.active]="img.url === detailMainImage"
+            (click)="detailMainImage = img.url"
+          >
+            <img [src]="img.url" />
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: info -->
+      <div class="pm-detail-right">
+        <div class="pm-detail-tags">
+          <span class="pm-tag pm-tag-cat">{{
+            selectedProduct.category.name
+          }}</span>
+          <span class="pm-tag pm-tag-brand">{{
+            selectedProduct.brand.name
+          }}</span>
+          <span
+            class="pm-status-badge"
+            [ngClass]="'pm-status-' + selectedProduct.status.toLowerCase()"
+          >
+            {{ getStatusLabel(selectedProduct.status) }}
+          </span>
+        </div>
+        <h2 class="pm-detail-name">{{ selectedProduct.name }}</h2>
+        <div class="pm-detail-price">
+          {{ selectedProduct.basePrice | number: "1.0-0" }}₫ <span>VNĐ</span>
+        </div>
+
+        <div
+          class="pm-detail-metrics"
+          *ngIf="
+            selectedProduct.performanceScore || selectedProduct.powerConsumption
+          "
+        >
+          <div>
+            <div class="pm-metric-label">
+              <i
+                class="bi bi-lightning-charge"
+                style="color: var(--pm-primary)"
+              ></i>
+              Điểm hiệu năng
+            </div>
+            <div class="pm-metric-bar">
+              <div
+                class="pm-metric-fill"
+                [style.width.%]="selectedProduct.performanceScore"
+                style="background: linear-gradient(90deg, #5a67f2, #845ef7)"
+              ></div>
+            </div>
+            <div class="pm-metric-val">
+              {{ selectedProduct.performanceScore }}/100
+            </div>
+          </div>
+          <div>
+            <div class="pm-metric-label">
+              <i class="bi bi-plug" style="color: var(--pm-warning)"></i> Tiêu
+              thụ điện
+            </div>
+            <div class="pm-metric-val-large">
+              {{ selectedProduct.powerConsumption
+              }}<span class="pm-metric-val-unit"> W</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedProduct.description" style="margin-bottom: 18px">
+          <div class="pm-detail-section-title">
+            <i class="bi bi-text-left"></i>Mô tả
+          </div>
+          <div class="pm-detail-desc">{{ selectedProduct.description }}</div>
+        </div>
+
+        <div
+          *ngIf="selectedProduct.specs.length > 0"
+          style="margin-bottom: 18px"
+        >
+          <div class="pm-detail-section-title">
+            <i class="bi bi-list-check"></i>Thông số kỹ thuật
+          </div>
+          <div class="pm-specs-table">
+            <div
+              class="pm-spec-line"
+              *ngFor="let spec of selectedProduct.specs"
+            >
+              <span class="pm-spec-k">{{ spec.specKey }}</span>
+              <span class="pm-spec-v">{{ spec.specValue }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedProduct.variants.length > 0">
+          <div class="pm-detail-section-title">
+            <i class="bi bi-layers-fill"></i>Biến thể ({{
+              selectedProduct.variants.length
+            }})
+          </div>
+          <div class="pm-vt-grid">
+            <div class="pm-vt-card" *ngFor="let v of selectedProduct.variants">
+              <div class="pm-vt-card-img">
+                <img *ngIf="v.imageUrl" [src]="v.imageUrl" />
+                <i *ngIf="!v.imageUrl" class="bi bi-image"></i>
+              </div>
+              <div class="pm-vt-card-info">
+                <div class="pm-vt-card-color">
+                  <span
+                    class="pm-color-dot"
+                    [style.background]="getColorHex(v.color)"
+                  ></span
+                  >{{ v.color }}
+                </div>
+                <div class="pm-vt-card-price">
+                  {{ v.price | number: "1.0-0" }}₫
+                </div>
+                <div class="pm-vt-card-stock" [class.low]="v.stock < 10">
+                  Kho: {{ v.stock }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: ADD / EDIT VARIANT
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-modal-overlay"
+  *ngIf="showVariantModal"
+  (click)="closeVariantModal()"
+>
+  <div class="pm-modal pm-modal-md" (click)="$event.stopPropagation()">
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <div class="pm-modal-icon" style="background: #f3f0ff">
+          <i class="bi bi-layers-fill" style="color: #845ef7"></i>
+        </div>
+        {{ isEditVariantMode ? "Chỉnh sửa biến thể" : "Thêm biến thể mới" }}
+      </div>
+      <button class="pm-modal-close" (click)="closeVariantModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="pm-modal-body">
+      <div
+        *ngIf="variantParentProduct"
+        style="
+          margin-bottom: 16px;
+          padding: 12px 14px;
+          background: var(--pm-primary-bg);
+          border-radius: var(--pm-radius-lg);
+          border: 1.5px solid #c7d2fe;
+          font-size: 13px;
+        "
+      >
+        <i
+          class="bi bi-box-seam"
+          style="color: var(--pm-primary); margin-right: 6px"
+        ></i>
+        <strong style="color: var(--pm-primary)">{{
+          variantParentProduct.name
+        }}</strong>
+      </div>
+      <div class="pm-form-grid">
+        <div class="pm-form-group pm-col-full">
+          <label class="pm-label">Màu sắc <span class="req">*</span></label>
+          <input
+            class="pm-input"
+            type="text"
+            [(ngModel)]="variantForm.color"
+            placeholder="VD: Đen, Bạc, Xanh Navy..."
+          />
+        </div>
+        <div class="pm-form-group">
+          <label class="pm-label">Giá bán (₫) <span class="req">*</span></label>
+          <input
+            class="pm-input"
+            type="number"
+            [(ngModel)]="variantForm.price"
+            placeholder="0"
+          />
+        </div>
+        <div class="pm-form-group">
+          <label class="pm-label">Trọng lượng (gram)</label>
+          <input
+            class="pm-input"
+            type="number"
+            [(ngModel)]="variantForm.weight"
+            placeholder="0"
+          />
+        </div>
+        <div class="pm-form-group pm-col-full">
+          <label class="pm-label">Trạng thái</label>
+          <div class="pm-radio-group">
+            <label class="pm-radio-item" *ngFor="let s of statusOptions">
+              <input
+                type="radio"
+                [(ngModel)]="variantForm.status"
+                [value]="s.value"
+              />
+              <span
+                class="pm-radio-label"
+                [ngClass]="'pm-status-' + s.value.toLowerCase()"
+                >{{ s.label }}</span
+              >
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-modal-footer">
+      <button class="pm-btn pm-btn-ghost" (click)="closeVariantModal()">
+        Hủy
+      </button>
+      <button
+        class="pm-btn pm-btn-primary"
+        [disabled]="saving"
+        (click)="saveVariant()"
+      >
+        <span *ngIf="saving" class="pm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-check-lg"></i>
+        {{
+          saving
+            ? "Đang lưu..."
+            : isEditVariantMode
+              ? "Cập nhật"
+              : "Thêm biến thể"
+        }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: UPDATE VARIANT IMAGE
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-modal-overlay"
+  *ngIf="showVariantImageModal"
+  (click)="showVariantImageModal = false"
+>
+  <div class="pm-modal pm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <div class="pm-modal-icon" style="background: #fff8e6">
+          <i class="bi bi-image-fill" style="color: #f0a000"></i>
+        </div>
+        Cập nhật ảnh biến thể
+      </div>
+      <button class="pm-modal-close" (click)="showVariantImageModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="pm-modal-body">
+      <div
+        *ngIf="selectedVariantForImage"
+        style="
+          margin-bottom: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <span
+          class="pm-color-dot"
+          [style.background]="getColorHex(selectedVariantForImage.color)"
+          style="width: 14px; height: 14px"
+        ></span>
+        <span class="pm-tag pm-tag-brand">{{
+          selectedVariantForImage.color
+        }}</span>
+        <span
+          style="
+            font-size: 12px;
+            color: var(--pm-muted);
+            font-family: var(--pm-mono);
+          "
+          >#{{ selectedVariantForImage.id }}</span
+        >
+      </div>
+      <div
+        class="pm-img-upload-zone"
+        style="padding: 32px"
+        (click)="variantImgInput.click()"
+      >
+        <input
+          #variantImgInput
+          type="file"
+          accept="image/*"
+          style="display: none"
+          (change)="onVariantImageSelected($event)"
+        />
+        <i class="bi bi-cloud-upload"></i>
+        <p>Nhấn để <span>chọn ảnh</span></p>
+        <small *ngIf="selectedVariantImageFile">{{
+          selectedVariantImageFile.name
+        }}</small>
+        <small *ngIf="!selectedVariantImageFile">PNG, JPG, WEBP</small>
+      </div>
+      <div class="pm-vt-img-preview" *ngIf="variantImagePreview">
+        <img [src]="variantImagePreview" />
+      </div>
+    </div>
+    <div class="pm-modal-footer">
+      <button
+        class="pm-btn pm-btn-ghost"
+        (click)="showVariantImageModal = false"
+      >
+        Hủy
+      </button>
+      <button
+        class="pm-btn pm-btn-primary"
+        [disabled]="!selectedVariantImageFile || saving"
+        (click)="saveVariantImage()"
+      >
+        <span *ngIf="saving" class="pm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-cloud-upload"></i>
+        {{ saving ? "Đang tải..." : "Lưu ảnh" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: CHANGE STATUS
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-modal-overlay"
+  *ngIf="showStatusModal"
+  (click)="showStatusModal = false"
+>
+  <div class="pm-modal pm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <div class="pm-modal-icon" style="background: #eef0ff">
+          <i class="bi bi-toggle-on" style="color: #5a67f2"></i>
+        </div>
+        Đổi trạng thái
+      </div>
+      <button class="pm-modal-close" (click)="showStatusModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="pm-modal-body">
+      <div *ngIf="productForStatus" class="pm-status-target">
+        <div style="font-weight: 700; font-size: 14px; margin-bottom: 6px">
+          {{ productForStatus.name }}
+        </div>
+        <div style="font-size: 12.5px; color: var(--pm-muted)">
+          Trạng thái hiện tại:
+          <span
+            class="pm-status-badge pm-status-sm"
+            [ngClass]="'pm-status-' + productForStatus.status.toLowerCase()"
+            style="margin-left: 4px"
+          >
+            {{ getStatusLabel(productForStatus.status) }}
+          </span>
+        </div>
+      </div>
+      <div class="pm-status-options">
+        <label
+          class="pm-status-option"
+          *ngFor="let s of statusOptions"
+          [class.selected]="newStatus === s.value"
+          (click)="newStatus = s.value"
+        >
+          <div
+            class="pm-status-option-dot"
+            [ngClass]="'pm-status-' + s.value.toLowerCase()"
+            style="background: currentColor"
+          ></div>
+          <span>{{ s.label }}</span>
+          <i
+            class="bi bi-check-circle-fill pm-status-check"
+            *ngIf="newStatus === s.value"
+          ></i>
+        </label>
+      </div>
+    </div>
+    <div class="pm-modal-footer">
+      <button class="pm-btn pm-btn-ghost" (click)="showStatusModal = false">
+        Hủy
+      </button>
+      <button
+        class="pm-btn pm-btn-primary"
+        [disabled]="saving"
+        (click)="saveStatus()"
+      >
+        <span *ngIf="saving" class="pm-btn-spinner"></span>
+        {{ saving ? "Đang lưu..." : "Cập nhật" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: CONFIRM DISABLE / DELETE
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-modal-overlay"
+  *ngIf="showDeleteModal"
+  (click)="showDeleteModal = false"
+>
+  <div class="pm-modal pm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <div class="pm-modal-icon" style="background: #fff0f0">
+          <i class="bi bi-exclamation-triangle-fill" style="color: #f04848"></i>
+        </div>
+        {{ variantToDelete ? "Xóa biến thể" : "Vô hiệu hóa sản phẩm" }}
+      </div>
+      <button class="pm-modal-close" (click)="showDeleteModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="pm-modal-body">
+      <p class="pm-delete-msg" *ngIf="productToDelete">
+        Bạn có chắc chắn muốn vô hiệu hóa sản phẩm
+        <strong>{{ productToDelete.name }}</strong
+        >?
+      </p>
+      <p class="pm-delete-msg" *ngIf="variantToDelete">
+        Bạn có chắc muốn xóa biến thể
+        <strong>{{ variantToDelete.color }}</strong
+        >?
+      </p>
+      <div class="pm-delete-warn" *ngIf="productToDelete">
+        <i class="bi bi-info-circle"></i>
+        <span
+          >Sản phẩm sẽ bị ẩn khỏi hệ thống (status: DISABLE). Bạn có thể khôi
+          phục bằng cách đổi lại trạng thái bất kỳ lúc nào.</span
+        >
+      </div>
+      <div
+        class="pm-delete-warn"
+        *ngIf="variantToDelete"
+        style="background: #fff0f0; border-color: #fca5a5; color: #b81c1c"
+      >
+        <i class="bi bi-exclamation-triangle"></i>
+        <span
+          >Hành động này không thể hoàn tác. Tất cả dữ liệu biến thể sẽ bị xóa
+          vĩnh viễn.</span
+        >
+      </div>
+    </div>
+    <div class="pm-modal-footer">
+      <button class="pm-btn pm-btn-ghost" (click)="showDeleteModal = false">
+        Hủy
+      </button>
+      <button
+        class="pm-btn pm-btn-danger"
+        [disabled]="saving"
+        (click)="executeDelete()"
+      >
+        <span *ngIf="saving" class="pm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-slash-circle"></i>
+        {{
+          saving
+            ? "Đang xử lý..."
+            : variantToDelete
+              ? "Xóa biến thể"
+              : "Xác nhận vô hiệu hóa"
+        }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TOAST NOTIFICATION
+══════════════════════════════════════════════════════════ -->
+<div
+  class="pm-toast"
+  [class.show]="toast.show"
+  [class.pm-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

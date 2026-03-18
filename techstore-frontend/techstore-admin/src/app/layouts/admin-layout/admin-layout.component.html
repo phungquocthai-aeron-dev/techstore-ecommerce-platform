@@ -1,0 +1,51 @@
+<div class="layout-root">
+  <!-- SIDEBAR -->
+  <app-sidebar
+    [isCollapsed]="sidebarCollapsed"
+    (toggleCollapse)="toggleSidebar()"
+  >
+  </app-sidebar>
+
+  <!-- MAIN AREA -->
+  <div class="layout-main" [class.expanded]="sidebarCollapsed">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="toggle-btn" (click)="toggleSidebar()" title="Thu/mở menu">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <span class="topbar-title">{{ pageTitle }}</span>
+
+      <div class="topbar-right">
+        <!-- Search -->
+        <div class="topbar-search">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            placeholder="Tìm kiếm..."
+            [(ngModel)]="searchQuery"
+          />
+        </div>
+
+        <!-- Notification -->
+        <button class="topbar-icon-btn" title="Thông báo">
+          <i class="bi bi-bell"></i>
+          <span class="notif-dot"></span>
+        </button>
+
+        <!-- Settings -->
+        <button class="topbar-icon-btn" title="Cài đặt">
+          <i class="bi bi-gear"></i>
+        </button>
+
+        <!-- Avatar -->
+        <div class="topbar-avatar" title="Tài khoản">AD</div>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="layout-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

@@ -3,4 +3,12 @@ export const environment = {
     apiUrl: 'http://localhost:8888/techstore/api/v1',
     imageProductUrl: 'http://localhost:8888/techstore/api/v1/file/media/download/img/products/',
     imageAvatarUrl: 'http://localhost:8888/techstore/api/v1/file/media/download/img/users/',
+    identityUrl: 'http://localhost:8888/techstore/api/v1/identity',
+    userUrl: 'http://localhost:8888/techstore/api/v1/user',
+    staffUrl: 'http://localhost:8888/techstore/api/v1/staff',
+    productUrl: 'http://localhost:8888/techstore/api/v1/product',
+    cartUrl: 'http://localhost:8888/techstore/api/v1/cart',
+    orderUrl: 'http://localhost:8888/techstore/api/v1/order',
+    warehouseUrl: 'http://localhost:8888/techstore/api/v1/warehouse',
+    reviewUrl: 'http://localhost:8888/techstore/api/v1/review',
 };

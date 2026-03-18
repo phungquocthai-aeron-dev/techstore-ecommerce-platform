@@ -1,0 +1,213 @@
+<div class="page">
+  <!-- ── HEADER ── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="bi bi-truck"></i></div>
+      <div>
+        <h1 class="page-title">Nhà cung cấp</h1>
+        <p class="page-sub">Quản lý danh sách nhà cung cấp hàng hoá</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <i class="bi bi-plus-lg"></i> Thêm nhà cung cấp
+    </button>
+  </div>
+
+  <!-- ── TOOLBAR ── -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Tìm theo tên..."
+        [(ngModel)]="searchName"
+        (input)="onSearch()"
+      />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Trạng thái</label>
+      <select [(ngModel)]="filterStatus" (change)="onFilterStatus()">
+        <option value="">Tất cả</option>
+        <option value="ACTIVE">Hoạt động</option>
+        <option value="INACTIVE">Ngừng HĐ</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── ALERT ── -->
+  @if (alertMsg) {
+    <div
+      class="alert"
+      [class.alert-success]="alertType === 'success'"
+      [class.alert-error]="alertType === 'error'"
+    >
+      <i
+        class="bi"
+        [class.bi-check-circle-fill]="alertType === 'success'"
+        [class.bi-exclamation-circle-fill]="alertType === 'error'"
+      ></i>
+      {{ alertMsg }}
+    </div>
+  }
+
+  <!-- ── TABLE ── -->
+  <div class="table-card">
+    @if (isLoading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Đang tải dữ liệu...</span>
+      </div>
+    } @else if (suppliers.length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>Không có nhà cung cấp nào</p>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 60px">#</th>
+            <th>Tên nhà cung cấp</th>
+            <th>Số điện thoại</th>
+            <th style="width: 130px">Trạng thái</th>
+            <th style="width: 160px; text-align: right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of suppliers; track s.id; let i = $index) {
+            <tr>
+              <td class="text-muted">{{ i + 1 }}</td>
+              <td class="font-medium">{{ s.name }}</td>
+              <td>{{ s.phone }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-active]="s.status === 'ACTIVE'"
+                  [class.badge-inactive]="s.status !== 'ACTIVE'"
+                >
+                  {{ s.status === "ACTIVE" ? "Hoạt động" : "Ngừng HĐ" }}
+                </span>
+              </td>
+              <td class="actions">
+                <button
+                  class="btn-icon-sm"
+                  title="Chỉnh sửa"
+                  (click)="openEditModal(s)"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn-icon-sm btn-icon-toggle"
+                  title="Đổi trạng thái"
+                  (click)="toggleStatus(s)"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-toggle-on]="s.status === 'ACTIVE'"
+                    [class.bi-toggle-off]="s.status !== 'ACTIVE'"
+                  ></i>
+                </button>
+                <button
+                  class="btn-icon-sm btn-icon-danger"
+                  title="Xoá"
+                  (click)="confirmDelete(s)"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- ── MODAL CREATE / EDIT ── -->
+@if (showModal) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editingId ? "Chỉnh sửa" : "Thêm" }} nhà cung cấp</h3>
+        <button class="modal-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tên nhà cung cấp <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="form.name"
+            placeholder="VD: Samsung Electronics VN"
+          />
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="form.phone"
+            placeholder="VD: 0901234567"
+          />
+        </div>
+        @if (editingId) {
+          <div class="form-group">
+            <label>Trạng thái</label>
+            <select [(ngModel)]="form.status">
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="INACTIVE">Ngừng hoạt động</option>
+            </select>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="closeModal()">Huỷ</button>
+        <button
+          class="btn-primary"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveSupplier()"
+        >
+          <span class="btn-text">{{
+            editingId ? "Lưu thay đổi" : "Tạo mới"
+          }}</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── MODAL CONFIRM DELETE ── -->
+@if (showDeleteModal) {
+  <div class="modal-backdrop" (click)="showDeleteModal = false">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Xác nhận xoá</h3>
+        <button class="modal-close" (click)="showDeleteModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Bạn có chắc muốn xoá nhà cung cấp
+          <strong>{{ deletingSupplier?.name }}</strong
+          >?
+        </p>
+        <p class="text-muted mt-4">Hành động này không thể hoàn tác.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showDeleteModal = false">Huỷ</button>
+        <button
+          class="btn-danger"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="deleteSupplier()"
+        >
+          <span class="btn-text">Xoá</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}

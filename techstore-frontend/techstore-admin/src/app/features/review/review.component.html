@@ -1,0 +1,484 @@
+<div class="page">
+  <!-- ── HEADER ── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon page-icon-indigo">
+        <i class="bi bi-chat-square-text-fill"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Quản lý bình luận</h1>
+        <p class="page-sub">Kiểm duyệt đánh giá & phản hồi của khách hàng</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATS ── -->
+  <div class="stats-row">
+    <div
+      class="stat-card"
+      [class.stat-active]="filterStatus === 'ACTIVE'"
+      (click)="quickFilter('ACTIVE')"
+    >
+      <div class="stat-icon si-green">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-val">{{ stats.active }}</div>
+        <div class="stat-lbl">Hoạt động</div>
+      </div>
+    </div>
+    <div
+      class="stat-card"
+      [class.stat-active]="filterStatus === 'HIDDEN'"
+      (click)="quickFilter('HIDDEN')"
+    >
+      <div class="stat-icon si-slate"><i class="bi bi-eye-slash-fill"></i></div>
+      <div>
+        <div class="stat-val">{{ stats.hidden }}</div>
+        <div class="stat-lbl">Đã ẩn</div>
+      </div>
+    </div>
+    <div
+      class="stat-card"
+      [class.stat-active]="filterStatus === 'SPAM'"
+      (click)="quickFilter('SPAM')"
+    >
+      <div class="stat-icon si-amber">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-val">{{ stats.spam }}</div>
+        <div class="stat-lbl">Spam</div>
+      </div>
+    </div>
+    <div
+      class="stat-card"
+      [class.stat-active]="filterStatus === 'TOXIC'"
+      (click)="quickFilter('TOXIC')"
+    >
+      <div class="stat-icon si-red">
+        <i class="bi bi-shield-exclamation"></i>
+      </div>
+      <div>
+        <div class="stat-val">{{ stats.toxic }}</div>
+        <div class="stat-lbl">Độc hại</div>
+      </div>
+    </div>
+    <div
+      class="stat-card"
+      [class.stat-active]="filterStatus === ''"
+      (click)="quickFilter('')"
+    >
+      <div class="stat-icon si-indigo">
+        <i class="bi bi-chat-square-text"></i>
+      </div>
+      <div>
+        <div class="stat-val">{{ page.totalElements }}</div>
+        <div class="stat-lbl">Tổng bình luận</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOOLBAR ── -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Tìm nội dung bình luận..."
+        [(ngModel)]="searchForm.keyword"
+        (keyup.enter)="doSearch()"
+      />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Sao</label>
+      <select [(ngModel)]="searchForm.rating" (change)="doSearch()">
+        <option [ngValue]="undefined">Tất cả</option>
+        <option [ngValue]="5">★★★★★</option>
+        <option [ngValue]="4">★★★★☆</option>
+        <option [ngValue]="3">★★★☆☆</option>
+        <option [ngValue]="2">★★☆☆☆</option>
+        <option [ngValue]="1">★☆☆☆☆</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Phản hồi</label>
+      <select [(ngModel)]="searchForm.hasReply" (change)="doSearch()">
+        <option [ngValue]="undefined">Tất cả</option>
+        <option [ngValue]="true">Đã phản hồi</option>
+        <option [ngValue]="false">Chưa phản hồi</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Sắp xếp</label>
+      <select [(ngModel)]="searchForm.sortBy" (change)="doSearch()">
+        <option value="createdAt">Ngày tạo</option>
+        <option value="rating">Điểm đánh giá</option>
+      </select>
+    </div>
+    <button class="btn-search" (click)="doSearch()">
+      <i class="bi bi-funnel-fill"></i> Lọc
+    </button>
+    <button class="btn-reset" (click)="resetSearch()">
+      <i class="bi bi-arrow-counterclockwise"></i>
+    </button>
+  </div>
+
+  <!-- ── ALERT ── -->
+  @if (alertMsg) {
+    <div
+      class="alert"
+      [class.alert-success]="alertType === 'success'"
+      [class.alert-error]="alertType === 'error'"
+    >
+      <i
+        class="bi"
+        [class.bi-check-circle-fill]="alertType === 'success'"
+        [class.bi-exclamation-circle-fill]="alertType === 'error'"
+      ></i>
+      {{ alertMsg }}
+    </div>
+  }
+
+  <!-- ── REVIEW LIST ── -->
+  @if (isLoading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Đang tải bình luận...</span>
+    </div>
+  } @else if (reviews.length === 0) {
+    <div class="empty-state">
+      <i class="bi bi-chat-square"></i>
+      <p>Không tìm thấy bình luận nào</p>
+    </div>
+  } @else {
+    <div class="review-list">
+      @for (r of reviews; track r.id) {
+        <div
+          class="review-card"
+          [class.rc-hidden]="r.status === 'HIDDEN'"
+          [class.rc-spam]="r.status === 'SPAM'"
+          [class.rc-toxic]="r.status === 'TOXIC'"
+        >
+          <!-- left stripe indicator -->
+          <div
+            class="rc-stripe"
+            [class.stripe-active]="r.status === 'ACTIVE'"
+            [class.stripe-hidden]="r.status === 'HIDDEN'"
+            [class.stripe-spam]="r.status === 'SPAM'"
+            [class.stripe-toxic]="r.status === 'TOXIC'"
+          ></div>
+
+          <div class="rc-body">
+            <!-- ── REVIEW HEADER ── -->
+            <div class="rc-header">
+              <div class="rc-author">
+                <div class="avatar">
+                  @if (r.customer?.avatar) {
+                    <img
+                      [src]="r.customer!.avatar"
+                      [alt]="r.customer?.fullName"
+                    />
+                  } @else {
+                    <span>{{ getInitial(r.customer?.fullName) }}</span>
+                  }
+                </div>
+                <div>
+                  <div class="author-name">
+                    {{ r.customer?.fullName ?? "Khách hàng #" + r.customerId }}
+                  </div>
+                  <div class="author-meta">
+                    <span class="meta-item"
+                      ><i class="bi bi-box-seam"></i> SP #{{
+                        r.productId
+                      }}</span
+                    >
+                    <span class="meta-sep">·</span>
+                    <span class="meta-item"
+                      ><i class="bi bi-clock"></i>
+                      {{ r.createdAt | date: "dd/MM/yyyy HH:mm" }}</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="rc-right">
+                <div class="stars">
+                  @for (s of starsArray(r.rating); track $index) {
+                    <i
+                      class="bi"
+                      [class.bi-star-fill]="s === 'full'"
+                      [class.bi-star-half]="s === 'half'"
+                      [class.bi-star]="s === 'empty'"
+                    ></i>
+                  }
+                  <span class="rating-num">{{ r.rating }}/5</span>
+                </div>
+                <span
+                  class="status-chip"
+                  [class]="'sc-' + r.status.toLowerCase()"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-check-circle-fill]="r.status === 'ACTIVE'"
+                    [class.bi-eye-slash-fill]="r.status === 'HIDDEN'"
+                    [class.bi-exclamation-triangle-fill]="r.status === 'SPAM'"
+                    [class.bi-shield-exclamation]="r.status === 'TOXIC'"
+                  ></i>
+                  {{ statusLabel(r.status) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- ── REVIEW CONTENT ── -->
+            <div class="rc-content">{{ r.content }}</div>
+
+            <!-- ── REPLY ── -->
+            @if (r.reply) {
+              <div class="reply-box">
+                <div class="reply-header">
+                  <div class="reply-icon">
+                    <i class="bi bi-person-badge-fill"></i>
+                  </div>
+                  <span class="reply-staff">{{
+                    r.reply.staff?.fullName ?? "Nhân viên #" + r.reply.staffId
+                  }}</span>
+                  <span class="reply-time">{{
+                    r.reply.createdAt | date: "dd/MM/yyyy HH:mm"
+                  }}</span>
+                  <span
+                    class="reply-status-chip"
+                    [class.rsc-active]="r.reply.status === 'ACTIVE'"
+                    [class.rsc-del]="r.reply.status !== 'ACTIVE'"
+                  >
+                    {{ r.reply.status === "ACTIVE" ? "Hiển thị" : "Đã ẩn" }}
+                  </span>
+                </div>
+                <div class="reply-content">{{ r.reply.content }}</div>
+                <div class="reply-actions">
+                  <button class="btn-link" (click)="openEditReply(r)">
+                    <i class="bi bi-pencil"></i> Sửa
+                  </button>
+                  <button
+                    class="btn-link btn-link-danger"
+                    (click)="confirmDeleteReply(r)"
+                  >
+                    <i class="bi bi-trash3"></i> Xoá
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="no-reply">
+                <button class="btn-reply" (click)="openReplyModal(r)">
+                  <i class="bi bi-reply-fill"></i> Phản hồi ngay
+                </button>
+              </div>
+            }
+
+            <!-- ── REVIEW ACTIONS ── -->
+            <div class="rc-actions">
+              <div class="action-group">
+                <span class="action-label">Chuyển trạng thái:</span>
+                @for (s of statusOptions; track s.value) {
+                  @if (s.value !== r.status) {
+                    <button
+                      class="status-action-btn"
+                      [class]="'sab-' + s.value.toLowerCase()"
+                      (click)="changeStatus(r, s.value)"
+                      [title]="'Chuyển sang ' + s.label"
+                    >
+                      <i class="bi" [class]="s.icon"></i> {{ s.label }}
+                    </button>
+                  }
+                }
+              </div>
+              <button
+                class="btn-delete-review"
+                (click)="confirmDeleteReview(r)"
+              >
+                <i class="bi bi-trash3"></i> Xoá
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ── PAGINATION ── -->
+    @if (page.totalPages > 1) {
+      <div class="pagination">
+        <button
+          class="pg-btn"
+          [disabled]="currentPage === 0"
+          (click)="goPage(currentPage - 1)"
+        >
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        @for (p of pageNumbers(); track p) {
+          <button
+            class="pg-btn"
+            [class.pg-active]="p === currentPage"
+            (click)="goPage(p)"
+          >
+            {{ p + 1 }}
+          </button>
+        }
+        <button
+          class="pg-btn"
+          [disabled]="page.last"
+          (click)="goPage(currentPage + 1)"
+        >
+          <i class="bi bi-chevron-right"></i>
+        </button>
+        <span class="pg-info"
+          >{{ page.totalElements }} bình luận · Trang {{ currentPage + 1 }}/{{
+            page.totalPages
+          }}</span
+        >
+      </div>
+    }
+  }
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: REPLY
+══════════════════════════════ -->
+@if (showReplyModal) {
+  <div class="modal-backdrop" (click)="closeReplyModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon"><i class="bi bi-reply-fill"></i></div>
+          <div>
+            <h3>
+              {{ editingReplyId ? "Chỉnh sửa phản hồi" : "Phản hồi bình luận" }}
+            </h3>
+            <p class="modal-sub">
+              {{ selectedReview?.customer?.fullName ?? "Khách hàng" }} ·
+              {{ selectedReview?.createdAt | date: "dd/MM/yyyy" }}
+            </p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closeReplyModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      @if (selectedReview) {
+        <div class="modal-review-preview">
+          <div class="preview-stars">
+            @for (s of starsArray(selectedReview.rating); track $index) {
+              <i
+                class="bi"
+                [class.bi-star-fill]="s === 'full'"
+                [class.bi-star]="s === 'empty'"
+              ></i>
+            }
+          </div>
+          <p class="preview-text">"{{ selectedReview.content }}"</p>
+        </div>
+      }
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nội dung phản hồi <span class="required">*</span></label>
+          <textarea
+            [(ngModel)]="replyContent"
+            placeholder="Viết phản hồi chân thành, chuyên nghiệp..."
+            rows="5"
+          ></textarea>
+          <span class="char-count">{{ replyContent.length }} ký tự</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="closeReplyModal()">Huỷ</button>
+        <button
+          class="btn-primary"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveReply()"
+        >
+          <span class="btn-text">{{
+            editingReplyId ? "Lưu thay đổi" : "Gửi phản hồi"
+          }}</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════
+     MODAL: CONFIRM DELETE REVIEW
+══════════════════════════════ -->
+@if (showDeleteReviewModal) {
+  <div class="modal-backdrop" (click)="showDeleteReviewModal = false">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Xoá bình luận</h3>
+        <button class="modal-close" (click)="showDeleteReviewModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Xoá bình luận của
+          <strong>{{ deletingReview?.customer?.fullName }}</strong
+          >?
+        </p>
+        <p class="text-muted mt-4">
+          Phản hồi đính kèm (nếu có) cũng sẽ bị xoá.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showDeleteReviewModal = false">
+          Huỷ
+        </button>
+        <button
+          class="btn-danger"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="deleteReview()"
+        >
+          <span class="btn-text">Xoá bình luận</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════
+     MODAL: CONFIRM DELETE REPLY
+══════════════════════════════ -->
+@if (showDeleteReplyModal) {
+  <div class="modal-backdrop" (click)="showDeleteReplyModal = false">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Xoá phản hồi</h3>
+        <button class="modal-close" (click)="showDeleteReplyModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Xoá phản hồi của nhân viên trong bình luận này?</p>
+        <p class="text-muted mt-4">Hành động này không thể hoàn tác.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showDeleteReplyModal = false">
+          Huỷ
+        </button>
+        <button
+          class="btn-danger"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="deleteReply()"
+        >
+          <span class="btn-text">Xoá phản hồi</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}

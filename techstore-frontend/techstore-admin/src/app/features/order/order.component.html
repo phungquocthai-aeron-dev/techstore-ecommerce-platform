@@ -1,0 +1,811 @@
+<div class="om-root">
+  <!-- ══════════════════ TOPBAR ══════════════════ -->
+  <div class="om-topbar">
+    <div class="om-topbar-left">
+      <div class="om-logo-mark">
+        <i class="bi bi-bag-check-fill"></i>
+      </div>
+      <div>
+        <div class="om-topbar-title">Quản lý Đơn hàng</div>
+        <div class="om-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Đơn hàng</span>
+        </div>
+      </div>
+    </div>
+    <div class="om-topbar-right">
+      <button class="om-btn om-btn-outline" (click)="exportExcel()">
+        <i class="bi bi-file-earmark-arrow-up"></i> Xuất Excel
+      </button>
+      <button
+        class="om-btn om-btn-outline"
+        (click)="printSelected()"
+        [disabled]="checkedIds.size === 0"
+      >
+        <i class="bi bi-printer"></i> In nhãn ({{ checkedIds.size }})
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STAT CARDS ══════════════════ -->
+  <div class="om-stats">
+    <div
+      class="om-stat"
+      *ngFor="let s of statusTabs"
+      [class.active]="activeTab === s.value"
+      (click)="switchTab(s.value)"
+    >
+      <div class="om-stat-icon" [style.--c]="s.color" [style.--cb]="s.bgColor">
+        <i class="bi" [class]="s.icon"></i>
+      </div>
+      <div>
+        <div class="om-stat-num">{{ s.count }}</div>
+        <div class="om-stat-lbl">{{ s.label }}</div>
+      </div>
+      <div
+        class="om-stat-bar"
+        [style.background]="s.color"
+        *ngIf="activeTab === s.value"
+      ></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOOLBAR ══════════════════ -->
+  <div class="om-toolbar">
+    <div class="om-toolbar-left">
+      <div class="om-search-wrap">
+        <i class="bi bi-search om-search-icon"></i>
+        <input
+          class="om-search"
+          type="text"
+          placeholder="Mã đơn, tên KH, email, SĐT..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          class="om-search-clear"
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      <select
+        class="om-select"
+        [(ngModel)]="sortBy"
+        (ngModelChange)="onFilterChange()"
+      >
+        <option value="id">Mới nhất</option>
+        <option value="totalPrice">Giá trị</option>
+      </select>
+    </div>
+    <div class="om-toolbar-right">
+      <span class="om-count-label">{{ totalElements }} đơn hàng</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOADING ══════════════════ -->
+  <div class="om-loading" *ngIf="loading">
+    <div class="om-spinner"></div>
+    <span>Đang tải đơn hàng...</span>
+  </div>
+
+  <!-- ══════════════════ EMPTY ══════════════════ -->
+  <div class="om-empty" *ngIf="!loading && orders.length === 0">
+    <div class="om-empty-icon"><i class="bi bi-inbox"></i></div>
+    <div class="om-empty-title">Không có đơn hàng nào</div>
+    <div class="om-empty-sub">Thử thay đổi bộ lọc hoặc tìm kiếm khác</div>
+  </div>
+
+  <!-- ══════════════════ TABLE ══════════════════ -->
+  <div class="om-table-wrap" *ngIf="!loading && orders.length > 0">
+    <table class="om-table">
+      <thead>
+        <tr>
+          <th style="width: 44px">
+            <input
+              type="checkbox"
+              class="om-checkbox"
+              [(ngModel)]="allChecked"
+              (change)="toggleAll()"
+            />
+          </th>
+          <th>Mã đơn</th>
+          <th>Khách hàng</th>
+          <th>Sản phẩm</th>
+          <th>Vận chuyển</th>
+          <th>Tổng tiền</th>
+          <th>Ngày đặt</th>
+          <th>Trạng thái</th>
+          <th style="text-align: center; width: 160px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let o of orders"
+          [class.om-row-selected]="checkedIds.has(o.orderId)"
+        >
+          <td>
+            <input
+              type="checkbox"
+              class="om-checkbox"
+              [checked]="checkedIds.has(o.orderId)"
+              (change)="toggleCheck(o.orderId)"
+            />
+          </td>
+
+          <!-- MÃ ĐƠN -->
+          <td>
+            <div class="om-order-id">#{{ o.orderId }}</div>
+            <div class="om-shipping-code" *ngIf="o.shippingCode">
+              <i class="bi bi-truck"></i> {{ o.shippingCode }}
+            </div>
+          </td>
+
+          <!-- KHÁCH HÀNG -->
+          <td>
+            <div class="om-customer-wrap">
+              <div class="om-avatar">{{ getInitial(o.customerName) }}</div>
+              <div>
+                <div class="om-customer-name">{{ o.customerName }}</div>
+                <div class="om-customer-contact">
+                  <i class="bi bi-envelope"></i> {{ o.customerEmail }}
+                </div>
+                <div class="om-customer-contact" *ngIf="o.customerPhone">
+                  <i class="bi bi-telephone"></i> {{ o.customerPhone }}
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <!-- SẢN PHẨM -->
+          <td>
+            <div class="om-items-preview">
+              <div
+                class="om-item-line"
+                *ngFor="let item of o.items.slice(0, 2)"
+              >
+                <div class="om-item-img">
+                  <img
+                    *ngIf="item.image"
+                    [src]="item.image"
+                    [alt]="item.name"
+                  />
+                  <i *ngIf="!item.image" class="bi bi-box-seam"></i>
+                </div>
+                <div class="om-item-info">
+                  <span class="om-item-name">{{
+                    truncate(item.name, 24)
+                  }}</span>
+                  <span class="om-item-qty">×{{ item.quantity }}</span>
+                </div>
+              </div>
+              <div class="om-items-more" *ngIf="o.items.length > 2">
+                +{{ o.items.length - 2 }} sản phẩm khác
+              </div>
+            </div>
+          </td>
+
+          <!-- VẬN CHUYỂN -->
+          <td>
+            <div class="om-shipping-info">
+              <div class="om-provider">{{ o.shippingProviderName }}</div>
+              <div class="om-fee">{{ o.shippingFee | number: "1.0-0" }}₫</div>
+              <div class="om-eta" *ngIf="o.expectedDeliveryTime">
+                <i class="bi bi-calendar3"></i>
+                {{ formatDate(o.expectedDeliveryTime) }}
+              </div>
+            </div>
+          </td>
+
+          <!-- TỔNG TIỀN -->
+          <td>
+            <div class="om-price-wrap">
+              <div class="om-total-price">
+                {{ o.totalPrice | number: "1.0-0" }}₫
+              </div>
+              <div class="om-vat" *ngIf="o.vat">
+                VAT: {{ o.vat | number: "1.0-0" }}₫
+              </div>
+              <div class="om-coupon" *ngIf="o.couponName">
+                <i class="bi bi-ticket-perforated"></i> {{ o.couponName }}
+              </div>
+            </div>
+          </td>
+
+          <!-- NGÀY ĐẶT -->
+          <td>
+            <div class="om-date">{{ formatDate(o.createdAt) }}</div>
+            <div class="om-time">{{ formatTime(o.createdAt) }}</div>
+          </td>
+
+          <!-- TRẠNG THÁI -->
+          <td>
+            <div class="om-status-wrap">
+              <span
+                class="om-status-badge"
+                [class]="'om-status-' + o.status.toLowerCase()"
+              >
+                {{ getStatusLabel(o.status) }}
+              </span>
+              <!-- TIMELINE MINI -->
+              <div class="om-timeline-mini">
+                <div
+                  class="om-tl-dot"
+                  *ngFor="let step of timelineSteps"
+                  [class.done]="isStepDone(o.status, step)"
+                  [class.active]="o.status === step"
+                  [title]="getStatusLabel(step)"
+                ></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- THAO TÁC -->
+          <td>
+            <div class="om-actions">
+              <!-- XEM CHI TIẾT -->
+              <button
+                class="om-action-btn om-action-view"
+                title="Xem chi tiết"
+                (click)="viewOrder(o)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+
+              <!-- IN NHÃN -->
+              <button
+                class="om-action-btn om-action-print"
+                title="In nhãn vận chuyển"
+                (click)="printLabel(o)"
+              >
+                <i class="bi bi-printer"></i>
+              </button>
+
+              <!-- PROCESSING: XÁC NHẬN → READY_TO_SHIP -->
+              <button
+                class="om-action-btn om-action-confirm"
+                *ngIf="o.status === 'PROCESSING'"
+                title="Xác nhận đơn → Sẵn sàng giao"
+                (click)="openConfirmAction(o, 'confirm')"
+              >
+                <i class="bi bi-check2-circle"></i>
+              </button>
+
+              <!-- PROCESSING: HỦY ĐƠN -->
+              <button
+                class="om-action-btn om-action-cancel"
+                *ngIf="o.status === 'PROCESSING'"
+                title="Hủy đơn hàng"
+                (click)="openConfirmAction(o, 'cancel')"
+              >
+                <i class="bi bi-x-circle"></i>
+              </button>
+
+              <!-- READY_TO_SHIP: XÁC NHẬN GIAO → DELIVERED -->
+              <button
+                class="om-action-btn om-action-deliver"
+                *ngIf="o.status === 'READY_TO_SHIP'"
+                title="Xác nhận đã giao"
+                (click)="openConfirmAction(o, 'deliver')"
+              >
+                <i class="bi bi-box-arrow-in-down"></i>
+              </button>
+
+              <!-- READY_TO_SHIP: HOÀN TRẢ → RETURNED -->
+              <button
+                class="om-action-btn om-action-return"
+                *ngIf="o.status === 'READY_TO_SHIP'"
+                title="Hoàn trả đơn"
+                (click)="openConfirmAction(o, 'return')"
+              >
+                <i class="bi bi-arrow-return-left"></i>
+              </button>
+
+              <!-- SHIPPING: XÁC NHẬN ĐÃ NHẬN → DELIVERED -->
+              <button
+                class="om-action-btn om-action-deliver"
+                *ngIf="o.status === 'SHIPPING'"
+                title="Xác nhận đã giao thành công"
+                (click)="openConfirmAction(o, 'deliver')"
+              >
+                <i class="bi bi-patch-check"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════ PAGINATION ══════════════════ -->
+  <div class="om-pagination" *ngIf="!loading && totalPages > 1">
+    <button
+      class="om-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(0)"
+    >
+      <i class="bi bi-chevron-double-left"></i>
+    </button>
+    <button
+      class="om-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(currentPage - 1)"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <ng-container *ngFor="let pg of pageNumbers">
+      <button
+        class="om-page-btn"
+        [class.active]="pg === currentPage"
+        *ngIf="pg !== -1"
+        (click)="goPage(pg)"
+      >
+        {{ pg + 1 }}
+      </button>
+      <span class="om-page-ellipsis" *ngIf="pg === -1">…</span>
+    </ng-container>
+    <button
+      class="om-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(currentPage + 1)"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+    <button
+      class="om-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(totalPages - 1)"
+    >
+      <i class="bi bi-chevron-double-right"></i>
+    </button>
+    <span class="om-page-info"
+      >Trang {{ currentPage + 1 }}/{{ totalPages }}</span
+    >
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: CHI TIẾT ĐƠN HÀNG
+══════════════════════════════════════════════════════ -->
+<div
+  class="om-overlay"
+  *ngIf="showDetailModal"
+  (click)="showDetailModal = false"
+>
+  <div
+    class="om-modal om-modal-xl"
+    (click)="$event.stopPropagation()"
+    *ngIf="selectedOrder"
+  >
+    <div class="om-modal-header">
+      <div class="om-modal-title">
+        <div class="om-modal-icon" style="background: #f0fdf4">
+          <i class="bi bi-file-text-fill" style="color: #10b981"></i>
+        </div>
+        Chi tiết đơn hàng
+        <span class="om-modal-id">#{{ selectedOrder.orderId }}</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <span
+          class="om-status-badge"
+          [class]="'om-status-' + selectedOrder.status.toLowerCase()"
+        >
+          {{ getStatusLabel(selectedOrder.status) }}
+        </span>
+        <button class="om-modal-close" (click)="showDetailModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="om-modal-body om-detail-body">
+      <!-- LEFT: ORDER ITEMS -->
+      <div class="om-detail-main">
+        <!-- TIMELINE -->
+        <div class="om-detail-timeline">
+          <div
+            class="om-tl-step"
+            *ngFor="let step of timelineSteps; let i = index"
+            [class.done]="isStepDone(selectedOrder.status, step)"
+            [class.active]="selectedOrder.status === step"
+            [class.cancelled]="
+              selectedOrder.status === 'CANCELLED' ||
+              selectedOrder.status === 'RETURNED'
+            "
+          >
+            <div class="om-tl-circle">
+              <i class="bi" [class]="getStepIcon(step)"></i>
+            </div>
+            <div
+              class="om-tl-connector"
+              *ngIf="i < timelineSteps.length - 1"
+            ></div>
+            <div class="om-tl-label">{{ getStatusLabel(step) }}</div>
+          </div>
+        </div>
+
+        <!-- ITEMS TABLE -->
+        <div class="om-detail-section">
+          <div class="om-detail-section-title">
+            <i class="bi bi-box-seam me-2"></i>Sản phẩm đặt hàng
+          </div>
+          <table class="om-items-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th style="text-align: center">SL</th>
+                <th style="text-align: right">Đơn giá</th>
+                <th style="text-align: right">Thành tiền</th>
+                <th style="text-align: center">Đánh giá</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of selectedOrder.items">
+                <td>
+                  <div class="om-detail-item">
+                    <div class="om-detail-item-img">
+                      <img
+                        *ngIf="item.image"
+                        [src]="item.image"
+                        [alt]="item.name"
+                      />
+                      <i *ngIf="!item.image" class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                      <div class="om-detail-item-name">{{ item.name }}</div>
+                      <div class="om-detail-item-id" *ngIf="item.variantId">
+                        SKU #{{ item.variantId }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td style="text-align: center">
+                  <span class="om-qty-badge">{{ item.quantity }}</span>
+                </td>
+                <td
+                  style="
+                    text-align: right;
+                    font-family: var(--om-mono);
+                    font-size: 13px;
+                  "
+                >
+                  {{ item.price | number: "1.0-0" }}₫
+                </td>
+                <td
+                  style="
+                    text-align: right;
+                    font-weight: 800;
+                    color: var(--om-primary);
+                    font-family: var(--om-mono);
+                  "
+                >
+                  {{ item.price * item.quantity | number: "1.0-0" }}₫
+                </td>
+                <td style="text-align: center">
+                  <span class="om-reviewed-badge" *ngIf="item.reviewed">
+                    <i class="bi bi-star-fill"></i> Đã đánh giá
+                  </span>
+                  <span class="om-not-reviewed" *ngIf="!item.reviewed">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PRICE SUMMARY -->
+        <div class="om-price-summary">
+          <div class="om-price-row">
+            <span>Tạm tính</span>
+            <span>{{ getSubtotal(selectedOrder) | number: "1.0-0" }}₫</span>
+          </div>
+          <div class="om-price-row">
+            <span
+              >Phí vận chuyển ({{ selectedOrder.shippingProviderName }})</span
+            >
+            <span>{{ selectedOrder.shippingFee | number: "1.0-0" }}₫</span>
+          </div>
+          <div class="om-price-row" *ngIf="selectedOrder.vat">
+            <span>VAT</span>
+            <span>{{ selectedOrder.vat | number: "1.0-0" }}₫</span>
+          </div>
+          <div
+            class="om-price-row om-price-coupon"
+            *ngIf="selectedOrder.couponName"
+          >
+            <span
+              ><i class="bi bi-ticket-perforated me-1"></i>Coupon:
+              {{ selectedOrder.couponName }}</span
+            >
+            <span class="om-discount">—</span>
+          </div>
+          <div class="om-price-row om-price-total">
+            <span>Tổng cộng</span>
+            <span>{{ selectedOrder.totalPrice | number: "1.0-0" }}₫</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: META INFO -->
+      <div class="om-detail-sidebar">
+        <!-- CUSTOMER INFO -->
+        <div class="om-detail-card">
+          <div class="om-detail-card-title">
+            <i class="bi bi-person-fill"></i> Thông tin khách hàng
+          </div>
+          <div class="om-detail-card-body">
+            <div class="om-meta-row">
+              <span class="om-meta-key">Họ tên</span>
+              <span class="om-meta-val">{{ selectedOrder.customerName }}</span>
+            </div>
+            <div class="om-meta-row">
+              <span class="om-meta-key">Email</span>
+              <span class="om-meta-val" style="font-size: 12px">{{
+                selectedOrder.customerEmail
+              }}</span>
+            </div>
+            <div class="om-meta-row" *ngIf="selectedOrder.customerPhone">
+              <span class="om-meta-key">Điện thoại</span>
+              <span class="om-meta-val om-mono">{{
+                selectedOrder.customerPhone
+              }}</span>
+            </div>
+            <div class="om-meta-row">
+              <span class="om-meta-key">Mã KH</span>
+              <span class="om-meta-val om-mono"
+                >#{{ selectedOrder.customerId }}</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- DELIVERY INFO -->
+        <div class="om-detail-card">
+          <div class="om-detail-card-title">
+            <i class="bi bi-geo-alt-fill"></i> Thông tin giao hàng
+          </div>
+          <div class="om-detail-card-body">
+            <div class="om-meta-row">
+              <span class="om-meta-key">Địa chỉ</span>
+              <span class="om-meta-val" style="font-size: 12px">{{
+                selectedOrder.address
+              }}</span>
+            </div>
+            <div class="om-meta-row">
+              <span class="om-meta-key">Nhà vận chuyển</span>
+              <span class="om-meta-val">{{
+                selectedOrder.shippingProviderName
+              }}</span>
+            </div>
+            <div class="om-meta-row" *ngIf="selectedOrder.shippingCode">
+              <span class="om-meta-key">Mã vận đơn</span>
+              <span class="om-meta-val om-mono">{{
+                selectedOrder.shippingCode
+              }}</span>
+            </div>
+            <div class="om-meta-row" *ngIf="selectedOrder.expectedDeliveryTime">
+              <span class="om-meta-key">Dự kiến giao</span>
+              <span class="om-meta-val">{{
+                formatDate(selectedOrder.expectedDeliveryTime)
+              }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ĐƠNHÀNG INFO -->
+        <div class="om-detail-card">
+          <div class="om-detail-card-title">
+            <i class="bi bi-credit-card-fill"></i> Thông tin đơn
+          </div>
+          <div class="om-detail-card-body">
+            <div class="om-meta-row">
+              <span class="om-meta-key">Mã đơn</span>
+              <span class="om-meta-val om-mono"
+                >#{{ selectedOrder.orderId }}</span
+              >
+            </div>
+            <div class="om-meta-row">
+              <span class="om-meta-key">Ngày đặt</span>
+              <span class="om-meta-val">{{
+                formatDate(selectedOrder.createdAt)
+              }}</span>
+            </div>
+            <div class="om-meta-row" *ngIf="selectedOrder.couponName">
+              <span class="om-meta-key">Coupon</span>
+              <span class="om-meta-val" style="color: var(--om-success)">
+                <i class="bi bi-ticket-perforated me-1"></i
+                >{{ selectedOrder.couponName }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS trong detail modal -->
+        <div
+          class="om-detail-card om-detail-actions-card"
+          *ngIf="canAct(selectedOrder.status)"
+        >
+          <div class="om-detail-card-title">
+            <i class="bi bi-lightning-charge-fill"></i> Thao tác nhanh
+          </div>
+          <div class="om-detail-card-body om-action-list">
+            <ng-container *ngIf="selectedOrder.status === 'PROCESSING'">
+              <button
+                class="om-big-btn om-big-confirm"
+                (click)="openConfirmActionFromDetail('confirm')"
+              >
+                <i class="bi bi-check2-circle"></i>
+                <div>
+                  <div class="om-big-btn-title">Xác nhận đơn hàng</div>
+                  <div class="om-big-btn-sub">Chuyển sang Sẵn sàng giao</div>
+                </div>
+              </button>
+              <button
+                class="om-big-btn om-big-cancel"
+                (click)="openConfirmActionFromDetail('cancel')"
+              >
+                <i class="bi bi-x-circle"></i>
+                <div>
+                  <div class="om-big-btn-title">Hủy đơn hàng</div>
+                  <div class="om-big-btn-sub">Không thể hoàn tác</div>
+                </div>
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="selectedOrder.status === 'READY_TO_SHIP'">
+              <button
+                class="om-big-btn om-big-deliver"
+                (click)="openConfirmActionFromDetail('deliver')"
+              >
+                <i class="bi bi-box-arrow-in-down"></i>
+                <div>
+                  <div class="om-big-btn-title">Xác nhận đã giao</div>
+                  <div class="om-big-btn-sub">Chuyển sang Đã giao</div>
+                </div>
+              </button>
+              <button
+                class="om-big-btn om-big-return"
+                (click)="openConfirmActionFromDetail('return')"
+              >
+                <i class="bi bi-arrow-return-left"></i>
+                <div>
+                  <div class="om-big-btn-title">Hoàn trả đơn</div>
+                  <div class="om-big-btn-sub">Chuyển sang Hoàn trả</div>
+                </div>
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="selectedOrder.status === 'SHIPPING'">
+              <button
+                class="om-big-btn om-big-deliver"
+                (click)="openConfirmActionFromDetail('deliver')"
+              >
+                <i class="bi bi-patch-check"></i>
+                <div>
+                  <div class="om-big-btn-title">Xác nhận đã nhận hàng</div>
+                  <div class="om-big-btn-sub">Chuyển sang Đã giao</div>
+                </div>
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="om-modal-footer">
+      <button class="om-btn om-btn-ghost" (click)="showDetailModal = false">
+        Đóng
+      </button>
+      <button class="om-btn om-btn-outline" (click)="printLabel(selectedOrder)">
+        <i class="bi bi-printer"></i> In nhãn
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: XÁC NHẬN THAO TÁC
+══════════════════════════════════════════════════════ -->
+<div
+  class="om-overlay"
+  *ngIf="showActionModal"
+  (click)="showActionModal = false"
+>
+  <div class="om-modal om-modal-sm" (click)="$event.stopPropagation()">
+    <div class="om-modal-header">
+      <div class="om-modal-title">
+        <div class="om-modal-icon" [style.background]="actionMeta.iconBg">
+          <i
+            class="bi"
+            [class]="actionMeta.icon"
+            [style.color]="actionMeta.color"
+          ></i>
+        </div>
+        {{ actionMeta.title }}
+      </div>
+      <button class="om-modal-close" (click)="showActionModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="om-modal-body">
+      <!-- ORDER SUMMARY -->
+      <div class="om-action-summary" *ngIf="actionTarget">
+        <div class="om-action-summary-row">
+          <span>Mã đơn</span>
+          <strong class="om-mono">#{{ actionTarget.orderId }}</strong>
+        </div>
+        <div class="om-action-summary-row">
+          <span>Tổng tiền</span>
+          <strong style="color: var(--om-primary)"
+            >{{ actionTarget.totalPrice | number: "1.0-0" }}₫</strong
+          >
+        </div>
+        <div class="om-action-summary-row">
+          <span>Trạng thái hiện tại</span>
+          <span
+            class="om-status-badge"
+            [class]="'om-status-' + actionTarget.status.toLowerCase()"
+          >
+            {{ getStatusLabel(actionTarget.status) }}
+          </span>
+        </div>
+        <div class="om-action-summary-row om-action-arrow">
+          <span>Chuyển sang</span>
+          <span
+            class="om-status-badge"
+            [class]="'om-status-' + actionMeta.targetStatus.toLowerCase()"
+          >
+            {{ getStatusLabel(actionMeta.targetStatus) }}
+          </span>
+        </div>
+      </div>
+
+      <p class="om-action-desc">{{ actionMeta.description }}</p>
+
+      <!-- NOTE input for cancel/return -->
+      <div
+        class="om-form-group"
+        *ngIf="pendingAction === 'cancel' || pendingAction === 'return'"
+      >
+        <label class="om-label">Ghi chú lý do</label>
+        <textarea
+          class="om-input om-textarea"
+          [(ngModel)]="actionNote"
+          placeholder="Nhập lý do hủy / hoàn trả..."
+          rows="3"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="om-modal-footer">
+      <button class="om-btn om-btn-ghost" (click)="showActionModal = false">
+        Hủy
+      </button>
+      <button
+        class="om-btn"
+        [class]="actionMeta.btnClass"
+        [disabled]="saving"
+        (click)="executeAction()"
+      >
+        <span *ngIf="saving" class="om-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi" [class]="actionMeta.icon"></i>
+        {{ saving ? "Đang xử lý..." : actionMeta.confirmLabel }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div
+  class="om-toast"
+  [class.show]="toast.show"
+  [class.om-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

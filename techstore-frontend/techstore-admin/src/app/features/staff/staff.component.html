@@ -1,0 +1,785 @@
+<div class="sm-root">
+  <!-- ══════════════════ TOPBAR ══════════════════ -->
+  <div class="sm-topbar">
+    <div class="sm-topbar-left">
+      <div class="sm-logo-mark">
+        <i class="bi bi-person-badge-fill"></i>
+      </div>
+      <div>
+        <div class="sm-topbar-title">Quản lý Nhân viên</div>
+        <div class="sm-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Nhân viên</span>
+        </div>
+      </div>
+    </div>
+    <div class="sm-topbar-right">
+      <button class="sm-btn sm-btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-person-plus-fill"></i> Thêm nhân viên
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STAT CARDS ══════════════════ -->
+  <div class="sm-stats">
+    <div
+      class="sm-stat"
+      [class.active]="activeStatFilter === 'all'"
+      (click)="filterByStat('all')"
+    >
+      <div class="sm-stat-icon" style="--c: #0ea5e9; --cb: #f0f9ff">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div class="sm-stat-num">{{ totalCount }}</div>
+        <div class="sm-stat-lbl">Tổng nhân viên</div>
+      </div>
+      <div
+        class="sm-stat-bar"
+        style="background: #0ea5e9"
+        *ngIf="activeStatFilter === 'all'"
+      ></div>
+    </div>
+    <div
+      class="sm-stat"
+      [class.active]="activeStatFilter === 'ACTIVE'"
+      (click)="filterByStat('ACTIVE')"
+    >
+      <div class="sm-stat-icon" style="--c: #10b981; --cb: #ecfdf5">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="sm-stat-num">{{ activeCount }}</div>
+        <div class="sm-stat-lbl">Đang hoạt động</div>
+      </div>
+      <div
+        class="sm-stat-bar"
+        style="background: #10b981"
+        *ngIf="activeStatFilter === 'ACTIVE'"
+      ></div>
+    </div>
+    <div
+      class="sm-stat"
+      [class.active]="activeStatFilter === 'INACTIVE'"
+      (click)="filterByStat('INACTIVE')"
+    >
+      <div class="sm-stat-icon" style="--c: #f59e0b; --cb: #fffbeb">
+        <i class="bi bi-pause-circle-fill"></i>
+      </div>
+      <div>
+        <div class="sm-stat-num">{{ inactiveCount }}</div>
+        <div class="sm-stat-lbl">Tạm ngừng</div>
+      </div>
+      <div
+        class="sm-stat-bar"
+        style="background: #f59e0b"
+        *ngIf="activeStatFilter === 'INACTIVE'"
+      ></div>
+    </div>
+    <div
+      class="sm-stat"
+      [class.active]="activeStatFilter === 'ADMIN'"
+      (click)="filterByStat('ADMIN')"
+    >
+      <div class="sm-stat-icon" style="--c: #8b5cf6; --cb: #f5f3ff">
+        <i class="bi bi-shield-fill"></i>
+      </div>
+      <div>
+        <div class="sm-stat-num">{{ adminCount }}</div>
+        <div class="sm-stat-lbl">Quản trị viên</div>
+      </div>
+      <div
+        class="sm-stat-bar"
+        style="background: #8b5cf6"
+        *ngIf="activeStatFilter === 'ADMIN'"
+      ></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOOLBAR ══════════════════ -->
+  <div class="sm-toolbar">
+    <div class="sm-toolbar-left">
+      <div class="sm-search-wrap">
+        <i class="bi bi-search sm-search-icon"></i>
+        <input
+          class="sm-search"
+          type="text"
+          placeholder="Tên, email, SĐT..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          class="sm-search-clear"
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="sm-toolbar-right">
+      <span class="sm-count-lbl">{{ staffList.length }} nhân viên</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOADING ══════════════════ -->
+  <div class="sm-loading" *ngIf="loading">
+    <div class="sm-spinner"></div>
+    <span>Đang tải dữ liệu...</span>
+  </div>
+
+  <!-- ══════════════════ EMPTY ══════════════════ -->
+  <div class="sm-empty" *ngIf="!loading && staffList.length === 0">
+    <div class="sm-empty-icon"><i class="bi bi-people"></i></div>
+    <div class="sm-empty-title">Không tìm thấy nhân viên</div>
+    <div class="sm-empty-sub">Thử thay đổi từ khoá tìm kiếm</div>
+  </div>
+
+  <!-- ══════════════════ TABLE ══════════════════ -->
+  <div class="sm-table-wrap" *ngIf="!loading && staffList.length > 0">
+    <table class="sm-table">
+      <thead>
+        <tr>
+          <th>Nhân viên</th>
+          <th>Liên hệ</th>
+          <th>Vai trò</th>
+          <th>Trạng thái</th>
+          <th style="text-align: center; width: 180px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of staffList">
+          <!-- NHÂN VIÊN -->
+          <td>
+            <div class="sm-staff-cell">
+              <div
+                class="sm-avatar"
+                [style.background]="getAvatarBg(s.fullName)"
+              >
+                {{ getInitial(s.fullName) }}
+              </div>
+              <div>
+                <div class="sm-staff-name">{{ s.fullName }}</div>
+                <div class="sm-staff-id">#{{ s.id }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- LIÊN HỆ -->
+          <td>
+            <div class="sm-contact">
+              <div class="sm-email">
+                <i class="bi bi-envelope"></i> {{ s.email }}
+              </div>
+              <div class="sm-phone" *ngIf="s.phone">
+                <i class="bi bi-telephone"></i> {{ s.phone }}
+              </div>
+            </div>
+          </td>
+
+          <!-- VAI TRÒ -->
+          <td>
+            <div class="sm-roles-wrap">
+              <span
+                class="sm-role-badge"
+                *ngFor="let r of parseRoles(s.roles)"
+                [class.sm-role-admin]="r === 'ADMIN'"
+                [class.sm-role-staff]="r === 'STAFF'"
+              >
+                <i
+                  class="bi"
+                  [class.bi-shield-fill]="r === 'ADMIN'"
+                  [class.bi-person-fill]="r === 'STAFF'"
+                ></i>
+                {{ r }}
+              </span>
+            </div>
+          </td>
+
+          <!-- TRẠNG THÁI -->
+          <td>
+            <span
+              class="sm-status-badge"
+              [class]="'sm-status-' + s.status.toLowerCase()"
+            >
+              {{ getStatusLabel(s.status) }}
+            </span>
+          </td>
+
+          <!-- THAO TÁC -->
+          <td>
+            <div class="sm-actions">
+              <button
+                class="sm-action-btn sm-action-view"
+                title="Xem chi tiết"
+                (click)="viewStaff(s)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+              <button
+                class="sm-action-btn sm-action-edit"
+                title="Chỉnh sửa thông tin"
+                (click)="editStaff(s)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="sm-action-btn sm-action-role"
+                title="Phân quyền"
+                (click)="openRoleModal(s)"
+              >
+                <i class="bi bi-shield-half"></i>
+              </button>
+              <button
+                class="sm-action-btn sm-action-pwd"
+                title="Đổi mật khẩu"
+                (click)="openPasswordModal(s)"
+              >
+                <i class="bi bi-key-fill"></i>
+              </button>
+              <button
+                class="sm-action-btn sm-action-toggle"
+                [title]="s.status === 'ACTIVE' ? 'Tạm ngừng' : 'Kích hoạt'"
+                (click)="openStatusModal(s)"
+              >
+                <i
+                  class="bi"
+                  [class.bi-toggle-on]="s.status === 'ACTIVE'"
+                  [class.bi-toggle-off]="s.status !== 'ACTIVE'"
+                ></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: XEM CHI TIẾT / THÊM / SỬA STAFF
+══════════════════════════════════════════════ -->
+<div class="sm-overlay" *ngIf="showFormModal" (click)="closeFormModal()">
+  <div class="sm-modal sm-modal-md" (click)="$event.stopPropagation()">
+    <div class="sm-modal-header">
+      <div class="sm-modal-title">
+        <div
+          class="sm-modal-icon"
+          [style.background]="
+            isEdit ? '#fef3c7' : isView ? '#f0fdf4' : '#eff6ff'
+          "
+          [style.color]="isEdit ? '#f59e0b' : isView ? '#10b981' : '#3b82f6'"
+        >
+          <i
+            class="bi"
+            [class.bi-eye-fill]="isView"
+            [class.bi-pencil-square]="isEdit && !isView"
+            [class.bi-person-plus-fill]="!isEdit && !isView"
+          ></i>
+        </div>
+        {{
+          isView
+            ? "Chi tiết nhân viên"
+            : isEdit
+              ? "Chỉnh sửa nhân viên"
+              : "Thêm nhân viên mới"
+        }}
+      </div>
+      <button class="sm-modal-close" (click)="closeFormModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- VIEW MODE -->
+    <div class="sm-modal-body" *ngIf="isView && viewTarget">
+      <div class="sm-detail-header">
+        <div
+          class="sm-detail-avatar"
+          [style.background]="getAvatarBg(viewTarget.fullName)"
+        >
+          {{ getInitial(viewTarget.fullName) }}
+        </div>
+        <div>
+          <div class="sm-detail-name">{{ viewTarget.fullName }}</div>
+          <div class="sm-detail-id">#{{ viewTarget.id }}</div>
+          <div class="sm-detail-roles">
+            <span
+              class="sm-role-badge"
+              *ngFor="let r of parseRoles(viewTarget.roles)"
+              [class.sm-role-admin]="r === 'ADMIN'"
+              [class.sm-role-staff]="r === 'STAFF'"
+            >
+              <i
+                class="bi"
+                [class.bi-shield-fill]="r === 'ADMIN'"
+                [class.bi-person-fill]="r === 'STAFF'"
+              ></i
+              >{{ r }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sm-detail-grid">
+        <div class="sm-detail-row">
+          <span class="sm-detail-key"
+            ><i class="bi bi-envelope"></i> Email</span
+          >
+          <span class="sm-detail-val">{{ viewTarget.email }}</span>
+        </div>
+        <div class="sm-detail-row">
+          <span class="sm-detail-key"
+            ><i class="bi bi-telephone"></i> Điện thoại</span
+          >
+          <span class="sm-detail-val">{{ viewTarget.phone || "—" }}</span>
+        </div>
+        <div class="sm-detail-row">
+          <span class="sm-detail-key"
+            ><i class="bi bi-circle-fill" style="font-size: 8px"></i> Trạng
+            thái</span
+          >
+          <span
+            class="sm-status-badge"
+            [class]="'sm-status-' + viewTarget.status.toLowerCase()"
+          >
+            {{ getStatusLabel(viewTarget.status) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="sm-detail-actions">
+        <button
+          class="sm-btn sm-btn-outline"
+          (click)="isView = false; isEdit = true"
+        >
+          <i class="bi bi-pencil"></i> Chỉnh sửa
+        </button>
+        <button
+          class="sm-btn sm-btn-outline"
+          (click)="openRoleModal(viewTarget); closeFormModal()"
+        >
+          <i class="bi bi-shield-half"></i> Phân quyền
+        </button>
+        <button
+          class="sm-btn sm-btn-outline"
+          (click)="openPasswordModal(viewTarget); closeFormModal()"
+        >
+          <i class="bi bi-key-fill"></i> Đổi mật khẩu
+        </button>
+      </div>
+    </div>
+
+    <!-- FORM MODE (CREATE / EDIT) -->
+    <div class="sm-modal-body" *ngIf="!isView">
+      <div class="sm-form-grid">
+        <div class="sm-form-group sm-col-full">
+          <label class="sm-label">Họ và tên <span class="req">*</span></label>
+          <input
+            class="sm-input"
+            type="text"
+            [(ngModel)]="staffForm.fullName"
+            placeholder="Nhập họ và tên..."
+          />
+        </div>
+        <div class="sm-form-group">
+          <label class="sm-label">Email <span class="req">*</span></label>
+          <input
+            class="sm-input"
+            type="email"
+            [(ngModel)]="staffForm.email"
+            placeholder="example@company.com"
+            [disabled]="isEdit"
+          />
+        </div>
+        <div class="sm-form-group">
+          <label class="sm-label">Số điện thoại</label>
+          <input
+            class="sm-input"
+            type="tel"
+            [(ngModel)]="staffForm.phone"
+            placeholder="0900 000 000"
+          />
+        </div>
+
+        <ng-container *ngIf="!isEdit">
+          <div class="sm-form-group">
+            <label class="sm-label">Mật khẩu <span class="req">*</span></label>
+            <div class="sm-input-wrap">
+              <input
+                class="sm-input"
+                [type]="showPwd ? 'text' : 'password'"
+                [(ngModel)]="staffForm.password"
+                placeholder="Tối thiểu 6 ký tự"
+              />
+              <button
+                class="sm-pwd-toggle"
+                type="button"
+                (click)="showPwd = !showPwd"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!showPwd"
+                  [class.bi-eye-slash]="showPwd"
+                ></i>
+              </button>
+            </div>
+          </div>
+          <div class="sm-form-group">
+            <label class="sm-label">Vai trò <span class="req">*</span></label>
+            <div class="sm-checkbox-group">
+              <label class="sm-check-item" *ngFor="let r of availableRoles">
+                <input
+                  type="checkbox"
+                  [checked]="staffForm.roleNames.includes(r.value)"
+                  (change)="toggleRole(r.value)"
+                />
+                <span
+                  class="sm-check-label"
+                  [class.admin]="r.value === 'ADMIN'"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-shield-fill]="r.value === 'ADMIN'"
+                    [class.bi-person-fill]="r.value === 'STAFF'"
+                  ></i>
+                  {{ r.label }}
+                </span>
+              </label>
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="sm-form-group" *ngIf="isEdit">
+          <label class="sm-label">Trạng thái</label>
+          <div class="sm-radio-group">
+            <label class="sm-radio-item" *ngFor="let s of statusOptions">
+              <input
+                type="radio"
+                [(ngModel)]="staffForm.status"
+                [value]="s.value"
+              />
+              <span
+                class="sm-radio-lbl"
+                [class]="'sm-status-' + s.value.toLowerCase()"
+                >{{ s.label }}</span
+              >
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sm-modal-footer" *ngIf="!isView">
+      <button class="sm-btn sm-btn-ghost" (click)="closeFormModal()">
+        Hủy
+      </button>
+      <button
+        class="sm-btn sm-btn-primary"
+        [disabled]="saving"
+        (click)="saveStaff()"
+      >
+        <span *ngIf="saving" class="sm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-check-lg"></i>
+        {{ saving ? "Đang lưu..." : isEdit ? "Cập nhật" : "Thêm nhân viên" }}
+      </button>
+    </div>
+    <div class="sm-modal-footer" *ngIf="isView">
+      <button class="sm-btn sm-btn-ghost" (click)="closeFormModal()">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: PHÂN QUYỀN
+══════════════════════════════════════════════ -->
+<div class="sm-overlay" *ngIf="showRoleModal" (click)="showRoleModal = false">
+  <div class="sm-modal sm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="sm-modal-header">
+      <div class="sm-modal-title">
+        <div class="sm-modal-icon" style="background: #f5f3ff; color: #8b5cf6">
+          <i class="bi bi-shield-half"></i>
+        </div>
+        Phân quyền nhân viên
+      </div>
+      <button class="sm-modal-close" (click)="showRoleModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="sm-modal-body" *ngIf="roleTarget">
+      <div class="sm-role-target-info">
+        <div
+          class="sm-avatar sm-avatar-sm"
+          [style.background]="getAvatarBg(roleTarget.fullName)"
+        >
+          {{ getInitial(roleTarget.fullName) }}
+        </div>
+        <div>
+          <div style="font-weight: 700">{{ roleTarget.fullName }}</div>
+          <div style="font-size: 12px; color: var(--sm-muted)">
+            {{ roleTarget.email }}
+          </div>
+        </div>
+      </div>
+
+      <div class="sm-role-section-title">Chọn vai trò</div>
+      <div class="sm-role-cards">
+        <div
+          class="sm-role-card"
+          *ngFor="let r of availableRoles"
+          [class.selected]="selectedRoles.includes(r.value)"
+          (click)="toggleSelectedRole(r.value)"
+        >
+          <div class="sm-role-card-icon" [class.admin]="r.value === 'ADMIN'">
+            <i
+              class="bi"
+              [class.bi-shield-fill]="r.value === 'ADMIN'"
+              [class.bi-person-fill]="r.value === 'STAFF'"
+            ></i>
+          </div>
+          <div class="sm-role-card-body">
+            <div class="sm-role-card-name">{{ r.label }}</div>
+            <div class="sm-role-card-desc">{{ r.desc }}</div>
+          </div>
+          <i
+            class="bi bi-check-circle-fill sm-role-check"
+            *ngIf="selectedRoles.includes(r.value)"
+          ></i>
+        </div>
+      </div>
+    </div>
+    <div class="sm-modal-footer">
+      <button class="sm-btn sm-btn-ghost" (click)="showRoleModal = false">
+        Hủy
+      </button>
+      <button
+        class="sm-btn sm-btn-primary"
+        [disabled]="saving || selectedRoles.length === 0"
+        (click)="saveRoles()"
+      >
+        <span *ngIf="saving" class="sm-btn-spinner"></span>
+        {{ saving ? "Đang lưu..." : "Lưu phân quyền" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: ĐỔI MẬT KHẨU (STAFF)
+══════════════════════════════════════════════ -->
+<div class="sm-overlay" *ngIf="showPwdModal" (click)="showPwdModal = false">
+  <div class="sm-modal sm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="sm-modal-header">
+      <div class="sm-modal-title">
+        <div class="sm-modal-icon" style="background: #fef3c7; color: #f59e0b">
+          <i class="bi bi-key-fill"></i>
+        </div>
+        Đổi mật khẩu nhân viên
+      </div>
+      <button class="sm-modal-close" (click)="showPwdModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="sm-modal-body" *ngIf="pwdTarget">
+      <div class="sm-role-target-info" style="margin-bottom: 18px">
+        <div
+          class="sm-avatar sm-avatar-sm"
+          [style.background]="getAvatarBg(pwdTarget.fullName)"
+        >
+          {{ getInitial(pwdTarget.fullName) }}
+        </div>
+        <div>
+          <div style="font-weight: 700">{{ pwdTarget.fullName }}</div>
+          <div style="font-size: 12px; color: var(--sm-muted)">
+            {{ pwdTarget.email }}
+          </div>
+        </div>
+      </div>
+
+      <div class="sm-form-group">
+        <label class="sm-label"
+          >Mật khẩu hiện tại <span class="req">*</span></label
+        >
+        <div class="sm-input-wrap">
+          <input
+            class="sm-input"
+            [type]="showOldPwd ? 'text' : 'password'"
+            [(ngModel)]="pwdForm.oldPassword"
+            placeholder="Nhập mật khẩu hiện tại"
+          />
+          <button
+            class="sm-pwd-toggle"
+            type="button"
+            (click)="showOldPwd = !showOldPwd"
+          >
+            <i
+              class="bi"
+              [class.bi-eye]="!showOldPwd"
+              [class.bi-eye-slash]="showOldPwd"
+            ></i>
+          </button>
+        </div>
+      </div>
+      <div class="sm-form-group" style="margin-top: 12px">
+        <label class="sm-label">Mật khẩu mới <span class="req">*</span></label>
+        <div class="sm-input-wrap">
+          <input
+            class="sm-input"
+            [type]="showNewPwd ? 'text' : 'password'"
+            [(ngModel)]="pwdForm.newPassword"
+            placeholder="Tối thiểu 6 ký tự"
+          />
+          <button
+            class="sm-pwd-toggle"
+            type="button"
+            (click)="showNewPwd = !showNewPwd"
+          >
+            <i
+              class="bi"
+              [class.bi-eye]="!showNewPwd"
+              [class.bi-eye-slash]="showNewPwd"
+            ></i>
+          </button>
+        </div>
+      </div>
+      <div class="sm-form-group" style="margin-top: 12px">
+        <label class="sm-label"
+          >Xác nhận mật khẩu mới <span class="req">*</span></label
+        >
+        <div class="sm-input-wrap">
+          <input
+            class="sm-input"
+            [type]="showConfirmPwd ? 'text' : 'password'"
+            [(ngModel)]="pwdForm.passwordConfirm"
+            placeholder="Nhập lại mật khẩu mới"
+          />
+          <button
+            class="sm-pwd-toggle"
+            type="button"
+            (click)="showConfirmPwd = !showConfirmPwd"
+          >
+            <i
+              class="bi"
+              [class.bi-eye]="!showConfirmPwd"
+              [class.bi-eye-slash]="showConfirmPwd"
+            ></i>
+          </button>
+        </div>
+        <div
+          class="sm-pwd-mismatch"
+          *ngIf="
+            pwdForm.newPassword &&
+            pwdForm.passwordConfirm &&
+            pwdForm.newPassword !== pwdForm.passwordConfirm
+          "
+        >
+          <i class="bi bi-exclamation-circle"></i> Mật khẩu không khớp
+        </div>
+      </div>
+    </div>
+    <div class="sm-modal-footer">
+      <button class="sm-btn sm-btn-ghost" (click)="showPwdModal = false">
+        Hủy
+      </button>
+      <button
+        class="sm-btn sm-btn-primary"
+        [disabled]="saving || !canSavePwd()"
+        (click)="savePassword()"
+      >
+        <span *ngIf="saving" class="sm-btn-spinner"></span>
+        {{ saving ? "Đang lưu..." : "Đổi mật khẩu" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CẬP NHẬT TRẠNG THÁI
+══════════════════════════════════════════════ -->
+<div
+  class="sm-overlay"
+  *ngIf="showStatusModal"
+  (click)="showStatusModal = false"
+>
+  <div class="sm-modal sm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="sm-modal-header">
+      <div class="sm-modal-title">
+        <div class="sm-modal-icon" style="background: #f0fdf4; color: #10b981">
+          <i class="bi bi-toggle-on"></i>
+        </div>
+        Cập nhật trạng thái
+      </div>
+      <button class="sm-modal-close" (click)="showStatusModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="sm-modal-body" *ngIf="statusTarget">
+      <div class="sm-role-target-info">
+        <div
+          class="sm-avatar sm-avatar-sm"
+          [style.background]="getAvatarBg(statusTarget.fullName)"
+        >
+          {{ getInitial(statusTarget.fullName) }}
+        </div>
+        <div>
+          <div style="font-weight: 700">{{ statusTarget.fullName }}</div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-top: 6px;
+            "
+          >
+            <span
+              class="sm-status-badge"
+              [class]="'sm-status-' + statusTarget.status.toLowerCase()"
+            >
+              {{ getStatusLabel(statusTarget.status) }}
+            </span>
+            <i
+              class="bi bi-arrow-right"
+              style="color: var(--sm-muted); font-size: 12px"
+            ></i>
+            <span
+              class="sm-status-badge"
+              [class]="
+                'sm-status-' + nextStatus(statusTarget.status).toLowerCase()
+              "
+            >
+              {{ getStatusLabel(nextStatus(statusTarget.status)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sm-modal-footer">
+      <button class="sm-btn sm-btn-ghost" (click)="showStatusModal = false">
+        Hủy
+      </button>
+      <button
+        class="sm-btn sm-btn-primary"
+        [disabled]="saving"
+        (click)="executeToggleStatus()"
+      >
+        <span *ngIf="saving" class="sm-btn-spinner"></span>
+        {{ saving ? "Đang lưu..." : "Xác nhận" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div
+  class="sm-toast"
+  [class.show]="toast.show"
+  [class.sm-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

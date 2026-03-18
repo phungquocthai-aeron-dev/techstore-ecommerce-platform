@@ -1,0 +1,594 @@
+<div class="bm-root">
+  <!-- ══════════════════ TOPBAR ══════════════════ -->
+  <div class="bm-topbar">
+    <div class="bm-topbar-left">
+      <div class="bm-logo-mark">
+        <i class="bi bi-bookmark-star-fill"></i>
+      </div>
+      <div>
+        <div class="bm-topbar-title">Quản lý Thương hiệu</div>
+        <div class="bm-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Thương hiệu</span>
+        </div>
+      </div>
+    </div>
+    <div class="bm-topbar-right">
+      <button class="bm-btn bm-btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> Thêm thương hiệu
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STAT CARDS ══════════════════ -->
+  <div class="bm-stats">
+    <div
+      class="bm-stat"
+      [class.active]="filterStatus === ''"
+      (click)="filterByStatus('')"
+    >
+      <div class="bm-stat-icon" style="--c: #7c3aed; --cb: #f5f3ff">
+        <i class="bi bi-bookmark-star-fill"></i>
+      </div>
+      <div class="bm-stat-content">
+        <div class="bm-stat-num">{{ totalCount }}</div>
+        <div class="bm-stat-lbl">Tổng thương hiệu</div>
+      </div>
+      <div
+        class="bm-stat-pill"
+        style="background: #7c3aed"
+        *ngIf="filterStatus === ''"
+      ></div>
+    </div>
+
+    <div
+      class="bm-stat"
+      [class.active]="filterStatus === 'ACTIVE'"
+      (click)="filterByStatus('ACTIVE')"
+    >
+      <div class="bm-stat-icon" style="--c: #059669; --cb: #ecfdf5">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div class="bm-stat-content">
+        <div class="bm-stat-num">{{ activeCount }}</div>
+        <div class="bm-stat-lbl">Đang hoạt động</div>
+      </div>
+      <div
+        class="bm-stat-pill"
+        style="background: #059669"
+        *ngIf="filterStatus === 'ACTIVE'"
+      ></div>
+    </div>
+
+    <div
+      class="bm-stat"
+      [class.active]="filterStatus === 'INACTIVE'"
+      (click)="filterByStatus('INACTIVE')"
+    >
+      <div class="bm-stat-icon" style="--c: #d97706; --cb: #fffbeb">
+        <i class="bi bi-pause-circle-fill"></i>
+      </div>
+      <div class="bm-stat-content">
+        <div class="bm-stat-num">{{ inactiveCount }}</div>
+        <div class="bm-stat-lbl">Tạm ngừng</div>
+      </div>
+      <div
+        class="bm-stat-pill"
+        style="background: #d97706"
+        *ngIf="filterStatus === 'INACTIVE'"
+      ></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOOLBAR ══════════════════ -->
+  <div class="bm-toolbar">
+    <div class="bm-toolbar-left">
+      <div class="bm-search-wrap">
+        <i class="bi bi-search bm-search-icon"></i>
+        <input
+          class="bm-search"
+          type="text"
+          placeholder="Tìm tên thương hiệu..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          class="bm-search-clear"
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <select
+        class="bm-select"
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="onFilterChange()"
+      >
+        <option value="">Tất cả trạng thái</option>
+        <option value="ACTIVE">Đang hoạt động</option>
+        <option value="INACTIVE">Tạm ngừng</option>
+      </select>
+
+      <select
+        class="bm-select"
+        [(ngModel)]="sortBy"
+        (ngModelChange)="onFilterChange()"
+      >
+        <option value="id">Mới nhất</option>
+        <option value="name">Tên A–Z</option>
+      </select>
+    </div>
+
+    <div class="bm-toolbar-right">
+      <span class="bm-count-lbl">{{ totalElements }} thương hiệu</span>
+      <div class="bm-view-toggle">
+        <button
+          class="bm-view-btn"
+          [class.active]="viewMode === 'table'"
+          (click)="viewMode = 'table'"
+        >
+          <i class="bi bi-list-ul"></i>
+        </button>
+        <button
+          class="bm-view-btn"
+          [class.active]="viewMode === 'grid'"
+          (click)="viewMode = 'grid'"
+        >
+          <i class="bi bi-grid-3x3-gap"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOADING ══════════════════ -->
+  <div class="bm-loading" *ngIf="loading">
+    <div class="bm-spinner"></div>
+    <span>Đang tải thương hiệu...</span>
+  </div>
+
+  <!-- ══════════════════ EMPTY ══════════════════ -->
+  <div class="bm-empty" *ngIf="!loading && brands.length === 0">
+    <div class="bm-empty-icon"><i class="bi bi-bookmark-star"></i></div>
+    <div class="bm-empty-title">Không có thương hiệu nào</div>
+    <div class="bm-empty-sub">
+      Thử thay đổi bộ lọc hoặc thêm thương hiệu mới
+    </div>
+    <button
+      class="bm-btn bm-btn-primary"
+      style="margin-top: 16px"
+      (click)="openCreateModal()"
+    >
+      <i class="bi bi-plus-lg"></i> Thêm thương hiệu
+    </button>
+  </div>
+
+  <!-- ══════════════════ TABLE VIEW ══════════════════ -->
+  <div
+    class="bm-table-wrap"
+    *ngIf="!loading && brands.length > 0 && viewMode === 'table'"
+  >
+    <table class="bm-table">
+      <thead>
+        <tr>
+          <th style="width: 44px">
+            <input
+              type="checkbox"
+              class="bm-checkbox"
+              [(ngModel)]="allChecked"
+              (change)="toggleAll()"
+            />
+          </th>
+          <th>Thương hiệu</th>
+          <th>Trạng thái</th>
+          <th style="text-align: center; width: 120px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of brands" [class.bm-row-sel]="checkedIds.has(b.id)">
+          <td>
+            <input
+              type="checkbox"
+              class="bm-checkbox"
+              [checked]="checkedIds.has(b.id)"
+              (change)="toggleCheck(b.id)"
+            />
+          </td>
+
+          <!-- NAME -->
+          <td>
+            <div class="bm-name-cell">
+              <div
+                class="bm-brand-avatar"
+                [style.background]="getBrandBg(b.name)"
+              >
+                {{ getInitial(b.name) }}
+              </div>
+              <div>
+                <div class="bm-brand-name">{{ b.name }}</div>
+                <div class="bm-brand-id">#{{ b.id }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- STATUS -->
+          <td>
+            <span
+              class="bm-status-badge"
+              [class]="'bm-status-' + b.status.toLowerCase()"
+            >
+              {{ getStatusLabel(b.status) }}
+            </span>
+          </td>
+
+          <!-- ACTIONS -->
+          <td>
+            <div class="bm-actions">
+              <button
+                class="bm-action-btn bm-action-edit"
+                title="Chỉnh sửa"
+                (click)="editBrand(b)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="bm-action-btn bm-action-toggle"
+                [title]="b.status === 'ACTIVE' ? 'Tạm ngừng' : 'Kích hoạt'"
+                (click)="toggleStatus(b)"
+              >
+                <i
+                  class="bi"
+                  [class.bi-toggle-on]="b.status === 'ACTIVE'"
+                  [class.bi-toggle-off]="b.status !== 'ACTIVE'"
+                ></i>
+              </button>
+              <button
+                class="bm-action-btn bm-action-del"
+                title="Xóa"
+                (click)="confirmDelete(b)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════ GRID VIEW ══════════════════ -->
+  <div
+    class="bm-grid"
+    *ngIf="!loading && brands.length > 0 && viewMode === 'grid'"
+  >
+    <div class="bm-grid-card" *ngFor="let b of brands">
+      <div class="bm-grid-avatar" [style.background]="getBrandBg(b.name)">
+        {{ getInitial(b.name) }}
+        <span
+          class="bm-grid-status-dot"
+          [class]="'bm-dot-' + b.status.toLowerCase()"
+        ></span>
+      </div>
+      <div class="bm-grid-body">
+        <div class="bm-grid-name">{{ b.name }}</div>
+        <div class="bm-grid-id">#{{ b.id }}</div>
+        <span
+          class="bm-status-badge"
+          [class]="'bm-status-' + b.status.toLowerCase()"
+        >
+          {{ getStatusLabel(b.status) }}
+        </span>
+        <div class="bm-grid-actions">
+          <button
+            class="bm-action-btn bm-action-edit"
+            title="Sửa"
+            (click)="editBrand(b)"
+            style="flex: 1; width: auto"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button
+            class="bm-action-btn bm-action-toggle"
+            [title]="b.status === 'ACTIVE' ? 'Tạm ngừng' : 'Kích hoạt'"
+            (click)="toggleStatus(b)"
+            style="flex: 1; width: auto"
+          >
+            <i
+              class="bi"
+              [class.bi-toggle-on]="b.status === 'ACTIVE'"
+              [class.bi-toggle-off]="b.status !== 'ACTIVE'"
+            ></i>
+          </button>
+          <button
+            class="bm-action-btn bm-action-del"
+            title="Xóa"
+            (click)="confirmDelete(b)"
+            style="flex: 1; width: auto"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PAGINATION ══════════════════ -->
+  <div class="bm-pagination" *ngIf="!loading && totalPages > 1">
+    <button
+      class="bm-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(0)"
+    >
+      <i class="bi bi-chevron-double-left"></i>
+    </button>
+    <button
+      class="bm-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(currentPage - 1)"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <ng-container *ngFor="let pg of pageNumbers">
+      <button
+        class="bm-page-btn"
+        [class.active]="pg === currentPage"
+        *ngIf="pg !== -1"
+        (click)="goPage(pg)"
+      >
+        {{ pg + 1 }}
+      </button>
+      <span class="bm-page-ellipsis" *ngIf="pg === -1">…</span>
+    </ng-container>
+    <button
+      class="bm-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(currentPage + 1)"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+    <button
+      class="bm-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(totalPages - 1)"
+    >
+      <i class="bi bi-chevron-double-right"></i>
+    </button>
+    <span class="bm-page-info"
+      >Trang {{ currentPage + 1 }}/{{ totalPages }}</span
+    >
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CREATE / EDIT BRAND
+══════════════════════════════════════════════ -->
+<div class="bm-overlay" *ngIf="showFormModal" (click)="closeFormModal()">
+  <div class="bm-modal bm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="bm-modal-header">
+      <div class="bm-modal-title">
+        <div
+          class="bm-modal-icon"
+          [style.background]="isEdit ? '#fef3c7' : '#f5f3ff'"
+        >
+          <i
+            class="bi"
+            [class.bi-pencil-square]="isEdit"
+            [class.bi-plus-circle-fill]="!isEdit"
+            [style.color]="isEdit ? '#f59e0b' : '#7c3aed'"
+          ></i>
+        </div>
+        {{ isEdit ? "Chỉnh sửa thương hiệu" : "Thêm thương hiệu mới" }}
+      </div>
+      <button class="bm-modal-close" (click)="closeFormModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="bm-modal-body">
+      <!-- PREVIEW AVATAR -->
+      <div class="bm-form-preview" *ngIf="form.name">
+        <div
+          class="bm-brand-avatar bm-avatar-lg"
+          [style.background]="getBrandBg(form.name)"
+        >
+          {{ getInitial(form.name) }}
+        </div>
+        <div class="bm-form-preview-name">{{ form.name }}</div>
+      </div>
+
+      <div class="bm-form-group">
+        <label class="bm-label"
+          >Tên thương hiệu <span class="req">*</span></label
+        >
+        <input
+          class="bm-input"
+          type="text"
+          [(ngModel)]="form.name"
+          placeholder="VD: Apple, Samsung, Intel..."
+        />
+      </div>
+
+      <div class="bm-form-group" style="margin-top: 14px">
+        <label class="bm-label">Trạng thái</label>
+        <div class="bm-radio-group">
+          <label class="bm-radio-item" *ngFor="let s of statusOptions">
+            <input type="radio" [(ngModel)]="form.status" [value]="s.value" />
+            <span
+              class="bm-radio-label"
+              [class]="'bm-status-' + s.value.toLowerCase()"
+              >{{ s.label }}</span
+            >
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="bm-modal-footer">
+      <button class="bm-btn bm-btn-ghost" (click)="closeFormModal()">
+        Hủy
+      </button>
+      <button
+        class="bm-btn bm-btn-primary"
+        [disabled]="saving"
+        (click)="saveBrand()"
+      >
+        <span *ngIf="saving" class="bm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-check-lg"></i>
+        {{ saving ? "Đang lưu..." : isEdit ? "Cập nhật" : "Thêm thương hiệu" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: TOGGLE STATUS
+══════════════════════════════════════════════ -->
+<div
+  class="bm-overlay"
+  *ngIf="showStatusModal"
+  (click)="showStatusModal = false"
+>
+  <div class="bm-modal bm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="bm-modal-header">
+      <div class="bm-modal-title">
+        <div class="bm-modal-icon" style="background: #f0fdf4">
+          <i class="bi bi-toggle-on" style="color: #059669"></i>
+        </div>
+        Cập nhật trạng thái
+      </div>
+      <button class="bm-modal-close" (click)="showStatusModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bm-modal-body">
+      <div class="bm-status-summary" *ngIf="statusTarget">
+        <div
+          class="bm-brand-avatar"
+          [style.background]="getBrandBg(statusTarget.name)"
+        >
+          {{ getInitial(statusTarget.name) }}
+        </div>
+        <div>
+          <div style="font-weight: 700; font-size: 14px">
+            {{ statusTarget.name }}
+          </div>
+          <div
+            style="
+              margin-top: 6px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 13px;
+            "
+          >
+            <span
+              class="bm-status-badge"
+              [class]="'bm-status-' + statusTarget.status.toLowerCase()"
+            >
+              {{ getStatusLabel(statusTarget.status) }}
+            </span>
+            <i class="bi bi-arrow-right" style="color: var(--bm-muted)"></i>
+            <span
+              class="bm-status-badge"
+              [class]="
+                'bm-status-' + nextStatus(statusTarget.status).toLowerCase()
+              "
+            >
+              {{ getStatusLabel(nextStatus(statusTarget.status)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bm-modal-footer">
+      <button class="bm-btn bm-btn-ghost" (click)="showStatusModal = false">
+        Hủy
+      </button>
+      <button
+        class="bm-btn bm-btn-primary"
+        [disabled]="saving"
+        (click)="executeToggleStatus()"
+      >
+        <span *ngIf="saving" class="bm-btn-spinner"></span>
+        {{ saving ? "Đang cập nhật..." : "Xác nhận" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CONFIRM DELETE
+══════════════════════════════════════════════ -->
+<div
+  class="bm-overlay"
+  *ngIf="showDeleteModal"
+  (click)="showDeleteModal = false"
+>
+  <div class="bm-modal bm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="bm-modal-header">
+      <div class="bm-modal-title">
+        <div class="bm-modal-icon" style="background: #fef2f2">
+          <i class="bi bi-trash-fill" style="color: #ef4444"></i>
+        </div>
+        Xác nhận xóa
+      </div>
+      <button class="bm-modal-close" (click)="showDeleteModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bm-modal-body">
+      <div class="bm-delete-preview" *ngIf="deleteTarget">
+        <div
+          class="bm-brand-avatar"
+          [style.background]="getBrandBg(deleteTarget.name)"
+        >
+          {{ getInitial(deleteTarget.name) }}
+        </div>
+        <div>
+          <div style="font-weight: 700; font-size: 14px">
+            {{ deleteTarget.name }}
+          </div>
+          <div
+            style="font-size: 12.5px; color: var(--bm-muted); margin-top: 3px"
+          >
+            #{{ deleteTarget.id }}
+          </div>
+        </div>
+      </div>
+      <p class="bm-delete-msg">
+        Bạn có chắc muốn xóa thương hiệu này?<br />
+        <span style="color: var(--bm-danger); font-size: 12.5px"
+          >Hành động không thể hoàn tác.</span
+        >
+      </p>
+    </div>
+    <div class="bm-modal-footer">
+      <button class="bm-btn bm-btn-ghost" (click)="showDeleteModal = false">
+        Hủy
+      </button>
+      <button
+        class="bm-btn bm-btn-danger"
+        [disabled]="saving"
+        (click)="executeDelete()"
+      >
+        <span *ngIf="saving" class="bm-btn-spinner"></span>
+        {{ saving ? "Đang xóa..." : "Xác nhận xóa" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div
+  class="bm-toast"
+  [class.show]="toast.show"
+  [class.bm-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

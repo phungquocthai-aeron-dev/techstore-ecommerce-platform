@@ -1,0 +1,612 @@
+<div class="cu-root">
+  <!-- ══════════════════ TOPBAR ══════════════════ -->
+  <div class="cu-topbar">
+    <div class="cu-topbar-left">
+      <div class="cu-logo-mark">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div class="cu-topbar-title">Quản lý Khách hàng</div>
+        <div class="cu-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Khách hàng</span>
+        </div>
+      </div>
+    </div>
+    <div class="cu-topbar-right">
+      <span class="cu-count-chip">
+        <i class="bi bi-people-fill"></i> {{ customers.length }} khách hàng
+      </span>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STAT CARDS ══════════════════ -->
+  <div class="cu-stats">
+    <div
+      class="cu-stat"
+      [class.active]="activeStatFilter === 'all'"
+      (click)="filterByStat('all')"
+    >
+      <div class="cu-stat-icon" style="--c: #e11d48; --cb: #fff1f2">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div class="cu-stat-num">{{ totalCount }}</div>
+        <div class="cu-stat-lbl">Tổng khách hàng</div>
+      </div>
+      <div
+        class="cu-stat-bar"
+        style="background: #e11d48"
+        *ngIf="activeStatFilter === 'all'"
+      ></div>
+    </div>
+    <div
+      class="cu-stat"
+      [class.active]="activeStatFilter === 'ACTIVE'"
+      (click)="filterByStat('ACTIVE')"
+    >
+      <div class="cu-stat-icon" style="--c: #10b981; --cb: #ecfdf5">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="cu-stat-num">{{ activeCount }}</div>
+        <div class="cu-stat-lbl">Đang hoạt động</div>
+      </div>
+      <div
+        class="cu-stat-bar"
+        style="background: #10b981"
+        *ngIf="activeStatFilter === 'ACTIVE'"
+      ></div>
+    </div>
+    <div
+      class="cu-stat"
+      [class.active]="activeStatFilter === 'INACTIVE'"
+      (click)="filterByStat('INACTIVE')"
+    >
+      <div class="cu-stat-icon" style="--c: #f59e0b; --cb: #fffbeb">
+        <i class="bi bi-pause-circle-fill"></i>
+      </div>
+      <div>
+        <div class="cu-stat-num">{{ inactiveCount }}</div>
+        <div class="cu-stat-lbl">Tạm khóa</div>
+      </div>
+      <div
+        class="cu-stat-bar"
+        style="background: #f59e0b"
+        *ngIf="activeStatFilter === 'INACTIVE'"
+      ></div>
+    </div>
+    <div
+      class="cu-stat"
+      [class.active]="activeStatFilter === 'GOOGLE'"
+      (click)="filterByStat('GOOGLE')"
+    >
+      <div class="cu-stat-icon" style="--c: #4285f4; --cb: #e8f0fe">
+        <i class="bi bi-google"></i>
+      </div>
+      <div>
+        <div class="cu-stat-num">{{ googleCount }}</div>
+        <div class="cu-stat-lbl">Đăng nhập Google</div>
+      </div>
+      <div
+        class="cu-stat-bar"
+        style="background: #4285f4"
+        *ngIf="activeStatFilter === 'GOOGLE'"
+      ></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOOLBAR ══════════════════ -->
+  <div class="cu-toolbar">
+    <div class="cu-toolbar-left">
+      <div class="cu-search-wrap">
+        <i class="bi bi-search cu-search-icon"></i>
+        <input
+          class="cu-search"
+          type="text"
+          placeholder="Tên, email, SĐT, ID..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          class="cu-search-clear"
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <select
+        class="cu-select"
+        [(ngModel)]="sortBy"
+        (ngModelChange)="applySortFilter()"
+      >
+        <option value="id">Mới nhất</option>
+        <option value="name">Tên A–Z</option>
+      </select>
+    </div>
+    <div class="cu-toolbar-right">
+      <span class="cu-count-lbl">{{ customerList.length }} hiển thị</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOADING ══════════════════ -->
+  <div class="cu-loading" *ngIf="loading">
+    <div class="cu-spinner"></div>
+    <span>Đang tải khách hàng...</span>
+  </div>
+
+  <!-- ══════════════════ EMPTY ══════════════════ -->
+  <div class="cu-empty" *ngIf="!loading && customerList.length === 0">
+    <div class="cu-empty-icon"><i class="bi bi-people"></i></div>
+    <div class="cu-empty-title">Không tìm thấy khách hàng</div>
+    <div class="cu-empty-sub">Thử thay đổi từ khoá hoặc bộ lọc</div>
+  </div>
+
+  <!-- ══════════════════ TABLE ══════════════════ -->
+  <div class="cu-table-wrap" *ngIf="!loading && customerList.length > 0">
+    <table class="cu-table">
+      <thead>
+        <tr>
+          <th>Khách hàng</th>
+          <th>Liên hệ</th>
+          <th>Ngày sinh</th>
+          <th>Provider</th>
+          <th>Trạng thái</th>
+          <th style="text-align: center; width: 130px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of customerList">
+          <!-- KHÁCH HÀNG -->
+          <td>
+            <div class="cu-customer-cell">
+              <div class="cu-avatar-wrap">
+                <img
+                  *ngIf="c.avatarUrl"
+                  [src]="c.avatarUrl"
+                  [alt]="c.fullName"
+                  class="cu-avatar-img"
+                />
+                <div
+                  *ngIf="!c.avatarUrl"
+                  class="cu-avatar"
+                  [style.background]="getAvatarBg(c.fullName)"
+                >
+                  {{ getInitial(c.fullName) }}
+                </div>
+                <div
+                  class="cu-provider-dot"
+                  *ngIf="c.provider === 'GOOGLE'"
+                  title="Google"
+                >
+                  <i class="bi bi-google"></i>
+                </div>
+              </div>
+              <div>
+                <div class="cu-customer-name">{{ c.fullName }}</div>
+                <div class="cu-customer-id">#{{ c.id }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- LIÊN HỆ -->
+          <td>
+            <div class="cu-contact">
+              <div class="cu-email">
+                <i class="bi bi-envelope"></i> {{ c.email }}
+              </div>
+              <div class="cu-phone" *ngIf="c.phone">
+                <i class="bi bi-telephone"></i> {{ c.phone }}
+              </div>
+            </div>
+          </td>
+
+          <!-- NGÀY SINH -->
+          <td>
+            <span class="cu-dob" *ngIf="c.dob">{{ formatDate(c.dob) }}</span>
+            <span class="cu-na" *ngIf="!c.dob">—</span>
+          </td>
+
+          <!-- PROVIDER -->
+          <td>
+            <span
+              class="cu-provider-badge"
+              [class.google]="c.provider === 'GOOGLE'"
+            >
+              <i
+                class="bi"
+                [class.bi-google]="c.provider === 'GOOGLE'"
+                [class.bi-envelope-fill]="c.provider !== 'GOOGLE'"
+              ></i>
+              {{ c.provider === "GOOGLE" ? "Google" : "Email" }}
+            </span>
+          </td>
+
+          <!-- TRẠNG THÁI -->
+          <td>
+            <span
+              class="cu-status-badge"
+              [class]="'cu-status-' + c.status.toLowerCase()"
+            >
+              {{ getStatusLabel(c.status) }}
+            </span>
+          </td>
+
+          <!-- THAO TÁC -->
+          <td>
+            <div class="cu-actions">
+              <button
+                class="cu-action-btn cu-action-view"
+                title="Xem chi tiết"
+                (click)="viewCustomer(c)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+              <button
+                class="cu-action-btn cu-action-edit"
+                title="Chỉnh sửa"
+                (click)="editCustomer(c)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="cu-action-btn cu-action-toggle"
+                [title]="c.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'"
+                (click)="openStatusModal(c)"
+              >
+                <i
+                  class="bi"
+                  [class.bi-lock-fill]="c.status === 'ACTIVE'"
+                  [class.bi-unlock-fill]="c.status !== 'ACTIVE'"
+                ></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: XEM CHI TIẾT KHÁCH HÀNG
+══════════════════════════════════════════════ -->
+<div
+  class="cu-overlay"
+  *ngIf="showDetailModal"
+  (click)="showDetailModal = false"
+>
+  <div
+    class="cu-modal cu-modal-md"
+    (click)="$event.stopPropagation()"
+    *ngIf="detailTarget"
+  >
+    <div class="cu-modal-header">
+      <div class="cu-modal-title">
+        <div class="cu-modal-icon" style="background: #fff1f2; color: #e11d48">
+          <i class="bi bi-person-circle"></i>
+        </div>
+        Chi tiết khách hàng
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button
+          class="cu-btn cu-btn-outline"
+          (click)="editCustomer(detailTarget); showDetailModal = false"
+        >
+          <i class="bi bi-pencil"></i> Sửa
+        </button>
+        <button class="cu-modal-close" (click)="showDetailModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="cu-modal-body">
+      <!-- HEADER PROFILE -->
+      <div class="cu-detail-hero">
+        <div class="cu-detail-avatar-wrap">
+          <img
+            *ngIf="detailTarget.avatarUrl"
+            [src]="detailTarget.avatarUrl"
+            [alt]="detailTarget.fullName"
+            class="cu-detail-avatar-img"
+          />
+          <div
+            *ngIf="!detailTarget.avatarUrl"
+            class="cu-detail-avatar"
+            [style.background]="getAvatarBg(detailTarget.fullName)"
+          >
+            {{ getInitial(detailTarget.fullName) }}
+          </div>
+        </div>
+        <div class="cu-detail-hero-info">
+          <div class="cu-detail-name">{{ detailTarget.fullName }}</div>
+          <div class="cu-detail-id">#{{ detailTarget.id }}</div>
+          <div class="cu-detail-badges">
+            <span
+              class="cu-status-badge"
+              [class]="'cu-status-' + detailTarget.status.toLowerCase()"
+            >
+              {{ getStatusLabel(detailTarget.status) }}
+            </span>
+            <span
+              class="cu-provider-badge"
+              [class.google]="detailTarget.provider === 'GOOGLE'"
+            >
+              <i
+                class="bi"
+                [class.bi-google]="detailTarget.provider === 'GOOGLE'"
+                [class.bi-envelope-fill]="detailTarget.provider !== 'GOOGLE'"
+              ></i>
+              {{ detailTarget.provider === "GOOGLE" ? "Google" : "Email" }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFO GRID -->
+      <div class="cu-detail-grid">
+        <div class="cu-detail-row">
+          <span class="cu-detail-key"
+            ><i class="bi bi-envelope"></i> Email</span
+          >
+          <span class="cu-detail-val">{{ detailTarget.email }}</span>
+        </div>
+        <div class="cu-detail-row">
+          <span class="cu-detail-key"
+            ><i class="bi bi-telephone"></i> Điện thoại</span
+          >
+          <span class="cu-detail-val">{{ detailTarget.phone || "—" }}</span>
+        </div>
+        <div class="cu-detail-row">
+          <span class="cu-detail-key"
+            ><i class="bi bi-calendar3"></i> Ngày sinh</span
+          >
+          <span class="cu-detail-val">{{
+            detailTarget.dob ? formatDate(detailTarget.dob) : "—"
+          }}</span>
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="cu-detail-actions">
+        <button
+          class="cu-status-action-btn"
+          [class.lock]="detailTarget.status === 'ACTIVE'"
+          (click)="openStatusModal(detailTarget); showDetailModal = false"
+        >
+          <i
+            class="bi"
+            [class.bi-lock-fill]="detailTarget.status === 'ACTIVE'"
+            [class.bi-unlock-fill]="detailTarget.status !== 'ACTIVE'"
+          ></i>
+          {{
+            detailTarget.status === "ACTIVE"
+              ? "Tạm khóa tài khoản"
+              : "Kích hoạt tài khoản"
+          }}
+        </button>
+      </div>
+    </div>
+
+    <div class="cu-modal-footer">
+      <button class="cu-btn cu-btn-ghost" (click)="showDetailModal = false">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CHỈNH SỬA KHÁCH HÀNG
+══════════════════════════════════════════════ -->
+<div class="cu-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="cu-modal cu-modal-sm" (click)="$event.stopPropagation()">
+    <div class="cu-modal-header">
+      <div class="cu-modal-title">
+        <div class="cu-modal-icon" style="background: #fef3c7; color: #f59e0b">
+          <i class="bi bi-pencil-square"></i>
+        </div>
+        Chỉnh sửa khách hàng
+      </div>
+      <button class="cu-modal-close" (click)="closeEditModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="cu-modal-body" *ngIf="editTarget">
+      <!-- MINI PROFILE -->
+      <div class="cu-edit-mini-profile">
+        <div class="cu-avatar-wrap">
+          <img
+            *ngIf="editTarget.avatarUrl"
+            [src]="editTarget.avatarUrl"
+            class="cu-avatar-img"
+          />
+          <div
+            *ngIf="!editTarget.avatarUrl"
+            class="cu-avatar"
+            [style.background]="getAvatarBg(editTarget.fullName)"
+          >
+            {{ getInitial(editTarget.fullName) }}
+          </div>
+        </div>
+        <div>
+          <div style="font-weight: 800; font-size: 14px">
+            {{ editTarget.fullName }}
+          </div>
+          <div style="font-size: 12px; color: var(--cu-muted)">
+            {{ editTarget.email }}
+          </div>
+        </div>
+      </div>
+
+      <div class="cu-form-group">
+        <label class="cu-label">Họ và tên <span class="req">*</span></label>
+        <input
+          class="cu-input"
+          type="text"
+          [(ngModel)]="editForm.fullName"
+          placeholder="Họ và tên đầy đủ"
+        />
+      </div>
+      <div class="cu-form-group" style="margin-top: 13px">
+        <label class="cu-label">Số điện thoại</label>
+        <input
+          class="cu-input"
+          type="tel"
+          [(ngModel)]="editForm.phone"
+          placeholder="0900 000 000"
+        />
+      </div>
+      <div class="cu-form-group" style="margin-top: 13px">
+        <label class="cu-label">Ngày sinh</label>
+        <input class="cu-input" type="date" [(ngModel)]="editForm.dob" />
+      </div>
+    </div>
+    <div class="cu-modal-footer">
+      <button class="cu-btn cu-btn-ghost" (click)="closeEditModal()">
+        Hủy
+      </button>
+      <button
+        class="cu-btn cu-btn-primary"
+        [disabled]="saving"
+        (click)="saveCustomer()"
+      >
+        <span *ngIf="saving" class="cu-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-check-lg"></i>
+        {{ saving ? "Đang lưu..." : "Cập nhật" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CẬP NHẬT TRẠNG THÁI
+══════════════════════════════════════════════ -->
+<div
+  class="cu-overlay"
+  *ngIf="showStatusModal"
+  (click)="showStatusModal = false"
+>
+  <div class="cu-modal cu-modal-sm" (click)="$event.stopPropagation()">
+    <div class="cu-modal-header">
+      <div class="cu-modal-title" *ngIf="statusTarget">
+        <div
+          class="cu-modal-icon"
+          [style.background]="
+            statusTarget.status === 'ACTIVE' ? '#fef2f2' : '#f0fdf4'
+          "
+          [style.color]="
+            statusTarget.status === 'ACTIVE' ? '#e11d48' : '#10b981'
+          "
+        >
+          <i
+            class="bi"
+            [class.bi-lock-fill]="statusTarget.status === 'ACTIVE'"
+            [class.bi-unlock-fill]="statusTarget.status !== 'ACTIVE'"
+          ></i>
+        </div>
+        {{
+          statusTarget.status === "ACTIVE"
+            ? "Tạm khóa tài khoản"
+            : "Kích hoạt tài khoản"
+        }}
+      </div>
+      <button class="cu-modal-close" (click)="showStatusModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="cu-modal-body" *ngIf="statusTarget">
+      <div class="cu-status-summary">
+        <div class="cu-avatar-wrap">
+          <img
+            *ngIf="statusTarget.avatarUrl"
+            [src]="statusTarget.avatarUrl"
+            class="cu-avatar-img"
+          />
+          <div
+            *ngIf="!statusTarget.avatarUrl"
+            class="cu-avatar"
+            [style.background]="getAvatarBg(statusTarget.fullName)"
+          >
+            {{ getInitial(statusTarget.fullName) }}
+          </div>
+        </div>
+        <div>
+          <div style="font-weight: 800; font-size: 14px">
+            {{ statusTarget.fullName }}
+          </div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-top: 6px;
+            "
+          >
+            <span
+              class="cu-status-badge"
+              [class]="'cu-status-' + statusTarget.status.toLowerCase()"
+            >
+              {{ getStatusLabel(statusTarget.status) }}
+            </span>
+            <i
+              class="bi bi-arrow-right"
+              style="color: var(--cu-muted); font-size: 12px"
+            ></i>
+            <span
+              class="cu-status-badge"
+              [class]="
+                'cu-status-' + nextStatus(statusTarget.status).toLowerCase()
+              "
+            >
+              {{ getStatusLabel(nextStatus(statusTarget.status)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <p class="cu-status-warn" *ngIf="statusTarget.status === 'ACTIVE'">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Khách hàng sẽ không thể đăng nhập cho đến khi được kích hoạt lại.
+      </p>
+    </div>
+    <div class="cu-modal-footer">
+      <button class="cu-btn cu-btn-ghost" (click)="showStatusModal = false">
+        Hủy
+      </button>
+      <button
+        *ngIf="statusTarget"
+        class="cu-btn"
+        [class.cu-btn-danger]="statusTarget.status === 'ACTIVE'"
+        [class.cu-btn-primary]="statusTarget.status !== 'ACTIVE'"
+        [disabled]="saving"
+        (click)="executeToggleStatus()"
+      >
+        <span *ngIf="saving" class="cu-btn-spinner"></span>
+        {{
+          saving
+            ? "Đang xử lý..."
+            : statusTarget.status === "ACTIVE"
+              ? "Xác nhận khóa"
+              : "Kích hoạt"
+        }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div
+  class="cu-toast"
+  [class.show]="toast.show"
+  [class.cu-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

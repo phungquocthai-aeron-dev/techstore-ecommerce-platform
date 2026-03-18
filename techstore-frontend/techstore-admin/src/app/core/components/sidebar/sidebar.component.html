@@ -1,0 +1,150 @@
+<nav class="sidebar" [class.collapsed]="isCollapsed">
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <i class="bi bi-grid-3x3-gap-fill"></i>
+    </div>
+    <div class="brand-text" *ngIf="!isCollapsed">
+      AdminPro
+      <small>Quản trị hệ thống</small>
+    </div>
+  </div>
+
+  <!-- Scroll area -->
+  <div class="sidebar-scroll">
+    <div class="sidebar-section">
+      <div class="section-label">Tổng quan</div>
+      <ul>
+        <li>
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
+            <i class="bi bi-speedometer2"></i>
+            <span>Tổng quan</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
+            <i class="bi bi-reception-4"></i>
+            <span>Thống kê</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Danh mục quản lý</div>
+      <ul>
+        <li>
+          <a class="nav-link" routerLink="/home" routerLinkActive="active">
+            <i class="bi bi-box-seam"></i>
+            <span>Sản phẩm</span>
+          </a>
+        </li>
+        <li>
+          <a
+            class="nav-link"
+            routerLink="/categories"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-tags"></i>
+            <span>Danh mục</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/brands" routerLinkActive="active">
+            <i class="bi bi-bookmark-star"></i>
+            <span>Thương hiệu</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Kinh doanh</div>
+      <ul>
+        <li>
+          <a class="nav-link" routerLink="/orders" routerLinkActive="active">
+            <i class="bi bi-bag-check"></i>
+            <span>Đơn đặt hàng</span>
+            <!-- <span class="badge-nav">12</span> -->
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/coupons" routerLinkActive="active">
+            <i class="bi bi-ticket-perforated"></i>
+            <span>Mã giảm giá</span>
+          </a>
+        </li>
+        <!-- <li>
+          <a
+            class="nav-link"
+            routerLink="/payments"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-credit-card"></i>
+            <span>Thanh toán</span>
+          </a>
+        </li> -->
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Người dùng</div>
+      <ul>
+        <li>
+          <a class="nav-link" routerLink="/customers" routerLinkActive="active">
+            <i class="bi bi-people"></i>
+            <span>Khách hàng</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/staffs" routerLinkActive="active">
+            <i class="bi bi-person-badge"></i>
+            <span>Nhân viên</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/reviews" routerLinkActive="active">
+            <i class="bi bi-chat-square-text"></i>
+            <span>Bình luận</span>
+            <!-- <span class="badge-nav danger">5</span> -->
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Kho hàng</div>
+      <ul>
+        <li>
+          <a
+            class="nav-link"
+            routerLink="/warehouses"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="bi bi-building"></i>
+            <span>Kho hàng</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/suppliers" routerLinkActive="active">
+            <i class="bi bi-truck"></i>
+            <span>Nhà cung cấp</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <!-- /sidebar-scroll -->
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">AD</div>
+      <div class="user-info" *ngIf="!isCollapsed">
+        <strong>Admin Hệ thống</strong>
+        <small>Quản trị viên</small>
+      </div>
+    </div>
+  </div>
+</nav>

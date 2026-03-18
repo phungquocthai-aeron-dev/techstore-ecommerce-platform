@@ -1,0 +1,520 @@
+<div class="cm-root">
+  <!-- ══════════════════ TOPBAR ══════════════════ -->
+  <div class="cm-topbar">
+    <div class="cm-topbar-left">
+      <div class="cm-logo-mark">
+        <i class="bi bi-tags-fill"></i>
+      </div>
+      <div>
+        <div class="cm-topbar-title">Quản lý Danh mục</div>
+        <div class="cm-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Danh mục</span>
+        </div>
+      </div>
+    </div>
+    <div class="cm-topbar-right">
+      <button class="cm-btn cm-btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> Thêm danh mục
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STAT CARDS ══════════════════ -->
+  <div class="cm-stats">
+    <div
+      class="cm-stat"
+      *ngFor="let s of statCards"
+      [class.active]="filterType === s.filterVal"
+      (click)="filterByType(s.filterVal)"
+    >
+      <div class="cm-stat-icon" [style.--c]="s.color" [style.--cb]="s.bg">
+        <i class="bi" [class]="s.icon"></i>
+      </div>
+      <div class="cm-stat-content">
+        <div class="cm-stat-num">{{ s.count }}</div>
+        <div class="cm-stat-lbl">{{ s.label }}</div>
+      </div>
+      <div
+        class="cm-stat-pill"
+        [style.background]="s.color"
+        *ngIf="filterType === s.filterVal"
+      ></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOOLBAR ══════════════════ -->
+  <div class="cm-toolbar">
+    <div class="cm-toolbar-left">
+      <div class="cm-search-wrap">
+        <i class="bi bi-search cm-search-icon"></i>
+        <input
+          class="cm-search"
+          type="text"
+          placeholder="Tìm tên danh mục..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          class="cm-search-clear"
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <select
+        class="cm-select"
+        [(ngModel)]="filterCategoryType"
+        (ngModelChange)="onFilterChange()"
+      >
+        <option value="">Tất cả loại</option>
+        <option value="LAPTOP">Laptop</option>
+        <option value="DESKTOP">Desktop</option>
+        <option value="COMPONENT">Linh kiện</option>
+        <option value="PERIPHERAL">Ngoại vi</option>
+        <option value="OTHER">Khác</option>
+      </select>
+
+      <select
+        class="cm-select"
+        [(ngModel)]="sortBy"
+        (ngModelChange)="onFilterChange()"
+      >
+        <option value="id">Mới nhất</option>
+        <option value="name">Tên A–Z</option>
+      </select>
+    </div>
+
+    <div class="cm-toolbar-right">
+      <span class="cm-count-lbl">{{ totalElements }} danh mục</span>
+      <div class="cm-view-toggle">
+        <button
+          class="cm-view-btn"
+          [class.active]="viewMode === 'table'"
+          (click)="viewMode = 'table'"
+        >
+          <i class="bi bi-list-ul"></i>
+        </button>
+        <button
+          class="cm-view-btn"
+          [class.active]="viewMode === 'grid'"
+          (click)="viewMode = 'grid'"
+        >
+          <i class="bi bi-grid-3x3-gap"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOADING ══════════════════ -->
+  <div class="cm-loading" *ngIf="loading">
+    <div class="cm-spinner"></div>
+    <span>Đang tải danh mục...</span>
+  </div>
+
+  <!-- ══════════════════ EMPTY ══════════════════ -->
+  <div class="cm-empty" *ngIf="!loading && categories.length === 0">
+    <div class="cm-empty-icon"><i class="bi bi-tags"></i></div>
+    <div class="cm-empty-title">Không có danh mục nào</div>
+    <div class="cm-empty-sub">Thử thay đổi bộ lọc hoặc thêm danh mục mới</div>
+    <button
+      class="cm-btn cm-btn-primary"
+      style="margin-top: 16px"
+      (click)="openCreateModal()"
+    >
+      <i class="bi bi-plus-lg"></i> Thêm danh mục
+    </button>
+  </div>
+
+  <!-- ══════════════════ TABLE VIEW ══════════════════ -->
+  <div
+    class="cm-table-wrap"
+    *ngIf="!loading && categories.length > 0 && viewMode === 'table'"
+  >
+    <table class="cm-table">
+      <thead>
+        <tr>
+          <th style="width: 44px">
+            <input
+              type="checkbox"
+              class="cm-checkbox"
+              [(ngModel)]="allChecked"
+              (change)="toggleAll()"
+            />
+          </th>
+          <th>Danh mục</th>
+          <th>Loại (CategoryType)</th>
+          <th>Loại linh kiện PC</th>
+          <th>Mô tả</th>
+          <th style="text-align: center; width: 120px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let c of categories"
+          [class.cm-row-sel]="checkedIds.has(c.id)"
+        >
+          <td>
+            <input
+              type="checkbox"
+              class="cm-checkbox"
+              [checked]="checkedIds.has(c.id)"
+              (change)="toggleCheck(c.id)"
+            />
+          </td>
+
+          <!-- NAME -->
+          <td>
+            <div class="cm-name-cell">
+              <div
+                class="cm-cat-icon"
+                [style.background]="getCatBg(c.categoryType)"
+                [style.color]="getCatColor(c.categoryType)"
+              >
+                <i class="bi" [class]="getCatIcon(c.categoryType)"></i>
+              </div>
+              <div>
+                <div class="cm-cat-name">{{ c.name }}</div>
+                <div class="cm-cat-id">#{{ c.id }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- CATEGORY TYPE -->
+          <td>
+            <span
+              class="cm-type-badge"
+              [class]="'cm-type-' + c.categoryType.toLowerCase()"
+            >
+              {{ getCategoryTypeLabel(c.categoryType) }}
+            </span>
+          </td>
+
+          <!-- PC COMPONENT TYPE -->
+          <td>
+            <span class="cm-pc-badge" *ngIf="c.pcComponentType">
+              <i class="bi bi-cpu-fill"></i> {{ c.pcComponentType }}
+            </span>
+            <span class="cm-na" *ngIf="!c.pcComponentType">—</span>
+          </td>
+
+          <!-- DESCRIPTION -->
+          <td>
+            <div class="cm-desc" [title]="c.description">
+              {{ truncate(c.description, 48) || "—" }}
+            </div>
+          </td>
+
+          <!-- ACTIONS -->
+          <td>
+            <div class="cm-actions">
+              <button
+                class="cm-action-btn cm-action-edit"
+                title="Chỉnh sửa"
+                (click)="editCategory(c)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="cm-action-btn cm-action-del"
+                title="Xóa"
+                (click)="confirmDelete(c)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════ GRID VIEW ══════════════════ -->
+  <div
+    class="cm-grid"
+    *ngIf="!loading && categories.length > 0 && viewMode === 'grid'"
+  >
+    <div class="cm-grid-card" *ngFor="let c of categories">
+      <div class="cm-grid-header" [style.background]="getCatBg(c.categoryType)">
+        <div class="cm-grid-icon" [style.color]="getCatColor(c.categoryType)">
+          <i class="bi" [class]="getCatIcon(c.categoryType)"></i>
+        </div>
+        <span
+          class="cm-type-badge"
+          [class]="'cm-type-' + c.categoryType.toLowerCase()"
+        >
+          {{ getCategoryTypeLabel(c.categoryType) }}
+        </span>
+      </div>
+      <div class="cm-grid-body">
+        <div class="cm-grid-name">{{ c.name }}</div>
+        <div class="cm-grid-id">#{{ c.id }}</div>
+        <div class="cm-grid-pc" *ngIf="c.pcComponentType">
+          <i class="bi bi-cpu-fill"></i> {{ c.pcComponentType }}
+        </div>
+        <div class="cm-grid-desc">{{ truncate(c.description, 60) || "—" }}</div>
+        <div class="cm-grid-actions">
+          <button
+            class="cm-action-btn cm-action-edit"
+            title="Sửa"
+            (click)="editCategory(c)"
+            style="flex: 1; width: auto"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button
+            class="cm-action-btn cm-action-del"
+            title="Xóa"
+            (click)="confirmDelete(c)"
+            style="flex: 1; width: auto"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PAGINATION ══════════════════ -->
+  <div class="cm-pagination" *ngIf="!loading && totalPages > 1">
+    <button
+      class="cm-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(0)"
+    >
+      <i class="bi bi-chevron-double-left"></i>
+    </button>
+    <button
+      class="cm-page-btn"
+      [disabled]="currentPage === 0"
+      (click)="goPage(currentPage - 1)"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <ng-container *ngFor="let pg of pageNumbers">
+      <button
+        class="cm-page-btn"
+        [class.active]="pg === currentPage"
+        *ngIf="pg !== -1"
+        (click)="goPage(pg)"
+      >
+        {{ pg + 1 }}
+      </button>
+      <span class="cm-page-ellipsis" *ngIf="pg === -1">…</span>
+    </ng-container>
+    <button
+      class="cm-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(currentPage + 1)"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+    <button
+      class="cm-page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="goPage(totalPages - 1)"
+    >
+      <i class="bi bi-chevron-double-right"></i>
+    </button>
+    <span class="cm-page-info"
+      >Trang {{ currentPage + 1 }}/{{ totalPages }}</span
+    >
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CREATE / EDIT CATEGORY
+══════════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="showFormModal" (click)="closeFormModal()">
+  <div class="cm-modal cm-modal-md" (click)="$event.stopPropagation()">
+    <div class="cm-modal-header">
+      <div class="cm-modal-title">
+        <div
+          class="cm-modal-icon"
+          [style.background]="isEdit ? '#fef3c7' : '#f0fdf4'"
+        >
+          <i
+            class="bi"
+            [class.bi-pencil-square]="isEdit"
+            [class.bi-plus-circle-fill]="!isEdit"
+            [style.color]="isEdit ? '#f59e0b' : '#10b981'"
+          ></i>
+        </div>
+        {{ isEdit ? "Chỉnh sửa danh mục" : "Thêm danh mục mới" }}
+      </div>
+      <button class="cm-modal-close" (click)="closeFormModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="cm-modal-body">
+      <div class="cm-form-grid">
+        <div class="cm-form-group cm-col-full">
+          <label class="cm-label"
+            >Tên danh mục <span class="req">*</span></label
+          >
+          <input
+            class="cm-input"
+            type="text"
+            [(ngModel)]="form.name"
+            placeholder="VD: Laptop Gaming, RAM DDR5..."
+          />
+        </div>
+
+        <div class="cm-form-group">
+          <label class="cm-label"
+            >Loại danh mục <span class="req">*</span></label
+          >
+          <select
+            class="cm-input"
+            [(ngModel)]="form.categoryType"
+            (ngModelChange)="onCategoryTypeChange()"
+          >
+            <option value="">-- Chọn loại --</option>
+            <option value="LAPTOP">Laptop</option>
+            <option value="DESKTOP">Desktop</option>
+            <option value="COMPONENT">Linh kiện PC</option>
+            <option value="PERIPHERAL">Ngoại vi</option>
+            <option value="OTHER">Khác</option>
+          </select>
+        </div>
+
+        <div class="cm-form-group" *ngIf="showPcComponentField">
+          <label class="cm-label">Loại linh kiện PC</label>
+          <select class="cm-input" [(ngModel)]="form.pcComponentType">
+            <option value="">-- Chọn loại linh kiện --</option>
+            <option value="CPU">CPU</option>
+            <option value="GPU">GPU / Card đồ họa</option>
+            <option value="RAM">RAM</option>
+            <option value="STORAGE">Ổ cứng (SSD/HDD)</option>
+            <option value="MOTHERBOARD">Bo mạch chủ</option>
+            <option value="PSU">Nguồn (PSU)</option>
+            <option value="CASE">Vỏ case</option>
+            <option value="COOLING">Tản nhiệt</option>
+            <option value="OTHER">Khác</option>
+          </select>
+        </div>
+
+        <div class="cm-form-group cm-col-full">
+          <label class="cm-label">Mô tả</label>
+          <textarea
+            class="cm-input cm-textarea"
+            [(ngModel)]="form.description"
+            rows="3"
+            placeholder="Mô tả ngắn về danh mục..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div class="cm-preview" *ngIf="form.name || form.categoryType">
+        <div class="cm-preview-title">Xem trước</div>
+        <div class="cm-preview-card">
+          <div
+            class="cm-cat-icon"
+            [style.background]="getCatBg(form.categoryType)"
+            [style.color]="getCatColor(form.categoryType)"
+          >
+            <i class="bi" [class]="getCatIcon(form.categoryType)"></i>
+          </div>
+          <div>
+            <div class="cm-cat-name">{{ form.name || "Tên danh mục" }}</div>
+            <div
+              style="display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap"
+            >
+              <span
+                class="cm-type-badge"
+                [class]="
+                  'cm-type-' + (form.categoryType || 'other').toLowerCase()
+                "
+                *ngIf="form.categoryType"
+              >
+                {{ getCategoryTypeLabel(form.categoryType) }}
+              </span>
+              <span class="cm-pc-badge" *ngIf="form.pcComponentType">
+                <i class="bi bi-cpu-fill"></i> {{ form.pcComponentType }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cm-modal-footer">
+      <button class="cm-btn cm-btn-ghost" (click)="closeFormModal()">
+        Hủy
+      </button>
+      <button
+        class="cm-btn cm-btn-primary"
+        [disabled]="saving"
+        (click)="saveCategory()"
+      >
+        <span *ngIf="saving" class="cm-btn-spinner"></span>
+        <i *ngIf="!saving" class="bi bi-check-lg"></i>
+        {{ saving ? "Đang lưu..." : isEdit ? "Cập nhật" : "Thêm danh mục" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CONFIRM DELETE
+══════════════════════════════════════════════ -->
+<div
+  class="cm-overlay"
+  *ngIf="showDeleteModal"
+  (click)="showDeleteModal = false"
+>
+  <div class="cm-modal cm-modal-sm" (click)="$event.stopPropagation()">
+    <div class="cm-modal-header">
+      <div class="cm-modal-title">
+        <div class="cm-modal-icon" style="background: #fef2f2">
+          <i class="bi bi-trash-fill" style="color: #ef4444"></i>
+        </div>
+        Xác nhận xóa
+      </div>
+      <button class="cm-modal-close" (click)="showDeleteModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="cm-modal-body">
+      <p class="cm-delete-msg" *ngIf="deleteTarget">
+        Bạn có chắc muốn xóa danh mục
+        <strong>{{ deleteTarget.name }}</strong
+        >?<br />
+        <span style="color: var(--cm-danger); font-size: 12.5px"
+          >Hành động này không thể hoàn tác.</span
+        >
+      </p>
+    </div>
+    <div class="cm-modal-footer">
+      <button class="cm-btn cm-btn-ghost" (click)="showDeleteModal = false">
+        Hủy
+      </button>
+      <button
+        class="cm-btn cm-btn-danger"
+        [disabled]="saving"
+        (click)="executeDelete()"
+      >
+        <span *ngIf="saving" class="cm-btn-spinner"></span>
+        {{ saving ? "Đang xóa..." : "Xác nhận xóa" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div
+  class="cm-toast"
+  [class.show]="toast.show"
+  [class.cm-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

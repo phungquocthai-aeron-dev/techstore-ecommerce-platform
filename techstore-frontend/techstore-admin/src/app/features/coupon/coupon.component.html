@@ -1,0 +1,445 @@
+<div class="page">
+  <!-- ── HEADER ── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon page-icon-violet">
+        <i class="bi bi-ticket-perforated-fill"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Mã giảm giá</h1>
+        <p class="page-sub">Quản lý coupon & chương trình khuyến mãi</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <i class="bi bi-plus-lg"></i> Tạo mã giảm giá
+    </button>
+  </div>
+
+  <!-- ── STATS ── -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon si-violet">
+        <i class="bi bi-ticket-perforated"></i>
+      </div>
+      <div>
+        <div class="stat-val">{{ coupons.length }}</div>
+        <div class="stat-lbl">Tổng mã</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-green">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-val">{{ activeCount }}</div>
+        <div class="stat-lbl">Đang hoạt động</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-amber"><i class="bi bi-clock-fill"></i></div>
+      <div>
+        <div class="stat-val">{{ pendingCount }}</div>
+        <div class="stat-lbl">Chưa bắt đầu</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-red"><i class="bi bi-x-circle-fill"></i></div>
+      <div>
+        <div class="stat-val">{{ expiredCount }}</div>
+        <div class="stat-lbl">Hết hạn / Vô hiệu</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOOLBAR ── -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Tìm tên mã giảm giá..."
+        [(ngModel)]="searchKeyword"
+        (input)="applyFilter()"
+      />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Loại</label>
+      <select [(ngModel)]="filterType" (change)="applyFilter()">
+        <option value="">Tất cả</option>
+        <option value="PERCENTAGE">Phần trăm</option>
+        <option value="FIXED">Số tiền cố định</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Trạng thái</label>
+      <select [(ngModel)]="filterStatus" (change)="applyFilter()">
+        <option value="">Tất cả</option>
+        <option value="ACTIVE">Hoạt động</option>
+        <option value="INACTIVE">Vô hiệu</option>
+        <option value="EXPIRED">Hết hạn</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── ALERT ── -->
+  @if (alertMsg) {
+    <div
+      class="alert"
+      [class.alert-success]="alertType === 'success'"
+      [class.alert-error]="alertType === 'error'"
+    >
+      <i
+        class="bi"
+        [class.bi-check-circle-fill]="alertType === 'success'"
+        [class.bi-exclamation-circle-fill]="alertType === 'error'"
+      ></i>
+      {{ alertMsg }}
+    </div>
+  }
+
+  <!-- ── TABLE ── -->
+  <div class="table-card">
+    @if (isLoading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Đang tải dữ liệu...</span>
+      </div>
+    } @else if (filtered.length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-ticket-perforated"></i>
+        <p>Không tìm thấy mã giảm giá nào</p>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 50px">#</th>
+            <th>Tên mã</th>
+            <th style="width: 150px">Loại giảm</th>
+            <th style="text-align: right; width: 140px">Giá trị</th>
+            <th style="text-align: right; width: 150px">Đơn tối thiểu</th>
+            <th style="text-align: right; width: 140px">Giảm tối đa</th>
+            <th style="width: 190px">Thời gian</th>
+            <th style="text-align: center; width: 120px">Đã dùng</th>
+            <th style="width: 120px">Trạng thái</th>
+            <th style="width: 110px; text-align: right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of filtered; track c.id; let i = $index) {
+            <tr>
+              <td class="text-muted">{{ i + 1 }}</td>
+              <td>
+                <div class="coupon-name-cell">
+                  <div
+                    class="coupon-chip"
+                    [class.chip-pct]="c.discountType === 'PERCENTAGE'"
+                    [class.chip-fix]="c.discountType === 'FIXED'"
+                  >
+                    <i
+                      class="bi"
+                      [class.bi-percent]="c.discountType === 'PERCENTAGE'"
+                      [class.bi-cash-coin]="c.discountType !== 'PERCENTAGE'"
+                    ></i>
+                  </div>
+                  <span class="font-medium">{{ c.name }}</span>
+                </div>
+              </td>
+              <td>
+                <span
+                  class="type-badge"
+                  [class.type-pct]="c.discountType === 'PERCENTAGE'"
+                  [class.type-fix]="c.discountType !== 'PERCENTAGE'"
+                >
+                  {{
+                    c.discountType === "PERCENTAGE"
+                      ? "Phần trăm"
+                      : "Số tiền cố định"
+                  }}
+                </span>
+              </td>
+              <td style="text-align: right" class="font-medium value-text">
+                {{
+                  c.discountType === "PERCENTAGE"
+                    ? c.discountValue + "%"
+                    : (c.discountValue | number) + "₫"
+                }}
+              </td>
+              <td style="text-align: right" class="text-muted">
+                {{ c.minOrderValue | number }}₫
+              </td>
+              <td style="text-align: right" class="text-muted">
+                {{ c.maxDiscount | number }}₫
+              </td>
+              <td>
+                <div class="date-range">
+                  <span class="date-from">{{
+                    c.startDate | date: "dd/MM/yy"
+                  }}</span>
+                  <i class="bi bi-arrow-right date-arrow"></i>
+                  <span
+                    class="date-to"
+                    [class.date-expired]="isExpired(c.endDate)"
+                    >{{ c.endDate | date: "dd/MM/yy" }}</span
+                  >
+                </div>
+              </td>
+              <td style="text-align: center">
+                <div class="usage-wrap">
+                  <div class="usage-bar-bg">
+                    <div
+                      class="usage-bar-fill"
+                      [style.width.%]="getUsagePct(c)"
+                      [class.bar-full]="getUsagePct(c) >= 100"
+                    ></div>
+                  </div>
+                  <span class="usage-label"
+                    >{{ c.usedCount }}/{{ c.usageLimit }}</span
+                  >
+                </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-active]="c.status === 'ACTIVE'"
+                  [class.badge-inactive]="c.status === 'INACTIVE'"
+                  [class.badge-expired]="c.status === 'EXPIRED'"
+                >
+                  {{ statusLabel(c.status) }}
+                </span>
+              </td>
+              <td class="actions">
+                <button
+                  class="btn-icon-sm"
+                  title="Chỉnh sửa"
+                  (click)="openEditModal(c)"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn-icon-sm btn-icon-danger"
+                  title="Xoá"
+                  (click)="confirmDelete(c)"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: CREATE / EDIT
+══════════════════════════════════ -->
+@if (showModal) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon" [class.mi-edit]="!!editingId">
+            <i
+              class="bi"
+              [class.bi-plus-lg]="!editingId"
+              [class.bi-pencil]="!!editingId"
+            ></i>
+          </div>
+          <div>
+            <h3>
+              {{ editingId ? "Chỉnh sửa mã giảm giá" : "Tạo mã giảm giá mới" }}
+            </h3>
+            <p class="modal-sub">
+              {{
+                editingId
+                  ? "Cập nhật thông tin coupon"
+                  : "Điền đầy đủ thông tin bên dưới"
+              }}
+            </p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Row 1 -->
+        <div class="form-group fg-full">
+          <label>Tên mã giảm giá <span class="required">*</span></label>
+          <input
+            type="text"
+            [(ngModel)]="form.name"
+            placeholder="VD: SUMMER2025, NEWUSER10..."
+          />
+        </div>
+
+        <!-- Row 2 -->
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>Loại giảm <span class="required">*</span></label>
+            <select [(ngModel)]="form.discountType">
+              <option value="PERCENTAGE">Phần trăm (%)</option>
+              <option value="FIXED">Số tiền cố định (₫)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Giá trị giảm <span class="required">*</span></label>
+            <div class="input-addon-wrap">
+              <input
+                type="number"
+                [(ngModel)]="form.discountValue"
+                min="0"
+                placeholder="0"
+              />
+              <span class="input-addon">{{
+                form.discountType === "PERCENTAGE" ? "%" : "₫"
+              }}</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Giới hạn sử dụng <span class="required">*</span></label>
+            <div class="input-addon-wrap">
+              <input
+                type="number"
+                [(ngModel)]="form.usageLimit"
+                min="1"
+                placeholder="100"
+              />
+              <span class="input-addon">lượt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Giá trị đơn tối thiểu <span class="required">*</span></label>
+            <div class="input-addon-wrap">
+              <input
+                type="number"
+                [(ngModel)]="form.minOrderValue"
+                min="0"
+                placeholder="0"
+              />
+              <span class="input-addon">₫</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Giảm tối đa</label>
+            <div class="input-addon-wrap">
+              <input
+                type="number"
+                [(ngModel)]="form.maxDiscount"
+                min="0"
+                placeholder="0"
+              />
+              <span class="input-addon">₫</span>
+            </div>
+            <span class="form-hint">Để 0 nếu không giới hạn</span>
+          </div>
+        </div>
+
+        <!-- Row 4 -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Ngày bắt đầu <span class="required">*</span></label>
+            <input type="datetime-local" [(ngModel)]="form.startDate" />
+          </div>
+          <div class="form-group">
+            <label>Ngày kết thúc <span class="required">*</span></label>
+            <input type="datetime-local" [(ngModel)]="form.endDate" />
+          </div>
+        </div>
+
+        <!-- Preview -->
+        @if (form.name || form.discountValue) {
+          <div class="coupon-preview">
+            <div class="preview-label">Xem trước</div>
+            <div class="preview-card">
+              <div class="preview-left">
+                <div class="preview-tag">COUPON</div>
+                <div class="preview-name">{{ form.name || "TÊN MÃ" }}</div>
+                <div class="preview-validity">
+                  {{
+                    form.startDate
+                      ? (toDate(form.startDate) | date: "dd/MM/yyyy")
+                      : "--"
+                  }}
+                  &nbsp;→&nbsp;
+                  {{
+                    form.endDate
+                      ? (toDate(form.endDate) | date: "dd/MM/yyyy")
+                      : "--"
+                  }}
+                </div>
+              </div>
+              <div class="preview-right">
+                <div class="preview-value">
+                  {{
+                    form.discountType === "PERCENTAGE"
+                      ? (form.discountValue || 0) + "%"
+                      : (form.discountValue || 0 | number) + "₫"
+                  }}
+                </div>
+                <div class="preview-sub">GIẢM NGAY</div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="closeModal()">Huỷ</button>
+        <button
+          class="btn-primary"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveCoupon()"
+        >
+          <span class="btn-text">{{
+            editingId ? "Lưu thay đổi" : "Tạo mã"
+          }}</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════
+     MODAL: CONFIRM DELETE
+══════════════════════════════════ -->
+@if (showDeleteModal) {
+  <div class="modal-backdrop" (click)="showDeleteModal = false">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Xác nhận xoá</h3>
+        <button class="modal-close" (click)="showDeleteModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Bạn có chắc muốn xoá mã <strong>{{ deletingCoupon?.name }}</strong
+          >?
+        </p>
+        <p class="text-muted mt-4">Hành động này không thể hoàn tác.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showDeleteModal = false">Huỷ</button>
+        <button
+          class="btn-danger"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="deleteCoupon()"
+        >
+          <span class="btn-text">Xoá</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}

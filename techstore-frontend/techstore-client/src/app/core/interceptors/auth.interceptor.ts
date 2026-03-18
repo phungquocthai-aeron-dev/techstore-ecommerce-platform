@@ -58,7 +58,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-
+console.log(error)
       // Chỉ xử lý 401 khi đang có token (còn lại trả thẳng)
       if (error.status !== 401 || !tokenService.getToken()) {
         return throwError(() => error);

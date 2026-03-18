@@ -12,7 +12,7 @@ import { ReviewResponse } from '../review/models/review.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { OrderItem } from '../check-out/order.component';
+import { OrderItem } from '../check-out/check-out.component';
 
 @Component({
   selector: 'app-product-detail',

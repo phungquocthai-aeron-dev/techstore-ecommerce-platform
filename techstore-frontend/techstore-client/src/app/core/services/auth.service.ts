@@ -47,12 +47,15 @@ export class AuthService {
   // Refresh customer
   refreshCustomerToken(): Observable<ApiResponse<{ token: string }>> {
     const token = this.tokenService.getToken();
+    console.log(token)
+    console.log("RE")
     return this.http.post<ApiResponse<{ token: string }>>(
       `${this.baseUrl}/refresh/customer`,
       { token }
     ).pipe(
       tap(res => {
         const newToken = res.result?.token;
+        console.log(res)
         if (newToken) {
           this.tokenService.setToken(newToken);
         }

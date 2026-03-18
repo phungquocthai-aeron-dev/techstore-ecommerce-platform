@@ -16,7 +16,7 @@ import { CartResponse, CartItemResponse } from './models/cart.model';
 import { VariantResponse } from '../product/models/product.model';
 import { CouponResponse } from '../coupon/models/coupon.model';
 
-import { OrderItem } from '../check-out/order.component';
+import { OrderItem } from '../check-out/check-out.component';
 
 @Component({
   selector: 'app-cart',

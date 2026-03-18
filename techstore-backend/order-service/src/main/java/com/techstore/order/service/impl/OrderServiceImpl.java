@@ -10,8 +10,10 @@ import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import com.techstore.event.dto.PostEvent;
 import com.techstore.order.client.ProductServiceClient;
 import com.techstore.order.client.UserServiceClient;
 import com.techstore.order.client.WarehouseServiceClient;
@@ -73,6 +75,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentRepository paymentRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final CouponRepository couponRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public List<CustomerOrderResponse> getOrdersByCustomer(Long customerId, String status) {
@@ -369,6 +372,15 @@ public class OrderServiceImpl implements OrderService {
 
         OrderResponse result = mapper.toDto(order);
         result.setPaymentUrl(paymentUrl);
+
+        PostEvent event = PostEvent.builder()
+                .title("Cập nhật trạng thái đơn hàng")
+                .content(buildContent(order.getId(), order.getStatus()))
+                .userId(order.getCustomerId().toString())
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
+
         return result;
     }
 
@@ -399,6 +411,14 @@ public class OrderServiceImpl implements OrderService {
         order.setStaffId(staffId);
 
         order.setStatus("READY_TO_SHIP");
+
+        PostEvent event = PostEvent.builder()
+                .title("Cập nhật trạng thái đơn hàng")
+                .content(buildContent(order.getId(), order.getStatus()))
+                .userId(order.getCustomerId().toString())
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
     }
 
     @Override
@@ -431,6 +451,14 @@ public class OrderServiceImpl implements OrderService {
             payment.setStatus("REFUNDED");
             paymentRepository.save(payment);
         });
+
+        PostEvent event = PostEvent.builder()
+                .title("Cập nhật trạng thái đơn hàng")
+                .content(buildContent(order.getId(), order.getStatus()))
+                .userId(order.getCustomerId().toString())
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
     }
 
     @Override
@@ -439,6 +467,14 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         order.setStatus(status);
+
+        PostEvent event = PostEvent.builder()
+                .title("Cập nhật trạng thái đơn hàng")
+                .content(buildContent(order.getId(), status))
+                .userId(order.getCustomerId().toString())
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
     }
 
     @Override
@@ -465,6 +501,15 @@ public class OrderServiceImpl implements OrderService {
         } else {
             detail.getOrder().setStatus("PARTIALLY_RETURNED");
         }
+
+        PostEvent event = PostEvent.builder()
+                .title("Cập nhật trạng thái đơn hàng")
+                .content(buildContent(
+                        detail.getOrder().getId(), detail.getOrder().getStatus()))
+                .userId(detail.getOrder().getCustomerId().toString())
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
     }
 
     @Override
@@ -506,5 +551,28 @@ public class OrderServiceImpl implements OrderService {
         }
 
         detail.setReviewed(true);
+    }
+
+    private String buildContent(Long orderId, String status) {
+        switch (status) {
+            case "CREATED":
+                return "Đơn hàng #" + orderId + " đã được tạo thành công.";
+            case "PROCESSING":
+                return "Đơn hàng #" + orderId + " đang được xử lý.";
+            case "READY_TO_SHIP":
+                return "Đơn hàng #" + orderId + " đã sẵn sàng để giao.";
+            case "SHIPPING":
+                return "Đơn hàng #" + orderId + " đang trên đường giao đến bạn.";
+            case "DELIVERED":
+                return "Đơn hàng #" + orderId + " đã được giao thành công.";
+            case "CANCELLED":
+                return "Đơn hàng #" + orderId + " đã bị hủy.";
+            case "REFUNDED":
+                return "Đơn hàng #" + orderId + " đã được hoàn tiền.";
+            case "PARTIALLY_RETURNED":
+                return "Đơn hàng #" + orderId + " đã được hoàn trả một phần.";
+            default:
+                return "Đơn hàng #" + orderId + " có trạng thái: " + status;
+        }
     }
 }

@@ -3,9 +3,11 @@ package com.techstore.order.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.techstore.event.dto.PostEvent;
 import com.techstore.order.dto.request.CouponRequest;
 import com.techstore.order.dto.response.CouponResponse;
 import com.techstore.order.entity.Coupon;
@@ -22,6 +24,7 @@ public class CouponService {
 
     private final CouponRepository couponRepo;
     private final CouponMapper couponMapper;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @PreAuthorize("hasRole('ADMIN')")
     public CouponResponse create(CouponRequest request) {
@@ -36,6 +39,14 @@ public class CouponService {
         coupon.setDiscountType(request.getDiscountType().toUpperCase());
         coupon.setStatus("ACTIVE");
         coupon.setUsedCount(0);
+
+        PostEvent event = PostEvent.builder()
+                .title("Khuyến mãi mới")
+                .content(buildCouponContent(coupon))
+                .userId("0")
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
 
         return couponMapper.toResponse(couponRepo.save(coupon));
     }
@@ -91,5 +102,32 @@ public class CouponService {
 
             throw new AppException(ErrorCode.INVALID_DISCOUNT_TYPE);
         }
+    }
+
+    private String buildCouponContent(Coupon coupon) {
+
+        String discountValue = coupon.getDiscountType().equals("PERCENT")
+                ? coupon.getDiscountValue() + "%"
+                : coupon.getDiscountValue() + "đ";
+
+        String minOrder = coupon.getMinOrderValue() != null ? " cho đơn từ " + coupon.getMinOrderValue() + "đ" : "";
+
+        String maxDiscount = coupon.getMaxDiscount() != null ? ", giảm tối đa " + coupon.getMaxDiscount() + "đ" : "";
+
+        String usageLimit = coupon.getUsageLimit() != null
+                ? " Áp dụng cho " + coupon.getUsageLimit() + " khách hàng đầu tiên."
+                : " Số lượng có hạn.";
+
+        String expiry = coupon.getEndDate() != null
+                ? " Hạn sử dụng đến " + coupon.getEndDate().toLocalDate() + "."
+                : "";
+
+        return "Ưu đãi mới! Voucher " + coupon.getName()
+                + " giảm " + discountValue
+                + minOrder
+                + maxDiscount + "."
+                + usageLimit
+                + expiry
+                + " Nhanh tay sử dụng ngay!";
     }
 }

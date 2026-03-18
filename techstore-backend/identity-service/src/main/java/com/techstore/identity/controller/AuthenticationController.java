@@ -2,7 +2,6 @@ package com.techstore.identity.controller;
 
 import java.text.ParseException;
 
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,13 +28,10 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticationController {
     AuthenticationService authenticationService;
 
-    @GetMapping("/hello")
-    ApiResponse<String> hello() {
-        return ApiResponse.<String>builder().result("Hello").build();
-    }
-
     @PostMapping("/token/staff")
     ApiResponse<AuthenticationResponse> authenticateStaff(@RequestBody AuthenticationRequest request) {
+        System.out.println(request.getPassword());
+        System.out.println(request.getUsername());
         var result = authenticationService.authenticateStaff(request);
         return ApiResponse.<AuthenticationResponse>builder().result(result).build();
     }
@@ -53,7 +49,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/refresh/staff")
-    ApiResponse<AuthenticationResponse> authenticateStaf(@RequestBody RefreshRequest request)
+    ApiResponse<AuthenticationResponse> authenticateStaff(@RequestBody RefreshRequest request)
             throws ParseException, JOSEException {
         var result = authenticationService.refreshStaffToken(request);
         return ApiResponse.<AuthenticationResponse>builder().result(result).build();

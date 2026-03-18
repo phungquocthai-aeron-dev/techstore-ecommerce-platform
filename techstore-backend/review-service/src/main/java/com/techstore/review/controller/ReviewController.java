@@ -16,6 +16,22 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
+    // ================= SEARCH REVIEWS =================
+    @GetMapping("/search")
+    public ApiResponse<PageResponse<ReviewResponse>> searchReviews(@ModelAttribute ReviewSearchRequest request) {
+        return ApiResponse.<PageResponse<ReviewResponse>>builder()
+                .result(reviewService.searchReviews(request))
+                .build();
+    }
+
+    // ================= SEARCH REPLIES =================
+    @GetMapping("/reply/search")
+    public ApiResponse<PageResponse<ReplyResponse>> searchReplies(@ModelAttribute ReplySearchRequest request) {
+        return ApiResponse.<PageResponse<ReplyResponse>>builder()
+                .result(reviewService.searchReplies(request))
+                .build();
+    }
+
     // ================= CREATE REVIEW =================
     @PostMapping
     public ApiResponse<ReviewResponse> create(@RequestBody CreateReviewRequest request) {

@@ -21,6 +21,8 @@ import com.techstore.review.client.ProductServiceClient;
 import com.techstore.review.client.UserServiceClient;
 import com.techstore.review.dto.request.CreateReplyRequest;
 import com.techstore.review.dto.request.CreateReviewRequest;
+import com.techstore.review.dto.request.ReplySearchRequest;
+import com.techstore.review.dto.request.ReviewSearchRequest;
 import com.techstore.review.dto.request.UpdateReplyRequest;
 import com.techstore.review.dto.request.UpdateReviewRequest;
 import com.techstore.review.dto.response.CustomerResponse;
@@ -50,6 +52,96 @@ public class ReviewService {
     private final OrderServiceClient orderClient;
     private final ProductServiceClient productClient;
     private final UserServiceClient userClient;
+
+    public PageResponse<ReviewResponse> searchReviews(ReviewSearchRequest req) {
+
+        Sort sort = Sort.by(
+                "ASC".equalsIgnoreCase(req.getSortDir()) ? Sort.Direction.ASC : Sort.Direction.DESC, req.getSortBy());
+        PageRequest pageable = PageRequest.of(req.getPage(), req.getSize(), sort);
+
+        Page<Review> reviewPage = reviewRepo.searchReviews(
+                req.getProductId(),
+                req.getCustomerId(),
+                req.getRating(),
+                req.getStatus(),
+                req.getHasReply(),
+                req.getKeyword(),
+                pageable);
+
+        List<ReviewResponse> responses =
+                reviewPage.getContent().stream().map(mapper::toResponse).toList();
+
+        if (responses.isEmpty()) {
+            return buildPageResponse(responses, reviewPage);
+        }
+
+        // Enrich với user info (tái dùng logic sẵn có)
+        List<Long> customerIds =
+                responses.stream().map(ReviewResponse::getCustomerId).distinct().toList();
+
+        List<Long> staffIds = responses.stream()
+                .map(ReviewResponse::getReply)
+                .filter(r -> r != null)
+                .map(ReplyResponse::getStaffId)
+                .distinct()
+                .toList();
+
+        Map<Long, CustomerResponse> customerMap = userClient.getCustomerByIds(customerIds).getResult().stream()
+                .collect(Collectors.toMap(CustomerResponse::getId, c -> c));
+
+        Map<Long, StaffResponse> staffMap = new HashMap<>();
+        if (!staffIds.isEmpty()) {
+            staffMap = userClient.getStaffByIds(staffIds).getResult().stream()
+                    .collect(Collectors.toMap(StaffResponse::getId, s -> s));
+        }
+
+        final Map<Long, StaffResponse> finalStaffMap = staffMap;
+        for (ReviewResponse review : responses) {
+            review.setCustomer(customerMap.get(review.getCustomerId()));
+            if (review.getReply() != null) {
+                review.getReply().setStaff(finalStaffMap.get(review.getReply().getStaffId()));
+            }
+        }
+
+        return buildPageResponse(responses, reviewPage);
+    }
+
+    // Helper tránh lặp code
+    private <T> PageResponse<T> buildPageResponse(List<T> content, Page<?> page) {
+        return PageResponse.<T>builder()
+                .content(content)
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .last(page.isLast())
+                .build();
+    }
+
+    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    public PageResponse<ReplyResponse> searchReplies(ReplySearchRequest req) {
+
+        Sort sort = Sort.by(
+                "ASC".equalsIgnoreCase(req.getSortDir()) ? Sort.Direction.ASC : Sort.Direction.DESC, "createdAt");
+        PageRequest pageable = PageRequest.of(req.getPage(), req.getSize(), sort);
+
+        Page<Reply> replyPage = replyRepo.searchReplies(req.getStaffId(), req.getStatus(), req.getKeyword(), pageable);
+
+        List<ReplyResponse> responses =
+                replyPage.getContent().stream().map(mapper::toReplyResponse).toList();
+
+        if (!responses.isEmpty()) {
+            List<Long> staffIds =
+                    responses.stream().map(ReplyResponse::getStaffId).distinct().toList();
+
+            Map<Long, StaffResponse> staffMap = userClient.getStaffByIds(staffIds).getResult().stream()
+                    .collect(Collectors.toMap(StaffResponse::getId, s -> s));
+
+            responses.forEach(r -> r.setStaff(staffMap.get(r.getStaffId())));
+        }
+
+        return buildPageResponse(responses, replyPage);
+    }
 
     // ===================== CREATE REVIEW =====================
 

@@ -1,0 +1,39 @@
+server:
+  port: 8090
+  servlet:
+    context-path: /chatbot
+
+spring:
+  application:
+    name: chatbot-service
+  datasource:
+    url: "jdbc:mysql://localhost:3307/techstore_chatbot"
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: root
+    password: root
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect    
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+
+app:
+  services:
+    product: http://localhost:8083/product
+    warehouse: http://localhost:8084/warehouse
+  gemini:
+    api-key: your-api-key
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
+    
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 10000
+        read-timeout: 15000
+        
+logging:
+  level:
+    com.techstore.chatbot: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG

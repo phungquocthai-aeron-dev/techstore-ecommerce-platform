@@ -1,0 +1,80 @@
+<div class="os-page">
+  <div class="os-confetti">
+    <span
+      *ngFor="let c of confettiItems"
+      class="os-confetti-dot"
+      [style]="c.style"
+    ></span>
+  </div>
+
+  <!-- Steps -->
+  <div class="os-steps">
+    <div class="os-step done">
+      <div class="os-dot"><i class="bi bi-check-lg"></i></div>
+      <span>Giỏ hàng</span>
+    </div>
+    <div class="os-step-line"></div>
+    <div class="os-step done">
+      <div class="os-dot"><i class="bi bi-check-lg"></i></div>
+      <span>Thanh toán</span>
+    </div>
+    <div class="os-step-line"></div>
+    <div class="os-step active">
+      <div class="os-dot"><i class="bi bi-bag-check-fill"></i></div>
+      <span>Hoàn tất</span>
+    </div>
+  </div>
+
+  <div class="os-card">
+    <!-- Check icon -->
+    <div class="os-check-ring">
+      <div class="os-check-inner">
+        <i class="bi bi-check-lg"></i>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="os-title">Thanh toán thành công!</h1>
+    <p class="os-sub">
+      Cảm ơn bạn đã mua sắm tại TechStore.<br />Đơn hàng của bạn đang được xử
+      lý.
+    </p>
+
+    <!-- Divider -->
+    <div class="os-divider"></div>
+
+    <!-- Mã giao dịch -->
+    <div class="os-txn-block">
+      <span class="os-txn-label">
+        <i class="bi bi-receipt"></i> Mã giao dịch VNPay
+      </span>
+      <div class="os-txn-row">
+        <span class="os-txn-value">{{ txnRef }}</span>
+        <button
+          class="os-copy-btn"
+          (click)="copyTxnRef()"
+          [class.copied]="copied"
+        >
+          <i class="bi" [ngClass]="copied ? 'bi-check-lg' : 'bi-copy'"></i>
+          {{ copied ? "Đã sao chép" : "Sao chép" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Note -->
+    <div class="os-note">
+      <i class="bi bi-info-circle-fill"></i>
+      Vui lòng lưu lại mã giao dịch để tra cứu hoặc khiếu nại nếu cần.
+    </div>
+
+    <!-- Actions -->
+    <div class="os-actions">
+      <button class="os-btn-primary" (click)="goOrders()">
+        <i class="bi bi-bag-fill"></i> Xem đơn hàng
+      </button>
+      <button class="os-btn-ghost" (click)="goHome()">
+        <i class="bi bi-house"></i> Về trang chủ
+      </button>
+    </div>
+  </div>
+</div>

@@ -224,6 +224,16 @@
             <span>Tạm tính ({{ items.length }} sản phẩm)</span>
             <span>{{ subtotal | number: "1.0-0" }}đ</span>
           </div>
+          <div *ngIf="discountAmount > 0" class="co-sum-row co-sum-discount">
+            <span
+              >Giảm giá <em>({{ appliedCoupon?.name }})</em></span
+            >
+            <span>−{{ discountAmount | number: "1.0-0" }}đ</span>
+          </div>
+          <div class="co-sum-row">
+            <span>VAT (10%)</span>
+            <span>{{ vat | number: "1.0-0" }}đ</span>
+          </div>
           <div class="co-sum-row">
             <span>Phí vận chuyển (GHN)</span>
             <span *ngIf="!loadingFee"
@@ -232,12 +242,6 @@
             <span *ngIf="loadingFee" class="co-fee-loading"
               ><span class="co-fee-dots"></span
             ></span>
-          </div>
-          <div *ngIf="discountAmount > 0" class="co-sum-row co-sum-discount">
-            <span
-              >Giảm giá <em>({{ appliedCoupon?.name }})</em></span
-            >
-            <span>−{{ discountAmount | number: "1.0-0" }}đ</span>
           </div>
         </div>
         <div class="co-sum-total">

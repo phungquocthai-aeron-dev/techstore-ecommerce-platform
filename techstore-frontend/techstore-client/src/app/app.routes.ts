@@ -77,6 +77,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/auth.component')
             .then(m => m.LoginComponent)
+      },
+      {
+        path: 'order-success',
+        loadComponent: () =>
+          import('./features/order-success/order-success.component')
+            .then(m => m.OrderSuccessComponent)
       }
     ]
   },

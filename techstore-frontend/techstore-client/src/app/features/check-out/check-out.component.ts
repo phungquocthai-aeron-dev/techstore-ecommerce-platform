@@ -71,6 +71,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     return this.items.reduce((s, i) => s + i.price * i.quantity, 0);
   }
 
+  get vat(): number {
+    const afterDiscount = this.subtotal - this.discountAmount;
+    return Math.max(0, afterDiscount * 0.1);
+  }
+
   get discountAmount(): number {
     if (!this.appliedCoupon || this.subtotal < this.appliedCoupon.minOrderValue) return 0;
     if (this.appliedCoupon.discountType === 'PERCENT') {
@@ -81,7 +86,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   get total(): number {
-    return Math.max(0, this.subtotal + this.shippingFee - this.discountAmount);
+    return Math.max(0, this.subtotal + this.shippingFee + this.vat - this.discountAmount);
   }
 
   get canOrder(): boolean {

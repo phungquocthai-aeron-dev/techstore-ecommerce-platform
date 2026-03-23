@@ -248,6 +248,7 @@
                 class="cu-action-btn cu-action-edit"
                 title="Chỉnh sửa"
                 (click)="editCustomer(c)"
+                *ngIf="perm.canDo('customer:edit')"
               >
                 <i class="bi bi-pencil"></i>
               </button>
@@ -255,6 +256,7 @@
                 class="cu-action-btn cu-action-toggle"
                 [title]="c.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'"
                 (click)="openStatusModal(c)"
+                *ngIf="perm.canDo('customer:status')"
               >
                 <i
                   class="bi"
@@ -294,6 +296,7 @@
         <button
           class="cu-btn cu-btn-outline"
           (click)="editCustomer(detailTarget); showDetailModal = false"
+          *ngIf="perm.canDo('customer:edit')"
         >
           <i class="bi bi-pencil"></i> Sửa
         </button>
@@ -373,6 +376,7 @@
       <!-- ACTIONS -->
       <div class="cu-detail-actions">
         <button
+          *ngIf="perm.canDo('customer:status')"
           class="cu-status-action-btn"
           [class.lock]="detailTarget.status === 'ACTIVE'"
           (click)="openStatusModal(detailTarget); showDetailModal = false"

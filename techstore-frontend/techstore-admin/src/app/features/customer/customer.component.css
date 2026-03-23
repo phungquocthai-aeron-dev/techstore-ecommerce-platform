@@ -6,7 +6,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
-:root {
+:host {
   --cu-bg:         #fdf4f4;
   --cu-card:       #ffffff;
   --cu-border:     #f0dada;

@@ -72,7 +72,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       // ── Bắt đầu refresh ──
       isRefreshing = true;
       refreshTokenSubject.next(undefined); // báo hiệu "đang refresh"
-
+      console.log("REFRESH CALLED");
       return authService.refreshToken().pipe(
         switchMap(res => {
           isRefreshing = false;

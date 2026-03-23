@@ -7,6 +7,7 @@ import { Customer } from './models/customer.model';
 import { CustomerUpdateRequest } from './models/customer-update.model';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf } from '@angular/common';
+import { PermissionService } from '../../core/services/permission.service';
 
 interface ToastState {
   show:    boolean;
@@ -59,7 +60,10 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
   showStatusModal = false;
   statusTarget:   Customer | null = null;
 
-  constructor(private customerService: CustomerService) {}
+  constructor(
+    private customerService: CustomerService,
+    public perm: PermissionService
+  ) {}
 
   // ══════════════════════════════════════════════════════════════════════
   // LIFECYCLE

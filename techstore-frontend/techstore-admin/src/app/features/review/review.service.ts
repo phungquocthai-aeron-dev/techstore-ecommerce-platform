@@ -26,6 +26,15 @@ export class ReviewService {
     return this.http.post<ApiResponse<ReviewResponse>>(this.baseUrl, req);
   }
 
+  updateReviewStatus(id: number, status: string): Observable<ApiResponse<ReviewResponse>> {
+    const params = new HttpParams().set('status', status);
+    return this.http.patch<ApiResponse<ReviewResponse>>(
+      `${this.baseUrl}/${id}/status`,
+      null,       // body là null vì status truyền qua @RequestParam
+      { params }
+    );
+  }
+
   updateReview(id: number, req: UpdateReviewRequest): Observable<ApiResponse<ReviewResponse>> {
     return this.http.put<ApiResponse<ReviewResponse>>(`${this.baseUrl}/${id}`, req);
   }
@@ -56,6 +65,13 @@ export class ReviewService {
     const params = this.buildReviewSearchParams(req);
     return this.http.get<ApiResponse<PageResponse<ReviewResponse>>>(`${this.baseUrl}/search`, { params });
   }
+
+  getAllReviews(page = 0, size = 10): Observable<ApiResponse<PageResponse<ReviewResponse>>> {
+  const params = new HttpParams()
+    .set('page', page)
+    .set('size', size);
+  return this.http.get<ApiResponse<PageResponse<ReviewResponse>>>(`${this.baseUrl}/all`, { params });
+}
 
   // ==================== REPLY ====================
 

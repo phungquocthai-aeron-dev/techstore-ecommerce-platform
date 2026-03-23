@@ -50,6 +50,17 @@ export class CouponService {
   }
 
   // ===============================
+  // GET AVAILABLE COUPONS
+  // ===============================
+  
+  getAvailableCoupons(): Observable<ApiResponse<CouponResponse[]>> {
+  
+    return this.http.get<ApiResponse<CouponResponse[]>>(
+      `${this.baseUrl}/available`
+    );
+  }
+
+  // ===============================
   // GET ALL
   // ===============================
 

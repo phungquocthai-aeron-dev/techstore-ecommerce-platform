@@ -513,7 +513,7 @@
 
 @keyframes fadeBg { from { opacity: 0; } to { opacity: 1; } }
 
-.modal {
+.modal-a {
   background: var(--surface);
   border-radius: var(--radius-lg);
   width: 100%; max-width: 520px;
@@ -523,8 +523,8 @@
   overflow-y: auto;
 }
 
-.modal.modal-lg  { max-width: 640px; }
-.modal.modal-sm  { max-width: 420px; }
+.modal-a.modal-lg  { max-width: 640px; }
+.modal-a.modal-sm  { max-width: 420px; }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(18px); }

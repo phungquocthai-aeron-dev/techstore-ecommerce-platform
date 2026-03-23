@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { ApiResponse } from '../../shared/models/api-response.model';
 import { Customer } from './models/customer.model';
 import { CustomerUpdateRequest } from './models/customer-update.model';
+import { PageResponse } from './models/page-response.model';
 
 @Injectable({
   providedIn: 'root'
@@ -29,6 +30,25 @@ export class CustomerService {
       `${this.baseUrl}/all`
     );
   }
+
+getAllPaged(params: {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+} = {}): Observable<ApiResponse<PageResponse<Customer>>> {
+
+  const httpParams = new HttpParams()
+    .set('page',    params.page    ?? 0)
+    .set('size',    params.size    ?? 10)
+    .set('sortBy',  params.sortBy  ?? 'id')
+    .set('sortDir', params.sortDir ?? 'asc');
+
+  return this.http.get<ApiResponse<PageResponse<Customer>>>(
+    `${this.baseUrl}/paged`,
+    { params: httpParams }
+  );
+}
 
   // Search
   search(params: {

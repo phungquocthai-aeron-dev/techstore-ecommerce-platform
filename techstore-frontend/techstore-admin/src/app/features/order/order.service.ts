@@ -10,11 +10,21 @@ import {
   OrderResponse,
   OrderDetailResponse,
   CustomerOrderResponse,
-  AdminOrderResponse
+  AdminOrderResponse,
+  OrderSummaryResponse,
+  TopVariantResponse,
+  RevenueStatsResponse,
+  TopLoyalCustomerResponse,
+  ProductSalesResponse
 } from './models/order.model';
 
 import {
-  OrderCreateRequest
+  OrderCreateRequest,
+  OrderSummaryParams,
+  ProductSalesParams,
+  RevenueStatsParams,
+  TopLoyalCustomersParams,
+  TopVariantsParams
 } from './models/order-request.model';
 
 @Injectable({
@@ -157,4 +167,137 @@ export class OrderService {
     );
   }
 
+  // ===============================
+  // REVENUE STATS
+  // ===============================
+
+  getRevenueStats(
+    params?: RevenueStatsParams
+  ): Observable<ApiResponse<RevenueStatsResponse>> {
+
+    let httpParams = new HttpParams();
+
+    if (params?.period) {
+      httpParams = httpParams.set('period', params.period);
+    }
+    if (params?.from) {
+      httpParams = httpParams.set('from', params.from);
+    }
+    if (params?.to) {
+      httpParams = httpParams.set('to', params.to);
+    }
+
+    return this.http.get<ApiResponse<RevenueStatsResponse>>(
+      `${this.baseUrl}/stats/revenue`,
+      { params: httpParams }
+    );
+  }
+
+  // ===============================
+  // TOP VARIANTS
+  // ===============================
+
+  getTopVariants(
+    params?: TopVariantsParams
+  ): Observable<ApiResponse<TopVariantResponse[]>> {
+
+    let httpParams = new HttpParams();
+
+    if (params?.top != null) {
+      httpParams = httpParams.set('top', params.top);
+    }
+    if (params?.from) {
+      httpParams = httpParams.set('from', params.from);
+    }
+    if (params?.to) {
+      httpParams = httpParams.set('to', params.to);
+    }
+
+    return this.http.get<ApiResponse<TopVariantResponse[]>>(
+      `${this.baseUrl}/stats/top-variants`,
+      { params: httpParams }
+    );
+  }
+
+  // ===============================
+  // ORDER SUMMARY
+  // ===============================
+
+  getOrderSummary(
+    params?: OrderSummaryParams
+  ): Observable<ApiResponse<OrderSummaryResponse>> {
+
+    let httpParams = new HttpParams();
+
+    if (params?.status && params.status !== 'ALL') {
+      httpParams = httpParams.set('status', params.status);
+    }
+    if (params?.from) {
+      httpParams = httpParams.set('from', params.from);
+    }
+    if (params?.to) {
+      httpParams = httpParams.set('to', params.to);
+    }
+
+    return this.http.get<ApiResponse<OrderSummaryResponse>>(
+      `${this.baseUrl}/stats/summary`,
+      { params: httpParams }
+    );
+  }
+
+// ===============================
+// TOP LOYAL CUSTOMERS
+// ===============================
+
+  getTopLoyalCustomers(
+  params?: TopLoyalCustomersParams
+): Observable<ApiResponse<TopLoyalCustomerResponse[]>> {
+
+  let httpParams = new HttpParams();
+
+  if (params?.top != null) {
+    httpParams = httpParams.set('top', params.top);
+  }
+  if (params?.period) {
+    httpParams = httpParams.set('period', params.period);
+  }
+  if (params?.from) {
+    httpParams = httpParams.set('from', params.from);
+  }
+  if (params?.to) {
+    httpParams = httpParams.set('to', params.to);
+  }
+
+  return this.http.get<ApiResponse<TopLoyalCustomerResponse[]>>(
+    `${this.baseUrl}/stats/top-loyal-customers`,
+    { params: httpParams }
+  );
+}
+
+// ===============================
+// PRODUCT SALES
+// ===============================
+
+getProductSales(
+  productId: number,
+  params?: ProductSalesParams
+): Observable<ApiResponse<ProductSalesResponse>> {
+
+  let httpParams = new HttpParams();
+
+  if (params?.period) {
+    httpParams = httpParams.set('period', params.period);
+  }
+  if (params?.from) {
+    httpParams = httpParams.set('from', params.from);
+  }
+  if (params?.to) {
+    httpParams = httpParams.set('to', params.to);
+  }
+
+  return this.http.get<ApiResponse<ProductSalesResponse>>(
+    `${this.baseUrl}/stats/product-sales/${productId}`,
+    { params: httpParams }
+  );
+}
 }

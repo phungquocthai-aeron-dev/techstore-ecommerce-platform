@@ -44,8 +44,11 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   private destroy$      = new Subject<void>();
   private searchSubject = new Subject<string>();
 
+  /** Danh sách role hợp lệ — phải khớp chính xác với tên role bên backend */
+  private readonly VALID_ROLES = ['ADMIN', 'SALES_STAFF', 'WAREHOUSE_STAFF'];
+
   // ─── List ──────────────────────────────────────────────────────────────
-  allStaff:   StaffResponse[] = [];   // full list (from search/getAll)
+  allStaff:   StaffResponse[] = [];   // cache từ getAllPaged
   staffList:  StaffResponse[] = [];   // filtered for display
   loading     = false;
 
@@ -61,8 +64,9 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
 
   // ─── Lookup ────────────────────────────────────────────────────────────
   availableRoles = [
-    { value: 'STAFF', label: 'Nhân viên', desc: 'Truy cập các tính năng quản lý thông thường' },
-    { value: 'ADMIN', label: 'Quản trị viên', desc: 'Toàn quyền quản trị hệ thống' }
+    { value: 'SALES_STAFF',     label: 'Nhân viên bán hàng', desc: 'Truy cập các tính năng quản lý liên quan đến bán hàng' },
+    { value: 'WAREHOUSE_STAFF', label: 'Nhân viên kho',       desc: 'Truy cập các tính năng quản lý kho bãi' },
+    { value: 'ADMIN',           label: 'Quản trị viên',       desc: 'Toàn quyền quản trị hệ thống' }
   ];
 
   statusOptions = [
@@ -129,14 +133,17 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
     ).subscribe(kw => this.applyFilters(kw));
   }
 
-  /** Load all staff (search with no params returns everyone) */
+  /**
+   * Load toàn bộ staff qua getAllPaged (size lớn).
+   * Dùng làm cache để lọc client-side cho stat cards & keyword search.
+   */
   loadAll(): void {
     this.loading = true;
-    this.staffService.search({})
+    this.staffService.getAllPaged({ page: 0, size: 1000, sortBy: 'id', sortDir: 'asc' })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.allStaff = res.result ?? [];
+          this.allStaff = res.result?.content ?? [];
           this.calcCounts();
           this.applyFilters(this.searchKeyword);
           this.loading = false;
@@ -155,27 +162,45 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
     this.adminCount    = this.allStaff.filter(s => this.parseRoles(s.roles).includes('ADMIN')).length;
   }
 
+  /**
+   * Nếu có keyword → gọi search API (backend LIKE).
+   * Nếu không có keyword → lọc client-side từ allStaff cache.
+   */
   private applyFilters(kw: string): void {
-    let list = [...this.allStaff];
-
-    // Keyword filter
     if (kw.trim()) {
-      const k = kw.toLowerCase();
-      list = list.filter(s =>
-        s.fullName?.toLowerCase().includes(k) ||
-        s.email?.toLowerCase().includes(k) ||
-        s.phone?.includes(k) ||
-        String(s.id).includes(k)
-      );
+      this.loading = true;
+      const k = kw.trim();
+
+      // Tự động phân loại keyword để map đúng field
+      const isNumeric = /^\d+$/.test(k);
+      const params = isNumeric
+        ? { phone: k }
+        : k.includes('@')
+          ? { email: k }
+          : { fullName: k };  // backend LIKE → tìm theo tên
+
+      this.staffService.search(params)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: res => {
+            this.staffList = res.result ?? [];
+            this.loading   = false;
+          },
+          error: () => {
+            this.showToast('Tìm kiếm thất bại', 'error');
+            this.loading = false;
+          }
+        });
+      return;
     }
 
-    // Stat filter
+    // Không có keyword → lọc client-side
+    let list = [...this.allStaff];
     if (this.activeStatFilter === 'ACTIVE' || this.activeStatFilter === 'INACTIVE') {
       list = list.filter(s => s.status === this.activeStatFilter);
     } else if (this.activeStatFilter === 'ADMIN') {
       list = list.filter(s => this.parseRoles(s.roles).includes('ADMIN'));
     }
-
     this.staffList = list;
   }
 
@@ -186,13 +211,15 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   onSearchChange(): void { this.searchSubject.next(this.searchKeyword); }
 
   clearSearch(): void {
-    this.searchKeyword = '';
-    this.applyFilters('');
+    this.searchKeyword    = '';
+    this.activeStatFilter = 'all';
+    this.loadAll();
   }
 
   filterByStat(filter: string): void {
     this.activeStatFilter = filter;
-    this.applyFilters(this.searchKeyword);
+    this.searchKeyword    = '';   // reset keyword khi click stat card
+    this.applyFilters('');
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -200,9 +227,9 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   // ══════════════════════════════════════════════════════════════════════
 
   viewStaff(s: StaffResponse): void {
-    this.viewTarget   = s;
-    this.isView       = true;
-    this.isEdit       = false;
+    this.viewTarget    = s;
+    this.isView        = true;
+    this.isEdit        = false;
     this.showFormModal = true;
   }
 
@@ -211,11 +238,11 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   // ══════════════════════════════════════════════════════════════════════
 
   openCreateModal(): void {
-    this.isView       = false;
-    this.isEdit       = false;
-    this.editingId    = null;
-    this.staffForm    = this.emptyStaffForm();
-    this.showPwd      = false;
+    this.isView        = false;
+    this.isEdit        = false;
+    this.editingId     = null;
+    this.staffForm     = this.emptyStaffForm();
+    this.showPwd       = false;
     this.showFormModal = true;
   }
 
@@ -246,9 +273,6 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
     }
     if (!this.staffForm.email?.trim()) {
       this.showToast('Vui lòng nhập email', 'error'); return;
-    }
-    if (!this.isEdit && !this.staffForm.password) {
-      this.showToast('Vui lòng nhập mật khẩu', 'error'); return;
     }
     if (!this.isEdit && this.staffForm.roleNames.length === 0) {
       this.showToast('Vui lòng chọn ít nhất một vai trò', 'error'); return;
@@ -297,6 +321,7 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
 
   openRoleModal(s: StaffResponse): void {
     this.roleTarget    = s;
+    // parseRoles() đã lọc & chuẩn hoá → selectedRoles luôn khớp VALID_ROLES
     this.selectedRoles = [...this.parseRoles(s.roles)];
     this.showRoleModal = true;
   }
@@ -309,8 +334,11 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
 
   saveRoles(): void {
     if (!this.roleTarget) return;
-    this.saving = true;
+    if (this.selectedRoles.length === 0) {
+      this.showToast('Vui lòng chọn ít nhất một vai trò', 'error'); return;
+    }
 
+    this.saving = true;
     const req: StaffRoleUpdateRequest = { roleNames: this.selectedRoles };
 
     this.staffService.updateRoles(this.roleTarget.id, req)
@@ -319,7 +347,7 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
         next: res => {
           this.saving        = false;
           this.showRoleModal = false;
-          // Update local
+          // Cập nhật local cache không cần reload toàn bộ
           const staff = this.allStaff.find(s => s.id === this.roleTarget!.id);
           if (staff && res.result) { Object.assign(staff, res.result); }
           this.calcCounts();
@@ -338,12 +366,12 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   // ══════════════════════════════════════════════════════════════════════
 
   openPasswordModal(s: StaffResponse): void {
-    this.pwdTarget     = s;
-    this.pwdForm       = this.emptyPwdForm();
-    this.showOldPwd    = false;
-    this.showNewPwd    = false;
+    this.pwdTarget      = s;
+    this.pwdForm        = this.emptyPwdForm();
+    this.showOldPwd     = false;
+    this.showNewPwd     = false;
     this.showConfirmPwd = false;
-    this.showPwdModal  = true;
+    this.showPwdModal   = true;
   }
 
   canSavePwd(): boolean {
@@ -382,7 +410,7 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   // ══════════════════════════════════════════════════════════════════════
 
   openStatusModal(s: StaffResponse): void {
-    this.statusTarget   = s;
+    this.statusTarget    = s;
     this.showStatusModal = true;
   }
 
@@ -395,8 +423,9 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          this.saving           = false;
-          this.showStatusModal  = false;
+          this.saving          = false;
+          this.showStatusModal = false;
+          // Cập nhật local cache không cần reload toàn bộ
           const staff = this.allStaff.find(s => s.id === this.statusTarget!.id);
           if (staff) staff.status = newStatus;
           this.calcCounts();
@@ -414,16 +443,24 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   // HELPERS
   // ══════════════════════════════════════════════════════════════════════
 
-  /** Parse roles string "ROLE_STAFF,ROLE_ADMIN" or "STAFF" → ['STAFF', 'ADMIN'] */
+  /**
+   * Parse roles string từ backend.
+   * Backend trả về dạng: "ADMIN SALES_STAFF" (cách nhau bằng dấu cách)
+   * hoặc "ROLE_ADMIN,ROLE_SALES_STAFF" (cách nhau bằng dấu phẩy, có prefix).
+   * Kết quả luôn là mảng các role hợp lệ trong VALID_ROLES.
+   */
   parseRoles(roles: string): string[] {
     if (!roles) return [];
-    return roles.split(',')
-      .map(r => r.trim().replace(/^ROLE_/, ''))
-      .filter(Boolean);
+    return roles
+      .split(/[\s,]+/)                            // split bằng dấu cách HOẶC dấu phẩy
+      .map(r => r.trim().replace(/^ROLE_/, ''))   // bỏ prefix ROLE_ nếu có
+      .filter(r => this.VALID_ROLES.includes(r)); // chỉ giữ role hợp lệ
   }
 
   getStatusLabel(status: string): string {
-    return { ACTIVE: 'Đang hoạt động', INACTIVE: 'Tạm ngừng', DISABLED: 'Vô hiệu' }[status] ?? status;
+    return (
+      { ACTIVE: 'Đang hoạt động', INACTIVE: 'Tạm ngừng', DISABLED: 'Vô hiệu' }[status] ?? status
+    );
   }
 
   nextStatus(status: string): string {
@@ -454,7 +491,7 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
   }
 
   private emptyStaffForm(): StaffForm {
-    return { fullName: '', email: '', phone: '', password: '', status: 'ACTIVE', roleNames: ['STAFF'] };
+    return { fullName: '', email: '', phone: '', password: '', status: 'ACTIVE', roleNames: [] };
   }
 
   private emptyPwdForm(): PwdForm {

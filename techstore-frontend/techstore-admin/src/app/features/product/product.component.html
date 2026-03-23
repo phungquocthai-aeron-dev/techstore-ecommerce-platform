@@ -15,16 +15,28 @@
       </div>
     </div>
     <div class="pm-topbar-right">
-      <button class="pm-btn pm-btn-outline" (click)="exportExcel()">
+      <!-- Xuất Excel: SALES_STAFF vẫn được xuất -->
+      <button
+        class="pm-btn pm-btn-outline"
+        *ngIf="perm.canDo('product:export')"
+        (click)="exportExcel()"
+      >
         <i class="bi bi-file-earmark-excel"></i> Xuất Excel
       </button>
-      <button class="pm-btn pm-btn-primary" (click)="openCreateModal()">
+
+      <!-- Thêm sản phẩm: chỉ ADMIN & WAREHOUSE_STAFF -->
+      <button
+        class="pm-btn pm-btn-primary"
+        *ngIf="perm.canDo('product:create')"
+        (click)="openCreateModal()"
+      >
         <i class="bi bi-plus-lg"></i> Thêm sản phẩm
       </button>
     </div>
   </div>
 
   <!-- ══════════════════════════ STAT CARDS ══════════════════════════ -->
+  <!-- (Giữ nguyên — chỉ xem, không cần phân quyền) -->
   <div class="pm-stats">
     <div
       class="pm-stat-card"
@@ -77,6 +89,7 @@
   </div>
 
   <!-- ══════════════════════════ TOOLBAR ══════════════════════════ -->
+  <!-- (Giữ nguyên — search/filter/sort là read-only) -->
   <div class="pm-toolbar">
     <div class="pm-toolbar-left">
       <div class="pm-search-wrap">
@@ -96,7 +109,6 @@
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
-
       <select
         class="pm-select"
         [(ngModel)]="filterStatus"
@@ -107,7 +119,6 @@
         <option value="INACTIVE">Ngừng bán</option>
         <option value="DISCONTINUED">Ngừng kinh doanh</option>
       </select>
-
       <select
         class="pm-select"
         [(ngModel)]="sortBy"
@@ -118,7 +129,6 @@
         <option value="basePrice">Giá tăng dần</option>
       </select>
     </div>
-
     <div class="pm-toolbar-right">
       <span class="pm-total-label"
         ><i class="bi bi-boxes"></i> {{ totalElements }} sản phẩm</span
@@ -144,18 +154,22 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════ LOADING ══════════════════════════ -->
+  <!-- ══════════════════════════ LOADING / EMPTY ══════════════════════════ -->
   <div class="pm-loading" *ngIf="loading">
     <div class="pm-spinner"></div>
     <span>Đang tải dữ liệu...</span>
   </div>
 
-  <!-- ══════════════════════════ EMPTY STATE ══════════════════════════ -->
   <div class="pm-empty" *ngIf="!loading && products.length === 0">
     <div class="pm-empty-icon"><i class="bi bi-inbox"></i></div>
     <div class="pm-empty-title">Không tìm thấy sản phẩm</div>
     <div class="pm-empty-sub">Thử thay đổi bộ lọc hoặc thêm sản phẩm mới</div>
-    <button class="pm-btn pm-btn-primary mt-3" (click)="openCreateModal()">
+    <!-- Nút thêm trong empty state cũng kiểm tra quyền -->
+    <button
+      class="pm-btn pm-btn-primary mt-3"
+      *ngIf="perm.canDo('product:create')"
+      (click)="openCreateModal()"
+    >
       <i class="bi bi-plus-lg"></i> Thêm sản phẩm
     </button>
   </div>
@@ -238,6 +252,7 @@
           </td>
           <td>
             <div class="pm-actions" style="justify-content: center">
+              <!-- Xem: tất cả đều được -->
               <button
                 class="pm-action-btn pm-action-view"
                 title="Xem chi tiết"
@@ -245,22 +260,31 @@
               >
                 <i class="bi bi-eye"></i>
               </button>
+
+              <!-- Sửa: ADMIN & WAREHOUSE_STAFF -->
               <button
                 class="pm-action-btn pm-action-edit"
+                *ngIf="perm.canDo('product:edit')"
                 title="Chỉnh sửa"
                 (click)="editProduct(p)"
               >
                 <i class="bi bi-pencil"></i>
               </button>
+
+              <!-- Đổi trạng thái: ADMIN & WAREHOUSE_STAFF -->
               <button
                 class="pm-action-btn pm-action-status"
+                *ngIf="perm.canDo('product:change-status')"
                 title="Đổi trạng thái"
                 (click)="openStatusModal(p)"
               >
                 <i class="bi bi-toggle-on"></i>
               </button>
+
+              <!-- Vô hiệu hóa: ADMIN & WAREHOUSE_STAFF -->
               <button
                 class="pm-action-btn pm-action-del"
+                *ngIf="perm.canDo('product:disable')"
                 title="Vô hiệu hóa"
                 (click)="confirmDelete(p)"
               >
@@ -276,15 +300,17 @@
             <td colspan="10" class="pm-variant-cell">
               <div class="pm-variant-panel">
                 <div class="pm-variant-header">
-                  <span
-                    ><i
+                  <span>
+                    <i
                       class="bi bi-layers-fill"
                       style="color: var(--pm-purple); margin-right: 6px"
-                    ></i
-                    >Biến thể của <strong>{{ p.name }}</strong></span
-                  >
+                    ></i>
+                    Biến thể của <strong>{{ p.name }}</strong>
+                  </span>
+                  <!-- Thêm biến thể: ADMIN & WAREHOUSE_STAFF -->
                   <button
                     class="pm-btn pm-btn-sm pm-btn-primary"
+                    *ngIf="perm.canDo('variant:add')"
                     (click)="openAddVariantModal(p)"
                   >
                     <i class="bi bi-plus"></i> Thêm biến thể
@@ -377,27 +403,51 @@
                       </td>
                       <td>
                         <div class="pm-actions pm-actions-center">
+                          <!-- Sửa biến thể: ADMIN & WAREHOUSE_STAFF -->
                           <button
                             class="pm-action-btn pm-action-edit"
+                            *ngIf="perm.canDo('variant:edit')"
                             title="Sửa biến thể"
                             (click)="editVariant(p, v)"
                           >
                             <i class="bi bi-pencil"></i>
                           </button>
+
+                          <!-- Cập nhật ảnh: ADMIN & WAREHOUSE_STAFF -->
                           <button
                             class="pm-action-btn pm-action-view"
+                            *ngIf="perm.canDo('variant:image')"
                             title="Cập nhật ảnh"
                             (click)="openVariantImageModal(p, v)"
                           >
                             <i class="bi bi-image"></i>
                           </button>
+
+                          <!-- Xóa biến thể: ADMIN & WAREHOUSE_STAFF -->
                           <button
                             class="pm-action-btn pm-action-del"
+                            *ngIf="perm.canDo('variant:delete')"
                             title="Xóa biến thể"
                             (click)="confirmDeleteVariant(p, v)"
                           >
                             <i class="bi bi-trash"></i>
                           </button>
+
+                          <!-- SALES_STAFF: chỉ xem ảnh (read-only) -->
+                          <span
+                            *ngIf="
+                              !perm.canDo('variant:edit') &&
+                              !perm.canDo('variant:delete')
+                            "
+                            style="
+                              font-size: 11.5px;
+                              color: var(--pm-muted);
+                              font-style: italic;
+                              padding: 0 6px;
+                            "
+                          >
+                            Chỉ xem
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -435,6 +485,7 @@
         <div class="pm-grid-name" [title]="p.name">{{ p.name }}</div>
         <div class="pm-grid-price">{{ p.basePrice | number: "1.0-0" }}₫</div>
         <div class="pm-grid-actions">
+          <!-- Xem: tất cả -->
           <button
             class="pm-action-btn pm-action-view"
             title="Xem"
@@ -442,22 +493,31 @@
           >
             <i class="bi bi-eye"></i>
           </button>
+
+          <!-- Sửa: ADMIN & WAREHOUSE_STAFF -->
           <button
             class="pm-action-btn pm-action-edit"
+            *ngIf="perm.canDo('product:edit')"
             title="Sửa"
             (click)="editProduct(p)"
           >
             <i class="bi bi-pencil"></i>
           </button>
+
+          <!-- Đổi trạng thái: ADMIN & WAREHOUSE_STAFF -->
           <button
             class="pm-action-btn pm-action-status"
+            *ngIf="perm.canDo('product:change-status')"
             title="Đổi trạng thái"
             (click)="openStatusModal(p)"
           >
             <i class="bi bi-toggle-on"></i>
           </button>
+
+          <!-- Vô hiệu hóa: ADMIN & WAREHOUSE_STAFF -->
           <button
             class="pm-action-btn pm-action-del"
+            *ngIf="perm.canDo('product:disable')"
             title="Vô hiệu hóa"
             (click)="confirmDelete(p)"
           >

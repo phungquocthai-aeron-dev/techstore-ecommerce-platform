@@ -1,5 +1,5 @@
 <div class="page">
-  <!-- ── BREADCRUMB + BACK ── -->
+  <!-- ── BREADCRUMB ── -->
   <div class="breadcrumb-bar">
     <button class="btn-back" (click)="goBack()">
       <i class="bi bi-arrow-left"></i>
@@ -42,11 +42,30 @@
         <button class="btn-ghost" (click)="openEditModal()">
           <i class="bi bi-pencil"></i> Chỉnh sửa
         </button>
+        <button class="btn-ghost btn-outbound" (click)="openOutboundModal()">
+          <i class="bi bi-box-arrow-up"></i> Xuất kho
+        </button>
         <button class="btn-primary" (click)="openInboundModal()">
           <i class="bi bi-box-arrow-in-down"></i> Nhập kho
         </button>
       </div>
     </div>
+
+    <!-- ── ALERT ── -->
+    @if (alertMsg) {
+      <div
+        class="alert"
+        [class.alert-success]="alertType === 'success'"
+        [class.alert-error]="alertType === 'error'"
+      >
+        <i
+          class="bi"
+          [class.bi-check-circle-fill]="alertType === 'success'"
+          [class.bi-exclamation-circle-fill]="alertType === 'error'"
+        ></i>
+        {{ alertMsg }}
+      </div>
+    }
 
     <!-- ── INFO CARDS ── -->
     <div class="info-cards">
@@ -113,12 +132,33 @@
           <i class="bi bi-search"></i>
           <input
             type="text"
-            placeholder="Tìm theo batch code, trạng thái..."
+            placeholder="Tìm theo batch code, màu sắc, trạng thái..."
             [(ngModel)]="invSearch"
           />
         </div>
+        <!-- Filter tồn kho -->
+        <div class="filter-group">
+          <label class="filter-label">Tình trạng</label>
+          <select [(ngModel)]="invStockFilter">
+            <option value="">Tất cả</option>
+            <option value="in_stock">Còn hàng</option>
+            <option value="out_of_stock">Hết hàng</option>
+          </select>
+        </div>
+        <div class="inv-summary-bar">
+          <span class="inv-summary-item inv-summary-all">
+            <i class="bi bi-layers"></i> {{ inventories.length }} SKU
+          </span>
+          <span class="inv-summary-item inv-summary-active">
+            <i class="bi bi-circle-fill"></i> {{ activeInventoryCount }} còn
+            hàng
+          </span>
+          <span class="inv-summary-item inv-summary-out">
+            <i class="bi bi-circle"></i>
+            {{ inventories.length - activeInventoryCount }} hết hàng
+          </span>
+        </div>
       </div>
-
       <div class="table-card">
         @if (isLoadingInv) {
           <div class="loading-state">
@@ -138,6 +178,7 @@
                 <th>Sản phẩm / Màu</th>
                 <th>Batch Code</th>
                 <th style="text-align: center">Số lượng</th>
+                <th style="text-align: right">Giá nhập (đ)</th>
                 <th>Cập nhật lúc</th>
                 <th style="width: 120px">Trạng thái</th>
                 <th style="width: 100px; text-align: right">Thao tác</th>
@@ -162,21 +203,37 @@
                       }
                       <div>
                         <div class="font-medium">
-                          Variant #{{ inv.variantId }}
+                          {{ inv.variantInfo.color }}
                         </div>
                         <div class="text-muted text-sm">
-                          {{ inv.variantInfo.color }}
+                          <span class="color-dot-badge">{{
+                            inv.variantInfo.color
+                          }}</span>
+                          <span class="text-muted">
+                            · ID: {{ inv.variantId }}</span
+                          >
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td class="mono">{{ inv.batchCode }}</td>
+                  <td class="mono">{{ inv.batchCode || "—" }}</td>
                   <td style="text-align: center">
                     <span
                       class="stock-pill"
-                      [class.stock-low]="inv.stock <= 10"
+                      [class.stock-low]="inv.stock <= 10 && inv.stock > 0"
+                      [class.stock-zero]="inv.stock === 0"
                       >{{ inv.stock }}</span
                     >
+                  </td>
+                  <!-- Cột giá nhập (cost) -->
+                  <td style="text-align: right">
+                    @if (inv.cost > 0) {
+                      <span class="cost-val"
+                        >{{ inv.cost | number: "1.0-0" }}đ</span
+                      >
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
                   </td>
                   <td class="text-muted text-sm">
                     {{ inv.updatedAt | date: "dd/MM/yyyy HH:mm" }}
@@ -187,7 +244,7 @@
                       [class.badge-active]="inv.status === 'ACTIVE'"
                       [class.badge-inactive]="inv.status !== 'ACTIVE'"
                     >
-                      {{ inv.status === "ACTIVE" ? "Hoạt động" : "Hết hàng" }}
+                      {{ inv.status === "ACTIVE" ? "Còn hàng" : "Hết hàng" }}
                     </span>
                   </td>
                   <td class="actions">
@@ -228,7 +285,6 @@
           </select>
         </div>
       </div>
-
       <div class="table-card">
         @if (isLoadingTx) {
           <div class="loading-state">
@@ -280,7 +336,7 @@
                     </span>
                   </td>
                   <td>{{ tx.supplier.name }}</td>
-                  <td class="text-muted">{{ tx.note }}</td>
+                  <td class="text-muted">{{ tx.note || "—" }}</td>
                   <td class="text-sm">
                     {{ tx.createdAt | date: "dd/MM/yyyy HH:mm" }}
                   </td>
@@ -321,10 +377,12 @@
   }
 </div>
 
-<!-- ── MODAL EDIT WAREHOUSE ── -->
+<!-- ══════════════════════════════════════════════════════
+     MODAL: CHỈNH SỬA KHO
+══════════════════════════════════════════════════════ -->
 @if (showEditModal && warehouse) {
   <div class="modal-backdrop" (click)="showEditModal = false">
-    <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-a" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Chỉnh sửa kho</h3>
         <button class="modal-close" (click)="showEditModal = false">
@@ -372,10 +430,12 @@
   </div>
 }
 
-<!-- ── MODAL UPDATE INVENTORY ── -->
+<!-- ══════════════════════════════════════════════════════
+     MODAL: CẬP NHẬT LÔ HÀNG
+══════════════════════════════════════════════════════ -->
 @if (showUpdateInvModal && editingInv) {
   <div class="modal-backdrop" (click)="showUpdateInvModal = false">
-    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-a modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Cập nhật lô hàng #{{ editingInv.id }}</h3>
         <button class="modal-close" (click)="showUpdateInvModal = false">
@@ -394,7 +454,7 @@
         <div class="form-group">
           <label>Trạng thái</label>
           <select [(ngModel)]="invForm.status">
-            <option value="ACTIVE">Hoạt động</option>
+            <option value="ACTIVE">Còn hàng</option>
             <option value="OUT_OF_STOCK">Hết hàng</option>
           </select>
         </div>
@@ -410,6 +470,502 @@
           (click)="saveInventory()"
         >
           <span class="btn-text">Lưu</span>
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: NHẬP KHO
+══════════════════════════════════════════════════════ -->
+@if (showInboundModal) {
+  <div class="modal-backdrop" (click)="showInboundModal = false">
+    <div class="modal-a modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon modal-icon-green">
+            <i class="bi bi-box-arrow-in-down"></i>
+          </div>
+          <div>
+            <h3>Nhập kho — {{ warehouse?.name }}</h3>
+            <p class="modal-sub">Thêm hàng hoá vào kho từ nhà cung cấp</p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="showInboundModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Thông tin chung -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nhà cung cấp <span class="required">*</span></label>
+            <select [(ngModel)]="inboundForm.supplierId">
+              <option [ngValue]="null">-- Chọn nhà cung cấp --</option>
+              @for (s of suppliers; track s.id) {
+                <option [ngValue]="s.id">{{ s.name }} · {{ s.phone }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ghi chú</label>
+            <input
+              type="text"
+              [(ngModel)]="inboundForm.note"
+              placeholder="Ghi chú phiếu nhập..."
+            />
+          </div>
+        </div>
+
+        <!-- Danh sách hàng -->
+        <div class="section-label">
+          <span>Danh sách hàng hoá</span>
+          <button class="btn-add-line" (click)="addInboundLine()">
+            <i class="bi bi-plus-circle"></i> Thêm dòng
+          </button>
+        </div>
+
+        <div class="line-list">
+          @for (line of inboundLines; track $index; let i = $index) {
+            <div class="line-card inbound-line-card">
+              <!-- ROW 1: số thứ tự + tìm variant + fields -->
+              <div class="line-main">
+                <div class="line-num">{{ i + 1 }}</div>
+
+                <!-- Variant search dropdown -->
+                <div
+                  class="line-variant-search"
+                  (click)="stopPropagation($event)"
+                >
+                  @if (!line.variantId) {
+                    <div class="variant-search-container">
+                      <div class="variant-search-wrap">
+                        <i class="bi bi-search search-icon-inner"></i>
+                        <input
+                          type="text"
+                          [(ngModel)]="line.searchTerm"
+                          placeholder="Tìm theo tên, màu, ID..."
+                          (input)="onInboundSearchInput(line)"
+                          (focus)="onInboundSearchInput(line)"
+                          autocomplete="off"
+                        />
+                        @if (line.searching) {
+                          <div class="spinner-xs search-spinner"></div>
+                        }
+                      </div>
+                      @if (
+                        line.showDropdown && line.dropdownResults.length > 0
+                      ) {
+                        <div class="variant-dropdown">
+                          @for (v of line.dropdownResults; track v.id) {
+                            <div
+                              class="variant-dropdown-item"
+                              (click)="selectVariantForInbound(line, v)"
+                            >
+                              @if (v.imageUrl) {
+                                <img
+                                  class="dd-thumb"
+                                  [src]="v.imageUrl"
+                                  [alt]="v.color"
+                                />
+                              } @else {
+                                <div class="dd-thumb-placeholder">
+                                  <i class="bi bi-image"></i>
+                                </div>
+                              }
+                              <div class="dd-info">
+                                <span class="font-medium text-sm">{{
+                                  v.name
+                                }}</span>
+                                <span
+                                  class="text-muted"
+                                  style="font-size: 11.5px"
+                                  >{{ v.color }} ·
+                                  {{ v.price | number: "1.0-0" }}đ</span
+                                >
+                              </div>
+                              <span class="dd-id">#{{ v.id }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="variant-found">
+                      @if (line.variantInfo?.imageUrl) {
+                        <img
+                          class="product-thumb"
+                          [src]="line.variantInfo!.imageUrl"
+                          alt=""
+                        />
+                      } @else {
+                        <div class="product-thumb-placeholder">
+                          <i class="bi bi-image"></i>
+                        </div>
+                      }
+                      <div class="variant-found-info">
+                        <span class="font-medium text-sm">{{
+                          line.variantInfo?.name ?? "Variant"
+                        }}</span>
+                        <span class="text-muted" style="font-size: 11.5px">
+                          {{ line.variantInfo?.color }} · #{{ line.variantId }}
+                        </span>
+                        <span class="stock-tag"
+                          >Tồn hiện tại: {{ line.currentStock }}</span
+                        >
+                      </div>
+                      <button
+                        class="btn-clear-variant"
+                        (click)="clearInboundVariant(line)"
+                        title="Xoá"
+                      >
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                <!-- Số lượng / Giá nhập / Batch -->
+                <div class="line-fields">
+                  <div class="form-group form-group-sm">
+                    <label>Số lượng</label>
+                    <input
+                      type="number"
+                      [(ngModel)]="line.quantity"
+                      min="1"
+                      (ngModelChange)="onInboundQtyChange(line)"
+                    />
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label>Giá nhập (đ)</label>
+                    <input
+                      type="number"
+                      [(ngModel)]="line.cost"
+                      min="0"
+                      (ngModelChange)="onInboundCostChange(line)"
+                    />
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label>Batch Code</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="line.batchCode"
+                      placeholder="Tuỳ chọn"
+                    />
+                  </div>
+                  <div class="line-subtotal">
+                    <span class="text-muted text-sm">Thành tiền</span>
+                    <span class="font-medium">{{
+                      formatCurrency(line.quantity * line.cost)
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- Xoá dòng -->
+                @if (inboundLines.length > 1) {
+                  <button
+                    class="btn-remove-line"
+                    (click)="removeInboundLine(i)"
+                    title="Xoá dòng"
+                  >
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                }
+              </div>
+
+              <!-- ROW 2: Cập nhật giá variant (chỉ hiện khi đã chọn variant) -->
+              @if (line.variantId) {
+                <div class="price-update-section">
+                  <div class="price-update-header">
+                    <i class="bi bi-tag-fill"></i>
+                    <span>Cập nhật giá bán variant</span>
+                    <span class="price-suggestion-badge">
+                      Giá TB: {{ line.proposedPrice | number: "1.0-0" }}đ
+                    </span>
+                  </div>
+                  <div class="price-update-body">
+                    <div class="price-input-wrap">
+                      <input
+                        type="number"
+                        [(ngModel)]="line.finalPrice"
+                        min="1"
+                        (ngModelChange)="onFinalPriceChange(line)"
+                        [class.price-edited]="line.priceEdited"
+                        placeholder="Giá variant mới..."
+                      />
+                      <span class="price-unit">đ</span>
+                    </div>
+                    @if (line.priceEdited) {
+                      <button
+                        class="btn-reset-price"
+                        (click)="resetFinalPrice(line)"
+                      >
+                        <i class="bi bi-arrow-counterclockwise"></i> Dùng giá TB
+                      </button>
+                    }
+                    <div class="price-hint">
+                      <i class="bi bi-info-circle"></i>
+                      <span>
+                        Tính TB từ tồn kho:
+                        <em
+                          >{{ line.currentStock }} ×
+                          {{ line.currentPrice | number: "1.0-0" }}đ</em
+                        >
+                        + nhập mới:
+                        <em
+                          >{{ line.quantity }} ×
+                          {{ line.cost | number: "1.0-0" }}đ</em
+                        >
+                        @if (line.priceEdited) {
+                          ·
+                          <span style="color: var(--amber); font-weight: 600"
+                            >Đã tự chỉnh sửa</span
+                          >
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Tổng cộng -->
+        <div class="line-total">
+          <span class="text-muted">Tổng giá trị nhập:</span>
+          <span class="total-val text-danger">{{
+            formatCurrency(inboundTotal)
+          }}</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showInboundModal = false">
+          Huỷ
+        </button>
+        <button
+          class="btn-primary"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveInbound()"
+        >
+          <span class="btn-text"
+            ><i class="bi bi-box-arrow-in-down"></i> Xác nhận nhập kho</span
+          >
+          <div class="btn-spinner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: XUẤT KHO
+══════════════════════════════════════════════════════ -->
+@if (showOutboundModal) {
+  <div class="modal-backdrop" (click)="showOutboundModal = false">
+    <div class="modal-a modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon modal-icon-amber">
+            <i class="bi bi-box-arrow-up"></i>
+          </div>
+          <div>
+            <h3>Xuất kho — {{ warehouse?.name }}</h3>
+            <p class="modal-sub">Xuất hàng hoá ra khỏi kho</p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="showOutboundModal = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Loại xuất kho</label>
+            <select [(ngModel)]="outboundForm.referenceType">
+              <option value="MANUAL">Thủ công</option>
+              <option value="ORDER">Theo đơn hàng</option>
+              <option value="RETURN">Trả hàng</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mã đơn hàng</label>
+            <input
+              type="number"
+              [(ngModel)]="outboundForm.orderId"
+              placeholder="Để trống nếu không có"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Ghi chú</label>
+          <input
+            type="text"
+            [(ngModel)]="outboundForm.note"
+            placeholder="Ghi chú phiếu xuất..."
+          />
+        </div>
+
+        <div class="section-label">
+          <span>Danh sách hàng xuất</span>
+          <button class="btn-add-line" (click)="addOutboundLine()">
+            <i class="bi bi-plus-circle"></i> Thêm dòng
+          </button>
+        </div>
+
+        <div class="line-list">
+          @for (line of outboundLines; track $index; let i = $index) {
+            <div class="line-card">
+              <div class="line-num">{{ i + 1 }}</div>
+
+              <!-- Variant search dropdown -->
+              <div
+                class="line-variant-search"
+                (click)="stopPropagation($event)"
+              >
+                @if (!line.variantId) {
+                  <div class="variant-search-container">
+                    <div class="variant-search-wrap">
+                      <i class="bi bi-search search-icon-inner"></i>
+                      <input
+                        type="text"
+                        [(ngModel)]="line.searchTerm"
+                        placeholder="Tìm theo tên, màu, ID..."
+                        (input)="onOutboundSearchInput(line)"
+                        (focus)="onOutboundSearchInput(line)"
+                        autocomplete="off"
+                      />
+                      @if (line.searching) {
+                        <div class="spinner-xs search-spinner"></div>
+                      }
+                    </div>
+                    @if (line.showDropdown && line.dropdownResults.length > 0) {
+                      <div class="variant-dropdown">
+                        @for (v of line.dropdownResults; track v.id) {
+                          <div
+                            class="variant-dropdown-item"
+                            (click)="selectVariantForOutbound(line, v)"
+                          >
+                            @if (v.imageUrl) {
+                              <img
+                                class="dd-thumb"
+                                [src]="v.imageUrl"
+                                [alt]="v.color"
+                              />
+                            } @else {
+                              <div class="dd-thumb-placeholder">
+                                <i class="bi bi-image"></i>
+                              </div>
+                            }
+                            <div class="dd-info">
+                              <span class="font-medium text-sm">{{
+                                v.name
+                              }}</span>
+                              <span
+                                class="text-muted"
+                                style="font-size: 11.5px"
+                                >{{ v.color }}</span
+                              >
+                            </div>
+                            <!-- Hiển thị tồn kho trong dropdown xuất kho -->
+                            @if (inventories | stockOf: v.id) {
+                              <span class="dd-stock-tag">
+                                Tồn: {{ inventories | stockOf: v.id }}
+                              </span>
+                            }
+                            <span class="dd-id">#{{ v.id }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="variant-found">
+                    @if (line.variantInfo?.imageUrl) {
+                      <img
+                        class="product-thumb"
+                        [src]="line.variantInfo!.imageUrl"
+                        alt=""
+                      />
+                    } @else {
+                      <div class="product-thumb-placeholder">
+                        <i class="bi bi-image"></i>
+                      </div>
+                    }
+                    <div class="variant-found-info">
+                      <span class="font-medium text-sm">{{
+                        line.variantInfo?.name ?? "Variant"
+                      }}</span>
+                      <span class="text-muted" style="font-size: 11.5px">{{
+                        line.variantInfo?.color
+                      }}</span>
+                      @if (line.maxStock > 0) {
+                        <span class="stock-tag">Tồn: {{ line.maxStock }}</span>
+                      } @else {
+                        <span class="stock-tag stock-tag-zero">Hết hàng</span>
+                      }
+                    </div>
+                    <button
+                      class="btn-clear-variant"
+                      (click)="clearOutboundVariant(line)"
+                    >
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+
+              <div class="line-fields">
+                <div class="form-group form-group-sm">
+                  <label>Số lượng xuất</label>
+                  <input
+                    type="number"
+                    [(ngModel)]="line.quantity"
+                    min="1"
+                    [max]="line.maxStock || 9999"
+                  />
+                </div>
+                @if (line.maxStock > 0 && line.quantity > line.maxStock) {
+                  <span class="err-msg">
+                    <i class="bi bi-exclamation-triangle"></i> Vượt quá tồn kho
+                  </span>
+                }
+              </div>
+
+              @if (outboundLines.length > 1) {
+                <button class="btn-remove-line" (click)="removeOutboundLine(i)">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="line-total">
+          <span class="text-muted">Tổng số lượng xuất:</span>
+          <span class="total-val">{{ outboundTotal }} sản phẩm</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showOutboundModal = false">
+          Huỷ
+        </button>
+        <button
+          class="btn-outbound-confirm"
+          [class.loading]="isSaving"
+          [disabled]="isSaving"
+          (click)="saveOutbound()"
+        >
+          <span class="btn-text"
+            ><i class="bi bi-box-arrow-up"></i> Xác nhận xuất kho</span
+          >
           <div class="btn-spinner"></div>
         </button>
       </div>

@@ -13,7 +13,7 @@
         </div>
       </div>
     </div>
-    <div class="cm-topbar-right">
+    <div class="cm-topbar-right" *ngIf="perm.canDo('brand:modify')">
       <button class="cm-btn cm-btn-primary" (click)="openCreateModal()">
         <i class="bi bi-plus-lg"></i> Thêm danh mục
       </button>
@@ -148,7 +148,12 @@
           <th>Loại (CategoryType)</th>
           <th>Loại linh kiện PC</th>
           <th>Mô tả</th>
-          <th style="text-align: center; width: 120px">Thao tác</th>
+          <th
+            *ngIf="perm.canDo('brand:modify')"
+            style="text-align: center; width: 120px"
+          >
+            Thao tác
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -208,7 +213,7 @@
           </td>
 
           <!-- ACTIONS -->
-          <td>
+          <td *ngIf="perm.canDo('brand:modify')">
             <div class="cm-actions">
               <button
                 class="cm-action-btn cm-action-edit"

@@ -17,6 +17,7 @@ export interface InventoryResponse {
   warehouseId: number;
   warehouseName: string;
   variantInfo: VariantInfo;
+  cost: number;
 }
 
 export interface VariantStockResponse {

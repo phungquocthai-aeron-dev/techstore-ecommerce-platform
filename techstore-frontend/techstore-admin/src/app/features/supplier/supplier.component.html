@@ -126,7 +126,7 @@
 <!-- ── MODAL CREATE / EDIT ── -->
 @if (showModal) {
   <div class="modal-backdrop" (click)="closeModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-a" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ editingId ? "Chỉnh sửa" : "Thêm" }} nhà cung cấp</h3>
         <button class="modal-close" (click)="closeModal()">
@@ -181,7 +181,7 @@
 <!-- ── MODAL CONFIRM DELETE ── -->
 @if (showDeleteModal) {
   <div class="modal-backdrop" (click)="showDeleteModal = false">
-    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-a modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Xác nhận xoá</h3>
         <button class="modal-close" (click)="showDeleteModal = false">

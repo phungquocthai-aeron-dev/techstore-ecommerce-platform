@@ -15,6 +15,7 @@ import {
   VariantUpdateRequest,
   VariantUpdateImageRequest
 } from './models/variant-request.model';
+import { PageResponse } from './models/page-response.model';
 
 @Injectable({
   providedIn: 'root'
@@ -25,6 +26,56 @@ export class VariantService {
   private productVariantUrl = environment.productUrl + '/products';
 
   constructor(private http: HttpClient) {}
+
+  // ===============================
+// SEARCH VARIANTS
+// ===============================
+
+search(
+  keyword: string = '',
+  page: number = 0,
+  size: number = 10,
+  sortBy: string = 'id',
+  sortDirection: string = 'DESC'
+) {
+  let params = new HttpParams()
+    .set('page', page)
+    .set('size', size)
+    .set('sortBy', sortBy)
+    .set('sortDirection', sortDirection);
+
+  if (keyword) {
+    params = params.set('keyword', keyword);
+  }
+
+  return this.http.get<ApiResponse<PageResponse<VariantResponse>>>(
+    `${this.baseUrl}/search`,
+    { params }
+  );
+}
+
+  // ===============================
+// GET ALL ACTIVE VARIANTS (PAGINATION)
+// ===============================
+
+getAll(
+  page: number = 0,
+  size: number = 10,
+  sortBy: string = 'id',
+  sortDirection: string = 'DESC'
+): Observable<ApiResponse<PageResponse<VariantResponse>>> {
+
+  const params = new HttpParams()
+    .set('page', page)
+    .set('size', size)
+    .set('sortBy', sortBy)
+    .set('sortDirection', sortDirection);
+
+  return this.http.get<ApiResponse<PageResponse<VariantResponse>>>(
+    `${this.baseUrl}/all`,
+    { params }
+  );
+}
 
   // ===============================
   // GET VARIANT BY ID

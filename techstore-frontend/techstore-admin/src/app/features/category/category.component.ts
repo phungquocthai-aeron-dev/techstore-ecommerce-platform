@@ -6,6 +6,7 @@ import { CategoryService } from '../product/category.service';
 import { CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest } from '../product/models/category.model';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf } from '@angular/common';
+import { PermissionService } from '../../core/services/permission.service';
 
 interface StatCard {
   label:     string;
@@ -93,7 +94,10 @@ export class CategoryManagementComponent implements OnInit, OnDestroy {
   showDeleteModal = false;
   deleteTarget:   CategoryResponse | null = null;
 
-  constructor(private categoryService: CategoryService) {}
+  constructor(
+    private categoryService: CategoryService,
+    public perm: PermissionService
+  ) {}
 
   // ══════════════════════════════════════════════════════════════════════
   // LIFECYCLE

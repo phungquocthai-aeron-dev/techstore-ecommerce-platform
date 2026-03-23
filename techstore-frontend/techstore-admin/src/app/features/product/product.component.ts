@@ -33,6 +33,7 @@ import {
 
 import { DecimalPipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PermissionService } from '../../core/services/permission.service';
 
 // ─── Extended interfaces for UI state ──────────────────────────────────────
 interface ProductListUI extends ProductListResponse {
@@ -156,7 +157,8 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     private productService:  ProductService,
     private brandService:    BrandService,
     private categoryService: CategoryService,
-    private variantService:  VariantService
+    private variantService:  VariantService,
+    public perm: PermissionService
   ) {}
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -550,7 +552,12 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     const files = Array.from(input.files);
     this.saving = true;
 
-    this.productService.updateImages(this.editingProductId, files)
+    const images = files.map((_, index) => ({
+      fileIndex: index,
+      isPrimary: false,
+    }));
+
+    this.productService.updateImages(this.editingProductId, files, images)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
@@ -584,10 +591,31 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
       });
   }
 
-  setPrimaryImage(img: any): void {
-    this.currentProductImages.forEach(i => i.isPrimary = false);
-    img.isPrimary = true;
-  }
+setPrimaryImage(img: any): void {
+  if (!this.editingProductId) return;
+
+  this.saving = true;
+
+  // Chỉ gửi oldUrl + isPrimary, không cần fileIndex hay file
+  const imageMeta = [{
+    oldUrl: img.url,
+    isPrimary: true
+  }];
+
+  this.productService.updateImages(this.editingProductId, [], imageMeta)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: res => {
+        this.saving = false;
+        this.currentProductImages = res.result?.images ?? this.currentProductImages;
+        this.showToast('Đã đặt ảnh chính thành công!', 'success');
+      },
+      error: () => {
+        this.saving = false;
+        this.showToast('Lỗi cập nhật ảnh chính', 'error');
+      }
+    });
+}
 
   // ══════════════════════════════════════════════════════════════════════════
   // ADD VARIANT

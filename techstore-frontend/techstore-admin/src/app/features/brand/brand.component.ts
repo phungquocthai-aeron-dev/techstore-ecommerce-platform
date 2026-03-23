@@ -7,6 +7,7 @@ import { BrandResponse } from '../product/models/brand.model';
 import { BrandCreateRequest, BrandUpdateRequest } from '../product/models/brand-request.model';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf } from '@angular/common';
+import { PermissionService } from '../../core/services/permission.service';
 
 
 interface BrandForm {
@@ -83,7 +84,10 @@ export class BrandManagementComponent implements OnInit, OnDestroy {
   showDeleteModal = false;
   deleteTarget:   BrandResponse | null = null;
 
-  constructor(private brandService: BrandService) {}
+  constructor(
+    private brandService: BrandService,
+    public perm: PermissionService
+  ) {}
 
   // ══════════════════════════════════════════════════════════════════════
   // LIFECYCLE

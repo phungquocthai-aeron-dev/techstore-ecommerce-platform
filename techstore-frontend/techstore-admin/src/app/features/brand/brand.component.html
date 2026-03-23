@@ -13,7 +13,7 @@
         </div>
       </div>
     </div>
-    <div class="bm-topbar-right">
+    <div *ngIf="perm.canDo('brand:modify')" class="bm-topbar-right">
       <button class="bm-btn bm-btn-primary" (click)="openCreateModal()">
         <i class="bi bi-plus-lg"></i> Thêm thương hiệu
       </button>
@@ -182,7 +182,12 @@
           </th>
           <th>Thương hiệu</th>
           <th>Trạng thái</th>
-          <th style="text-align: center; width: 120px">Thao tác</th>
+          <th
+            *ngIf="perm.canDo('brand:modify')"
+            style="text-align: center; width: 120px"
+          >
+            Thao tác
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -223,7 +228,7 @@
           </td>
 
           <!-- ACTIONS -->
-          <td>
+          <td *ngIf="perm.canDo('brand:modify')">
             <div class="bm-actions">
               <button
                 class="bm-action-btn bm-action-edit"

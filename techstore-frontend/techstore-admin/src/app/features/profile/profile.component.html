@@ -1,0 +1,420 @@
+<div class="pf-root">
+  <!-- ══════════════════════ HERO BANNER ══════════════════════ -->
+  <div class="pf-hero">
+    <div class="pf-hero-bg">
+      <div class="pf-hero-blob pf-blob-1"></div>
+      <div class="pf-hero-blob pf-blob-2"></div>
+      <div class="pf-hero-blob pf-blob-3"></div>
+    </div>
+
+    <div class="pf-hero-content">
+      <!-- Avatar -->
+      <div class="pf-avatar-wrap">
+        <div class="pf-avatar">
+          {{ staff ? getAvatarText(staff.fullName) : "?" }}
+        </div>
+        <div class="pf-avatar-ring"></div>
+      </div>
+
+      <!-- Identity -->
+      <div class="pf-hero-identity" *ngIf="staff">
+        <h1 class="pf-hero-name">{{ staff.fullName }}</h1>
+        <div class="pf-hero-meta">
+          <span class="pf-hero-email">
+            <i class="bi bi-envelope-fill"></i>{{ staff.email }}
+          </span>
+          <span class="pf-hero-sep">·</span>
+          <span
+            class="pf-role-pill"
+            [ngClass]="perm.getRoleBadgeClass(staff.roles)"
+          >
+            {{ perm.getRoleLabel(staff.roles) }}
+          </span>
+          <span class="pf-hero-sep">·</span>
+          <span
+            class="pf-status-dot"
+            [class.active]="staff.status === 'ACTIVE'"
+          >
+            <i class="bi bi-circle-fill"></i>
+            {{ staff.status === "ACTIVE" ? "Đang hoạt động" : "Tạm ngừng" }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="pf-breadcrumb">
+      <i class="bi bi-house-fill"></i>
+      <span>Trang chủ</span>
+      <i class="bi bi-chevron-right"></i>
+      <span class="cur">Hồ sơ cá nhân</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ BODY ══════════════════════ -->
+  <div class="pf-body">
+    <!-- ── LEFT: Quick info card ── -->
+    <aside class="pf-aside">
+      <div class="pf-info-card" *ngIf="staff">
+        <div class="pf-info-card-title">
+          <i class="bi bi-person-vcard"></i> Thông tin nhanh
+        </div>
+        <ul class="pf-info-list">
+          <li>
+            <span class="pf-il-label"><i class="bi bi-hash"></i> Mã NV</span>
+            <span class="pf-il-val pf-mono">#{{ staff.id }}</span>
+          </li>
+          <li>
+            <span class="pf-il-label"
+              ><i class="bi bi-envelope"></i> Email</span
+            >
+            <span class="pf-il-val pf-truncate">{{ staff.email }}</span>
+          </li>
+          <li>
+            <span class="pf-il-label"><i class="bi bi-telephone"></i> SĐT</span>
+            <span class="pf-il-val">{{ staff.phone || "—" }}</span>
+          </li>
+          <li>
+            <span class="pf-il-label"
+              ><i class="bi bi-shield"></i> Vai trò</span
+            >
+            <span class="pf-il-val">{{ perm.getRoleLabel(staff.roles) }}</span>
+          </li>
+          <li>
+            <span class="pf-il-label"
+              ><i class="bi bi-activity"></i> Trạng thái</span
+            >
+            <span class="pf-status-chip" [class.on]="staff.status === 'ACTIVE'">
+              {{ staff.status === "ACTIVE" ? "Hoạt động" : "Tạm ngừng" }}
+            </span>
+          </li>
+        </ul>
+
+        <!-- Danh sách role pills nếu có nhiều role -->
+        <div class="pf-roles-section" *ngIf="staff.roles.includes(' ')">
+          <div class="pf-info-card-title" style="margin-top: 14px">
+            <i class="bi bi-shield-shaded"></i> Các vai trò
+          </div>
+          <div class="pf-roles-list">
+            <span
+              class="pf-role-tag"
+              *ngFor="let r of perm.parseRoles(staff.roles)"
+            >
+              <i class="bi bi-check-circle-fill"></i> {{ r }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── RIGHT: Tab content ── -->
+    <main class="pf-main">
+      <!-- Tab nav -->
+      <div class="pf-tabs">
+        <button
+          class="pf-tab"
+          [class.active]="activeTab === 'info'"
+          (click)="activeTab = 'info'"
+        >
+          <i class="bi bi-person-lines-fill"></i>
+          Thông tin cá nhân
+        </button>
+        <button
+          class="pf-tab"
+          [class.active]="activeTab === 'password'"
+          (click)="activeTab = 'password'"
+        >
+          <i class="bi bi-key-fill"></i>
+          Đổi mật khẩu
+        </button>
+      </div>
+
+      <!-- ════ TAB: THÔNG TIN CÁ NHÂN ════ -->
+      <div class="pf-panel" *ngIf="activeTab === 'info'">
+        <div class="pf-panel-header">
+          <div class="pf-panel-title">
+            <i class="bi bi-person-fill"></i> Thông tin cá nhân
+          </div>
+          <button
+            class="pf-btn pf-btn-outline"
+            *ngIf="!infoEditing"
+            (click)="infoEditing = true"
+          >
+            <i class="bi bi-pencil"></i> Chỉnh sửa
+          </button>
+        </div>
+
+        <!-- VIEW mode -->
+        <div class="pf-field-grid" *ngIf="!infoEditing && staff">
+          <div class="pf-field-row">
+            <div class="pf-field-group">
+              <label class="pf-field-label">Họ và tên</label>
+              <div class="pf-field-val">{{ staff.fullName }}</div>
+            </div>
+            <div class="pf-field-group">
+              <label class="pf-field-label">Email</label>
+              <div class="pf-field-val pf-field-readonly">
+                {{ staff.email }}
+                <span class="pf-locked-badge"
+                  ><i class="bi bi-lock-fill"></i> Không thể thay đổi</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="pf-field-row">
+            <div class="pf-field-group">
+              <label class="pf-field-label">Số điện thoại</label>
+              <div class="pf-field-val">{{ staff.phone || "—" }}</div>
+            </div>
+            <div class="pf-field-group">
+              <label class="pf-field-label">Trạng thái tài khoản</label>
+              <div class="pf-field-val">
+                <span
+                  class="pf-status-chip"
+                  [class.on]="staff.status === 'ACTIVE'"
+                >
+                  {{
+                    staff.status === "ACTIVE" ? "Đang hoạt động" : "Tạm ngừng"
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDIT mode -->
+        <div class="pf-edit-form" *ngIf="infoEditing">
+          <div class="pf-field-row">
+            <div class="pf-form-group">
+              <label class="pf-label"
+                >Họ và tên <span class="req">*</span></label
+              >
+              <input
+                class="pf-input"
+                type="text"
+                [(ngModel)]="infoForm.fullName"
+                placeholder="Nhập họ và tên"
+              />
+            </div>
+            <div class="pf-form-group">
+              <label class="pf-label">Email</label>
+              <input
+                class="pf-input pf-input-disabled"
+                type="email"
+                [value]="staff?.email"
+                disabled
+              />
+              <small class="pf-hint"
+                ><i class="bi bi-info-circle"></i> Email không thể thay
+                đổi</small
+              >
+            </div>
+          </div>
+          <div class="pf-field-row">
+            <div class="pf-form-group">
+              <label class="pf-label">Số điện thoại</label>
+              <input
+                class="pf-input"
+                type="tel"
+                [(ngModel)]="infoForm.phone"
+                placeholder="0900 000 000"
+              />
+            </div>
+          </div>
+
+          <div class="pf-form-actions">
+            <button class="pf-btn pf-btn-ghost" (click)="cancelEdit()">
+              <i class="bi bi-x-lg"></i> Hủy
+            </button>
+            <button
+              class="pf-btn pf-btn-primary"
+              [disabled]="saving || !infoForm.fullName?.trim()"
+              (click)="saveInfo()"
+            >
+              <span class="pf-spinner" *ngIf="saving"></span>
+              <i class="bi bi-check-lg" *ngIf="!saving"></i>
+              {{ saving ? "Đang lưu..." : "Lưu thay đổi" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ TAB: ĐỔI MẬT KHẨU ════ -->
+      <div class="pf-panel" *ngIf="activeTab === 'password'">
+        <div class="pf-panel-header">
+          <div class="pf-panel-title">
+            <i class="bi bi-shield-lock-fill"></i> Đổi mật khẩu
+          </div>
+        </div>
+
+        <div class="pf-pwd-notice">
+          <i class="bi bi-info-circle-fill"></i>
+          Mật khẩu mới phải có ít nhất 6 ký tự. Sau khi đổi, bạn sẽ cần đăng
+          nhập lại.
+        </div>
+
+        <div class="pf-pwd-form">
+          <!-- Mật khẩu hiện tại -->
+          <div class="pf-form-group">
+            <label class="pf-label"
+              >Mật khẩu hiện tại <span class="req">*</span></label
+            >
+            <div class="pf-input-wrap">
+              <input
+                class="pf-input"
+                [type]="showOld ? 'text' : 'password'"
+                [(ngModel)]="pwdForm.oldPassword"
+                placeholder="Nhập mật khẩu hiện tại"
+              />
+              <button
+                class="pf-eye-btn"
+                type="button"
+                (click)="showOld = !showOld"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!showOld"
+                  [class.bi-eye-slash]="showOld"
+                ></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mật khẩu mới -->
+          <div class="pf-form-group">
+            <label class="pf-label"
+              >Mật khẩu mới <span class="req">*</span></label
+            >
+            <div class="pf-input-wrap">
+              <input
+                class="pf-input"
+                [type]="showNew ? 'text' : 'password'"
+                [(ngModel)]="pwdForm.newPassword"
+                placeholder="Tối thiểu 6 ký tự"
+              />
+              <button
+                class="pf-eye-btn"
+                type="button"
+                (click)="showNew = !showNew"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!showNew"
+                  [class.bi-eye-slash]="showNew"
+                ></i>
+              </button>
+            </div>
+            <!-- Strength bar -->
+            <div class="pf-strength-wrap" *ngIf="pwdForm.newPassword">
+              <div class="pf-strength-bar">
+                <div
+                  class="pf-strength-fill"
+                  [class.weak]="pwdForm.newPassword.length < 6"
+                  [class.medium]="
+                    pwdForm.newPassword.length >= 6 &&
+                    pwdForm.newPassword.length < 10
+                  "
+                  [class.strong]="pwdForm.newPassword.length >= 10"
+                  [style.width.%]="
+                    Math.min(pwdForm.newPassword.length * 8, 100)
+                  "
+                ></div>
+              </div>
+              <span
+                class="pf-strength-label"
+                [class.weak]="pwdForm.newPassword.length < 6"
+                [class.medium]="
+                  pwdForm.newPassword.length >= 6 &&
+                  pwdForm.newPassword.length < 10
+                "
+                [class.strong]="pwdForm.newPassword.length >= 10"
+              >
+                {{
+                  pwdForm.newPassword.length < 6
+                    ? "Yếu"
+                    : pwdForm.newPassword.length < 10
+                      ? "Trung bình"
+                      : "Mạnh"
+                }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Xác nhận mật khẩu -->
+          <div class="pf-form-group">
+            <label class="pf-label"
+              >Xác nhận mật khẩu mới <span class="req">*</span></label
+            >
+            <div class="pf-input-wrap">
+              <input
+                class="pf-input"
+                [type]="showConfirm ? 'text' : 'password'"
+                [(ngModel)]="pwdForm.passwordConfirm"
+                placeholder="Nhập lại mật khẩu mới"
+                [class.pf-input-error]="pwdMismatch"
+                [class.pf-input-ok]="
+                  !pwdMismatch &&
+                  pwdForm.passwordConfirm &&
+                  pwdForm.newPassword === pwdForm.passwordConfirm
+                "
+              />
+              <button
+                class="pf-eye-btn"
+                type="button"
+                (click)="showConfirm = !showConfirm"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!showConfirm"
+                  [class.bi-eye-slash]="showConfirm"
+                ></i>
+              </button>
+            </div>
+            <div class="pf-error-msg" *ngIf="pwdMismatch">
+              <i class="bi bi-exclamation-circle"></i> Mật khẩu xác nhận không
+              khớp
+            </div>
+            <div
+              class="pf-ok-msg"
+              *ngIf="
+                !pwdMismatch &&
+                pwdForm.passwordConfirm &&
+                pwdForm.newPassword === pwdForm.passwordConfirm
+              "
+            >
+              <i class="bi bi-check-circle"></i> Mật khẩu khớp
+            </div>
+          </div>
+
+          <div class="pf-form-actions">
+            <button
+              class="pf-btn pf-btn-primary"
+              [disabled]="!pwdCanSave || saving"
+              (click)="savePassword()"
+            >
+              <span class="pf-spinner" *ngIf="saving"></span>
+              <i class="bi bi-shield-check" *ngIf="!saving"></i>
+              {{ saving ? "Đang lưu..." : "Đổi mật khẩu" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════ TOAST ══════════════════════ -->
+<div
+  class="pf-toast"
+  [class.show]="toast.show"
+  [class.error]="toast.type === 'error'"
+>
+  <div class="pf-toast-icon">
+    <i
+      class="bi"
+      [class.bi-check-circle-fill]="toast.type === 'success'"
+      [class.bi-x-circle-fill]="toast.type === 'error'"
+    ></i>
+  </div>
+  <span>{{ toast.message }}</span>
+</div>

@@ -1,5 +1,5 @@
 <nav class="sidebar" [class.collapsed]="isCollapsed">
-  <!-- Brand -->
+  <!-- ── Brand ── -->
   <div class="sidebar-brand">
     <div class="brand-icon">
       <i class="bi bi-grid-3x3-gap-fill"></i>
@@ -10,9 +10,10 @@
     </div>
   </div>
 
-  <!-- Scroll area -->
+  <!-- ── Scroll area ── -->
   <div class="sidebar-scroll">
-    <div class="sidebar-section">
+    <!-- Tổng quan: ADMIN & SALES_STAFF -->
+    <div class="sidebar-section" *ngIf="canAccess('dashboard')">
       <div class="section-label">Tổng quan</div>
       <ul>
         <li>
@@ -30,16 +31,22 @@
       </ul>
     </div>
 
-    <div class="sidebar-section">
+    <!-- Danh mục quản lý -->
+    <div
+      class="sidebar-section"
+      *ngIf="
+        canAccess('home') || canAccess('categories') || canAccess('brands')
+      "
+    >
       <div class="section-label">Danh mục quản lý</div>
       <ul>
-        <li>
+        <li *ngIf="canAccess('home')">
           <a class="nav-link" routerLink="/home" routerLinkActive="active">
             <i class="bi bi-box-seam"></i>
             <span>Sản phẩm</span>
           </a>
         </li>
-        <li>
+        <li *ngIf="canAccess('categories')">
           <a
             class="nav-link"
             routerLink="/categories"
@@ -49,7 +56,7 @@
             <span>Danh mục</span>
           </a>
         </li>
-        <li>
+        <li *ngIf="canAccess('brands')">
           <a class="nav-link" routerLink="/brands" routerLinkActive="active">
             <i class="bi bi-bookmark-star"></i>
             <span>Thương hiệu</span>
@@ -58,64 +65,66 @@
       </ul>
     </div>
 
-    <div class="sidebar-section">
+    <!-- Kinh doanh: ADMIN & SALES_STAFF -->
+    <div
+      class="sidebar-section"
+      *ngIf="canAccess('orders') || canAccess('coupons')"
+    >
       <div class="section-label">Kinh doanh</div>
       <ul>
-        <li>
+        <li *ngIf="canAccess('orders')">
           <a class="nav-link" routerLink="/orders" routerLinkActive="active">
             <i class="bi bi-bag-check"></i>
             <span>Đơn đặt hàng</span>
-            <!-- <span class="badge-nav">12</span> -->
           </a>
         </li>
-        <li>
+        <li *ngIf="canAccess('coupons')">
           <a class="nav-link" routerLink="/coupons" routerLinkActive="active">
             <i class="bi bi-ticket-perforated"></i>
             <span>Mã giảm giá</span>
           </a>
         </li>
-        <!-- <li>
-          <a
-            class="nav-link"
-            routerLink="/payments"
-            routerLinkActive="active"
-          >
-            <i class="bi bi-credit-card"></i>
-            <span>Thanh toán</span>
-          </a>
-        </li> -->
       </ul>
     </div>
 
-    <div class="sidebar-section">
+    <!-- Người dùng: ADMIN & SALES_STAFF -->
+    <div
+      class="sidebar-section"
+      *ngIf="
+        canAccess('customers') || canAccess('staffs') || canAccess('reviews')
+      "
+    >
       <div class="section-label">Người dùng</div>
       <ul>
-        <li>
+        <li *ngIf="canAccess('customers')">
           <a class="nav-link" routerLink="/customers" routerLinkActive="active">
             <i class="bi bi-people"></i>
             <span>Khách hàng</span>
           </a>
         </li>
-        <li>
+        <li *ngIf="canAccess('staffs')">
           <a class="nav-link" routerLink="/staffs" routerLinkActive="active">
             <i class="bi bi-person-badge"></i>
             <span>Nhân viên</span>
           </a>
         </li>
-        <li>
+        <li *ngIf="canAccess('reviews')">
           <a class="nav-link" routerLink="/reviews" routerLinkActive="active">
             <i class="bi bi-chat-square-text"></i>
             <span>Bình luận</span>
-            <!-- <span class="badge-nav danger">5</span> -->
           </a>
         </li>
       </ul>
     </div>
 
-    <div class="sidebar-section">
+    <!-- Kho hàng: tất cả role -->
+    <div
+      class="sidebar-section"
+      *ngIf="canAccess('warehouses') || canAccess('suppliers')"
+    >
       <div class="section-label">Kho hàng</div>
       <ul>
-        <li>
+        <li *ngIf="canAccess('warehouses')">
           <a
             class="nav-link"
             routerLink="/warehouses"
@@ -126,7 +135,7 @@
             <span>Kho hàng</span>
           </a>
         </li>
-        <li>
+        <li *ngIf="canAccess('suppliers')">
           <a class="nav-link" routerLink="/suppliers" routerLinkActive="active">
             <i class="bi bi-truck"></i>
             <span>Nhà cung cấp</span>
@@ -137,14 +146,66 @@
   </div>
   <!-- /sidebar-scroll -->
 
-  <!-- Footer -->
+  <!-- ── Footer ── -->
   <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-avatar">AD</div>
-      <div class="user-info" *ngIf="!isCollapsed">
-        <strong>Admin Hệ thống</strong>
-        <small>Quản trị viên</small>
+    <ng-container *ngIf="currentStaff$ | async as staff; else loadingUser">
+      <!-- Expanded: thẻ <a> để click → /profile -->
+      <a
+        class="user-card"
+        routerLink="/profile"
+        routerLinkActive="user-card-active"
+        *ngIf="!isCollapsed"
+      >
+        <div class="user-avatar">{{ getAvatarText(staff.fullName) }}</div>
+        <div class="user-info">
+          <strong>{{ staff.fullName }}</strong>
+          <span
+            class="role-badge"
+            [ngClass]="permService.getRoleBadgeClass(staff.roles)"
+          >
+            {{ permService.getRoleLabel(staff.roles) }}
+          </span>
+          <small class="user-email">{{ staff.email }}</small>
+        </div>
+        <!-- stopPropagation để click logout không kích hoạt routerLink -->
+        <button
+          class="logout-btn"
+          title="Đăng xuất"
+          (click)="$event.preventDefault(); $event.stopPropagation(); logout()"
+        >
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </a>
+
+      <!-- Collapsed: chỉ avatar, click → /profile -->
+      <a
+        class="user-card user-card-collapsed"
+        routerLink="/profile"
+        routerLinkActive="user-card-active"
+        *ngIf="isCollapsed"
+        [title]="staff.fullName + ' — ' + permService.getRoleLabel(staff.roles)"
+      >
+        <div class="user-avatar">{{ getAvatarText(staff.fullName) }}</div>
+      </a>
+    </ng-container>
+
+    <ng-template #loadingUser>
+      <div class="user-card">
+        <div class="user-avatar user-avatar-ghost">--</div>
+        <div class="user-info" *ngIf="!isCollapsed">
+          <strong>Đang tải...</strong>
+        </div>
       </div>
-    </div>
+    </ng-template>
+
+    <!-- Logout riêng khi collapsed -->
+    <button
+      class="logout-btn-collapsed"
+      *ngIf="isCollapsed"
+      (click)="logout()"
+      title="Đăng xuất"
+    >
+      <i class="bi bi-box-arrow-right"></i>
+    </button>
   </div>
 </nav>

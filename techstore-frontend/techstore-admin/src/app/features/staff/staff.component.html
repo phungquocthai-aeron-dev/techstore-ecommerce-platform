@@ -228,15 +228,9 @@
                 title="Phân quyền"
                 (click)="openRoleModal(s)"
               >
-                <i class="bi bi-shield-half"></i>
+                <i class="bi bi-shield-fill-check"></i>
               </button>
-              <button
-                class="sm-action-btn sm-action-pwd"
-                title="Đổi mật khẩu"
-                (click)="openPasswordModal(s)"
-              >
-                <i class="bi bi-key-fill"></i>
-              </button>
+
               <button
                 class="sm-action-btn sm-action-toggle"
                 [title]="s.status === 'ACTIVE' ? 'Tạm ngừng' : 'Kích hoạt'"
@@ -358,7 +352,7 @@
           class="sm-btn sm-btn-outline"
           (click)="openRoleModal(viewTarget); closeFormModal()"
         >
-          <i class="bi bi-shield-half"></i> Phân quyền
+          <i class="bi bi-shield-fill-check"></i> Phân quyền
         </button>
         <button
           class="sm-btn sm-btn-outline"
@@ -402,28 +396,6 @@
         </div>
 
         <ng-container *ngIf="!isEdit">
-          <div class="sm-form-group">
-            <label class="sm-label">Mật khẩu <span class="req">*</span></label>
-            <div class="sm-input-wrap">
-              <input
-                class="sm-input"
-                [type]="showPwd ? 'text' : 'password'"
-                [(ngModel)]="staffForm.password"
-                placeholder="Tối thiểu 6 ký tự"
-              />
-              <button
-                class="sm-pwd-toggle"
-                type="button"
-                (click)="showPwd = !showPwd"
-              >
-                <i
-                  class="bi"
-                  [class.bi-eye]="!showPwd"
-                  [class.bi-eye-slash]="showPwd"
-                ></i>
-              </button>
-            </div>
-          </div>
           <div class="sm-form-group">
             <label class="sm-label">Vai trò <span class="req">*</span></label>
             <div class="sm-checkbox-group">
@@ -499,7 +471,7 @@
     <div class="sm-modal-header">
       <div class="sm-modal-title">
         <div class="sm-modal-icon" style="background: #f5f3ff; color: #8b5cf6">
-          <i class="bi bi-shield-half"></i>
+          <i class="bi bi-shield-fill-check"></i>
         </div>
         Phân quyền nhân viên
       </div>
@@ -535,7 +507,9 @@
             <i
               class="bi"
               [class.bi-shield-fill]="r.value === 'ADMIN'"
-              [class.bi-person-fill]="r.value === 'STAFF'"
+              [class.bi-person-fill]="
+                r.value === 'WAREHOUSE_STAFF' || r.value === 'SALES_STAFF'
+              "
             ></i>
           </div>
           <div class="sm-role-card-body">

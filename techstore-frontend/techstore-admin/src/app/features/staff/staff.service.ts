@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../shared/models/api-response.model';
 import { StaffRequest, StaffResponse, StaffRoleUpdateRequest } from './models/staff.model';
+import { PageResponse } from './models/page-response.model';
 
 
 @Injectable({
@@ -61,6 +62,25 @@ export class StaffService {
       `${this.baseUrl}/${id}`
     );
   }
+
+  getAllPaged(params: {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+} = {}): Observable<ApiResponse<PageResponse<StaffResponse>>> {
+
+  const httpParams = new HttpParams()
+    .set('page',    params.page    ?? 0)
+    .set('size',    params.size    ?? 10)
+    .set('sortBy',  params.sortBy  ?? 'id')
+    .set('sortDir', params.sortDir ?? 'asc');
+
+  return this.http.get<ApiResponse<PageResponse<StaffResponse>>>(
+    `${this.baseUrl}/paged`,
+    { params: httpParams }
+  );
+}
 
   // GET /staffs?id=&email=&phone=
   getOne(params: {

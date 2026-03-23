@@ -27,7 +27,7 @@ public class WarehouseService {
     private final WarehouseRepository warehouseRepo;
     private final WarehouseMapper warehouseMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Transactional
     public WarehouseResponse create(WarehouseCreateRequest req) {
         log.info("Creating warehouse with name: {}", req.getName());
@@ -42,7 +42,7 @@ public class WarehouseService {
         return warehouseMapper.toResponse(warehouseRepo.save(warehouse));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Transactional
     public WarehouseResponse update(Long id, WarehouseUpdateRequest req) {
         log.info("Updating warehouse with id: {}", id);
@@ -60,31 +60,31 @@ public class WarehouseService {
         return warehouseMapper.toResponse(warehouseRepo.save(warehouse));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public WarehouseResponse getById(Long id) {
         return warehouseMapper.toResponse(
                 warehouseRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public WarehouseResponse getByName(String name) {
         return warehouseMapper.toResponse(
                 warehouseRepo.findByName(name).orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseResponse> getAll() {
         return warehouseRepo.findAll().stream().map(warehouseMapper::toResponse).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseResponse> getByStatus(String status) {
         return warehouseRepo.findByStatus(status).stream()
                 .map(warehouseMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseResponse> getByAddress(String addressId) {
         return warehouseRepo.findByAddressId(addressId).stream()
                 .map(warehouseMapper::toResponse)

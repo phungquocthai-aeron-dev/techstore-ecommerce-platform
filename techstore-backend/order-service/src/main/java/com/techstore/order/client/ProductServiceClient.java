@@ -19,4 +19,7 @@ public interface ProductServiceClient {
 
     @GetMapping("/variants")
     ApiResponse<List<VariantInfo>> getVariantsByIds(@RequestParam List<Long> ids);
+
+    @GetMapping("/products/{productId}/variants")
+    ApiResponse<List<VariantInfo>> getVariantsByProductId(@PathVariable Long productId);
 }

@@ -2,6 +2,7 @@ package com.techstore.user.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,6 +62,18 @@ public class CustomerController {
     public ApiResponse<List<CustomerResponse>> getAll() {
         return ApiResponse.<List<CustomerResponse>>builder()
                 .result(customerService.getAll())
+                .build();
+    }
+
+    @GetMapping("/paged")
+    public ApiResponse<Page<CustomerResponse>> getAllPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .result(customerService.getAllPaged(page, size, sortBy, sortDir))
                 .build();
     }
 

@@ -3,114 +3,145 @@ package com.techstore.chatbot.service;
 import org.springframework.stereotype.Service;
 
 import com.techstore.chatbot.constant.ResponseType;
+import com.techstore.chatbot.dto.IntentAnalysisResult;
 import com.techstore.chatbot.dto.request.ChatRequest;
 import com.techstore.chatbot.dto.response.ChatResponse;
-import com.techstore.chatbot.util.MessageParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * ChatService là orchestrator trung tâm của chatbot.
+ * Orchestrator chính. Thứ tự xử lý:
  *
- * <p>Nhận request từ controller → phân tích intent → điều hướng đến service phù hợp.
- *
- * <p>Thứ tự ưu tiên xử lý intent (rule-based trước, AI sau):
- * <pre>
- * 1. FAQ (bảo hành, đổi trả, giao hàng, ...)  → FaqService
- * 2. Kiểm tra tồn kho ("còn hàng không")      → ProductChatService
- * 3. So sánh sản phẩm ("so sánh A và B")      → CompareChatService
- * 4. Tìm sản phẩm (laptop, iPhone, ...)       → ProductChatService
- * 5. Tư vấn AI (mọi thứ còn lại)             → AiAdvisorService
- * </pre>
+ * 1. NlpIntentService phân tích message (Gemini → fallback rule-based)
+ * 2. Dispatch theo intent đến đúng service
+ * 3. Lưu lịch sử chat
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ChatService {
 
+    private final NlpIntentService nlpIntentService;
     private final FaqService faqService;
     private final ProductChatService productChatService;
     private final CompareChatService compareChatService;
+    private final CouponChatService couponChatService;
     private final AiAdvisorService aiAdvisorService;
     private final ChatHistoryService chatHistoryService;
-    private final MessageParser messageParser;
 
-    /**
-     * Xử lý một lượt chat từ user.
-     *
-     * @param request  ChatRequest chứa message và sessionId
-     * @param userId   userId từ JWT (null nếu anonymous)
-     * @return ChatResponse trả về cho frontend
-     */
     public ChatResponse processMessage(ChatRequest request, Long userId) {
         String message = request.getMessage().trim();
         String sessionId = request.getSessionId();
 
-        log.info("Processing chat: userId={}, sessionId={}, message='{}'", userId, sessionId, message);
+        log.info("╔══════════════════════════════════════════╗");
+        log.info("║         CHATBOT REQUEST START            ║");
+        log.info("╠══════════════════════════════════════════╣");
+        log.info("║ userId    : {}", userId);
+        log.info("║ sessionId : {}", sessionId);
+        log.info("║ message   : \"{}\"", message);
+        log.info("╚══════════════════════════════════════════╝");
 
-        // === Lưu tin nhắn USER vào DB ===
         chatHistoryService.saveUserMessage(message, userId, sessionId);
 
-        // === Phân tích intent và điều hướng ===
-        ChatResponse response = routeIntent(message);
+        // ── Step 1: FAQ nhanh (rule-based, không tốn Gemini token) ──────────
+        // FAQ dùng keyword matching đơn giản, không cần AI
+        if (faqService.isFaqQuestion(message)) {
+            log.info("──── [FAST PATH] FAQ matched, skip NLP ────");
+            String answer = faqService.findAnswer(message);
+            ChatResponse response = ChatResponse.builder()
+                    .type(ResponseType.TEXT)
+                    .message(answer)
+                    .build();
+            chatHistoryService.saveBotResponse(response, userId, sessionId);
+            return response;
+        }
 
-        // === Lưu BOT response vào DB ===
+        // ── Step 2: NLP phân tích intent (Gemini → fallback rule-based) ──────
+        log.info("──── [STEP 1] NLP ANALYSIS ────");
+        IntentAnalysisResult intent = nlpIntentService.analyze(message);
+
+        // ── Step 3: Dispatch ──────────────────────────────────────────────────
+        log.info("──── [STEP 2] ROUTING → {} (confidence={}) ────", intent.getIntent(), intent.getConfidence());
+
+        long start = System.currentTimeMillis();
+        ChatResponse response = dispatch(intent, message);
+        long elapsed = System.currentTimeMillis() - start;
+
         chatHistoryService.saveBotResponse(response, userId, sessionId);
+
+        String preview = response.getMessage() != null
+                ? response.getMessage()
+                                .replace("\n", "\\n")
+                                .substring(0, Math.min(80, response.getMessage().length())) + "..."
+                : "null";
+
+        log.info("╔══════════════════════════════════════════╗");
+        log.info("║         CHATBOT RESPONSE DONE            ║");
+        log.info("╠══════════════════════════════════════════╣");
+        log.info("║ intent    : {}", intent.getIntent());
+        log.info("║ type      : {}", response.getType());
+        log.info("║ elapsed   : {} ms", elapsed);
+        log.info("║ preview   : \"{}\"", preview);
+        log.info("╚══════════════════════════════════════════╝");
 
         return response;
     }
 
-    /**
-     * Điều hướng message đến handler phù hợp theo thứ tự ưu tiên.
-     */
-    private ChatResponse routeIntent(String message) {
+    private ChatResponse dispatch(IntentAnalysisResult intent, String originalMessage) {
+        return switch (intent.getIntent()) {
+            case "COUPON" -> {
+                log.info("  → [CouponChatService] handleCouponQuery()");
+                log.info("  → API call: order-service GET /coupons/available");
+                yield couponChatService.handleCouponQuery();
+            }
 
-        // ── 1. FAQ: câu hỏi chính sách ──────────────────────────────────
-        // Ưu tiên cao nhất vì đây là rule-based đơn giản, nhanh nhất
-        if (faqService.isFaqQuestion(message)) {
-            log.debug("Intent: FAQ");
-            String answer = faqService.findAnswer(message);
-            return ChatResponse.builder()
-                    .type(ResponseType.TEXT)
-                    .message(answer)
-                    .build();
-        }
+            case "STOCK_CHECK" -> {
+                // Dùng keyword từ NLP (đã chuẩn hóa) thay vì original message
+                String keyword = intent.getKeyword() != null ? intent.getKeyword() : originalMessage;
+                log.info("  → [ProductChatService] handleStockCheck(\"{}\") [NLP keyword]", keyword);
+                yield productChatService.handleStockCheck(keyword);
+            }
 
-        // ── 2. Kiểm tra tồn kho ──────────────────────────────────────────
-        if (messageParser.isStockCheck(message)) {
-            log.debug("Intent: STOCK_CHECK");
-            return productChatService.handleStockCheck(message);
-        }
+            case "COMPARE" -> {
+                log.info("  → [CompareChatService] handleCompare()");
+                log.info(
+                        "  →   productA=\"{}\", productB=\"{}\"",
+                        intent.getCompareProductA(),
+                        intent.getCompareProductB());
 
-        // ── 3. So sánh sản phẩm ──────────────────────────────────────────
-        if (messageParser.isCompare(message)) {
-            log.debug("Intent: COMPARE");
-            return compareChatService.handleCompare(message);
-        }
+                // Nếu Gemini đã extract được 2 sản phẩm → build message chuẩn
+                if (intent.getCompareProductA() != null && intent.getCompareProductB() != null) {
+                    String normalizedMsg =
+                            "so sánh " + intent.getCompareProductA() + " và " + intent.getCompareProductB();
+                    yield compareChatService.handleCompare(normalizedMsg);
+                }
+                yield compareChatService.handleCompare(originalMessage);
+            }
 
-        // ── 4. Tìm kiếm sản phẩm ─────────────────────────────────────────
-        if (messageParser.isProductSearch(message)) {
-            log.debug("Intent: PRODUCT_SEARCH");
-            return productChatService.handleProductSearch(message);
-        }
+            case "PRODUCT_SEARCH" -> {
+                log.info("  → [ProductChatService] handleProductSearch()");
+                log.info(
+                        "  →   keyword=\"{}\", min={}, max={}",
+                        intent.getKeyword(),
+                        intent.getMinPrice(),
+                        intent.getMaxPrice());
+                // Truyền intent đã parse sẵn để không cần parse lại
+                yield productChatService.handleProductSearchFromIntent(
+                        intent.getKeyword(), intent.getMinPrice(), intent.getMaxPrice());
+            }
 
-        // ── 5. Tư vấn AI (fallback) ───────────────────────────────────────
-        log.debug("Intent: AI_ADVICE (fallback)");
-        return aiAdvisorService.handleAiAdvice(message);
+            default -> {
+                // AI_ADVICE hoặc intent không xác định
+                log.info("  → [AiAdvisorService] handleAiAdvice()");
+                yield aiAdvisorService.handleAiAdvice(originalMessage);
+            }
+        };
     }
 
-    /**
-     * Lấy lịch sử chat.
-     * Ưu tiên userId nếu đã đăng nhập, fallback về sessionId.
-     */
     public Object getChatHistory(Long userId, String sessionId) {
-        if (userId != null) {
-            return chatHistoryService.getHistoryByUser(userId);
-        }
-        if (sessionId != null && !sessionId.isBlank()) {
-            return chatHistoryService.getHistoryBySession(sessionId);
-        }
+        if (userId != null) return chatHistoryService.getHistoryByUser(userId);
+        if (sessionId != null && !sessionId.isBlank()) return chatHistoryService.getHistoryBySession(sessionId);
         return java.util.List.of();
     }
 }

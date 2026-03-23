@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +23,7 @@ import com.techstore.product.dto.request.VariantUpdateImageRequestDTO;
 import com.techstore.product.dto.request.VariantUpdateRequestDTO;
 import com.techstore.product.dto.response.ApiResponse;
 import com.techstore.product.dto.response.FileResponse;
+import com.techstore.product.dto.response.PageResponseDTO;
 import com.techstore.product.dto.response.VariantResponseDTO;
 import com.techstore.product.dto.response.VariantStockResponse;
 import com.techstore.product.entity.Product;
@@ -283,6 +288,81 @@ public class VariantService {
         product.setBasePrice(minPrice != null ? minPrice : 0.0);
 
         productRepository.save(product);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDTO<VariantResponseDTO> getAllActiveVariants(
+            int page, int size, String sortBy, String sortDirection) {
+
+        // 1. Validate sort field (tránh lỗi FE gửi bậy)
+        List<String> allowedSortFields = List.of("id", "price", "color", "createdAt");
+
+        if (!allowedSortFields.contains(sortBy)) {
+            sortBy = "id";
+        }
+
+        // 2. Sort
+        Sort sort = sortDirection.equalsIgnoreCase("ASC")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        // 3. Pageable
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // 4. Query DB (chỉ ACTIVE)
+        Page<Variant> variantPage = variantRepository.findByStatus("ACTIVE", pageable);
+
+        // 5. Map DTO
+        List<VariantResponseDTO> content = variantMapper.toResponseDTOList(variantPage.getContent());
+
+        // 6. Return PageResponseDTO
+        return new PageResponseDTO<>(
+                content,
+                variantPage.getNumber(),
+                variantPage.getSize(),
+                variantPage.getTotalElements(),
+                variantPage.getTotalPages(),
+                variantPage.isLast());
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDTO<VariantResponseDTO> searchVariants(
+            String keyword, int page, int size, String sortBy, String sortDirection) {
+
+        // 1. Validate sort
+        List<String> allowedSortFields = List.of("id", "price", "color", "createdAt");
+
+        if (!allowedSortFields.contains(sortBy)) {
+            sortBy = "id";
+        }
+
+        // 2. Sort
+        Sort sort = sortDirection.equalsIgnoreCase("ASC")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // 3. Query
+        Page<Variant> variantPage;
+
+        if (keyword == null || keyword.isBlank()) {
+            variantPage = variantRepository.findByStatus("ACTIVE", pageable);
+        } else {
+            variantPage = variantRepository.searchVariants(keyword, pageable);
+        }
+
+        // 4. Map DTO
+        List<VariantResponseDTO> content = variantMapper.toResponseDTOList(variantPage.getContent());
+
+        // 5. Response
+        return new PageResponseDTO<>(
+                content,
+                variantPage.getNumber(),
+                variantPage.getSize(),
+                variantPage.getTotalElements(),
+                variantPage.getTotalPages(),
+                variantPage.isLast());
     }
 
     private String normalizeImagePath(String url) {

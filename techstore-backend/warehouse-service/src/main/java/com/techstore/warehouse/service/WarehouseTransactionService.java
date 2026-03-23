@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -51,7 +53,7 @@ public class WarehouseTransactionService {
     private final UserServiceClient userClient;
     private final InventoryRepository inventoryRepo;
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     @Transactional
     public WarehouseTransactionResponse createInboundTransaction(WarehouseTransactionCreateRequest req) {
         log.info("Creating INBOUND transaction for warehouse: {}", req.getWarehouseId());
@@ -81,18 +83,23 @@ public class WarehouseTransactionService {
                 .referenceType(req.getReferenceType())
                 .orderId(req.getOrderId())
                 .staffId(req.getStaffId())
-                .status(TransactionStatus.PENDING.name())
+                .status(TransactionStatus.COMPLETED.name())
                 .build();
 
         List<WarehouseTransactionDetail> details = new ArrayList<>();
 
         for (TransactionDetailRequest detailReq : req.getDetails()) {
+
+            String batchCode = "BATCH-" + System.currentTimeMillis() + "-"
+                    + UUID.randomUUID().toString().substring(0, 6);
+
             // Create or update inventory
             Inventory inventory = inventoryService.createOrUpdateInventory(
                     warehouse.getId(),
                     detailReq.getVariantId(),
                     detailReq.getQuantity(),
-                    detailReq.getBatchCode() != null ? detailReq.getBatchCode() : "DEFAULT");
+                    detailReq.getCost(),
+                    detailReq.getBatchCode() != null ? detailReq.getBatchCode() : batchCode);
 
             // Create transaction detail
             WarehouseTransactionDetail detail = WarehouseTransactionDetail.builder()
@@ -101,20 +108,21 @@ public class WarehouseTransactionService {
                     .variantId(detailReq.getVariantId())
                     .quantity(detailReq.getQuantity())
                     .cost(detailReq.getCost())
+                    .batchCode(detailReq.getBatchCode() != null ? detailReq.getBatchCode() : batchCode)
                     .build();
 
             details.add(detail);
         }
 
         transaction.setDetails(details);
-        transaction.setStatus(TransactionStatus.COMPLETED.name());
+        transaction.setStatus(TransactionStatus.PENDING.name());
 
         WarehouseTransaction saved = transactionRepo.save(transaction);
         return transactionMapper.toResponse(saved);
     }
 
     //  Chỉ tạo 1 phiếu xuất phục vụ cho nhập thủ công
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     @Transactional
     public WarehouseTransactionResponse createOutboundTransaction(WarehouseTransactionCreateRequest req) {
         log.info("Creating OUTBOUND transaction for warehouse: {}", req.getWarehouseId());
@@ -169,6 +177,7 @@ public class WarehouseTransactionService {
                         .inventory(inventory)
                         .variantId(detailReq.getVariantId())
                         .quantity(deduct)
+                        .cost(inventory.getCost())
                         .build();
 
                 details.add(detail);
@@ -182,6 +191,7 @@ public class WarehouseTransactionService {
         }
 
         transaction.setDetails(details);
+        transaction.setStatus(TransactionStatus.COMPLETED.name());
 
         WarehouseTransaction saved = transactionRepo.save(transaction);
         return transactionMapper.toResponse(saved);
@@ -249,12 +259,28 @@ public class WarehouseTransactionService {
                 items.stream().map(OrderItemRequest::getVariantId).toList();
 
         List<Inventory> inventories = inventoryRepo.findByVariantIdsForUpdate(variantIds);
-        System.out.println("AAAAAAAAAAA");
-        System.out.println(items.getFirst().getVariantId());
-        System.out.println("Inventories size: " + inventories.size());
-        
-        if(inventories.size() == 0) throw new AppException(ErrorCode.VARIANT_NOT_FOUND);
-        
+
+        if (inventories.size() == 0) throw new AppException(ErrorCode.VARIANT_NOT_FOUND);
+
+        Map<Long, Long> groupedItems = items.stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemRequest::getVariantId, Collectors.summingLong(OrderItemRequest::getQuantity)));
+
+        for (Map.Entry<Long, Long> entry : groupedItems.entrySet()) {
+            Long variantId = entry.getKey();
+            Long requiredQty = entry.getValue();
+
+            Long totalStock = inventories.stream()
+                    .filter(inv -> inv.getVariantId().equals(variantId))
+                    .filter(inv -> InventoryStatus.ACTIVE.name().equals(inv.getStatus()))
+                    .mapToLong(Inventory::getStock)
+                    .sum();
+
+            if (totalStock < requiredQty) {
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+        }
+
         // ===== 1. Validate =====
         for (OrderItemRequest item : items) {
 
@@ -267,10 +293,7 @@ public class WarehouseTransactionService {
             if (totalStock < item.getQuantity()) {
                 throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
             }
-            System.out.println("Item variant: " + item.getVariantId());
-            System.out.println("Total stock: " + totalStock);
         }
-        System.out.println("BBBBBBB");
 
         // ===== 2. Group transaction theo warehouse =====
         Map<Long, WarehouseTransaction> transactionMap = new HashMap<Long, WarehouseTransaction>();
@@ -292,6 +315,8 @@ public class WarehouseTransactionService {
 
                 if (inventory.getStock() == 0) {
                     inventory.setStatus(InventoryStatus.OUT_OF_STOCK.name());
+                } else {
+                    inventory.setStatus(InventoryStatus.ACTIVE.name());
                 }
 
                 Long warehouseId = inventory.getWarehouse().getId();
@@ -304,7 +329,7 @@ public class WarehouseTransactionService {
                             .transactionType(TransactionType.OUTBOUND.name())
                             .referenceType("ORDER")
                             .orderId(orderId)
-                            .status(TransactionStatus.PENDING.name())
+                            .status(TransactionStatus.COMPLETED.name())
                             .details(new ArrayList<>())
                             .build();
                     return tx;
@@ -316,6 +341,7 @@ public class WarehouseTransactionService {
                         .inventory(inventory)
                         .variantId(item.getVariantId())
                         .quantity(deduct)
+                        .cost(inventory.getCost())
                         .build();
 
                 transaction.getDetails().add(detail);
@@ -323,7 +349,6 @@ public class WarehouseTransactionService {
                 remaining -= deduct;
             }
         }
-        System.out.println("CCCCCCCCCCCC");
 
         // ===== 4. Save tất cả transaction 1 lần =====
         List<WarehouseTransaction> savedTransactions = transactionRepo.saveAll(transactionMap.values());
@@ -331,63 +356,63 @@ public class WarehouseTransactionService {
         return savedTransactions.stream().map(WarehouseTransaction::getId).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public WarehouseTransactionResponse getById(Long id) {
         WarehouseTransaction transaction =
                 transactionRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
         return transactionMapper.toResponse(transaction);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getAll() {
         return transactionRepo.findAll().stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getByWarehouse(Long warehouseId) {
         return transactionRepo.findByWarehouseId(warehouseId).stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getBySupplier(Long supplierId) {
         return transactionRepo.findBySupplierId(supplierId).stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getByType(String type) {
         return transactionRepo.findByTransactionType(type).stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getByStatus(String status) {
         return transactionRepo.findByStatus(status).stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getByOrderId(Long orderId) {
         return transactionRepo.findByOrderId(orderId).stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<WarehouseTransactionResponse> getByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
         return transactionRepo.findByDateRange(startDate, endDate).stream()
                 .map(transactionMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     @Transactional
     public WarehouseTransactionResponse cancelTransaction(Long id) {
 
@@ -423,7 +448,7 @@ public class WarehouseTransactionService {
         return transactionMapper.toResponse(transaction);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     @Transactional
     public WarehouseTransactionResponse updateTransactionStatus(Long id, String status) {
         log.info("Update status transaction with id: {}", id);

@@ -14,7 +14,7 @@ public class WebClientConfig {
 
     @Bean(name = "userWebClient")
     WebClient userServiceClient() {
-        HttpClient httpClient = HttpClient.create().responseTimeout(Duration.ofSeconds(3));
+        HttpClient httpClient = HttpClient.create().responseTimeout(Duration.ofSeconds(5));
 
         return WebClient.builder()
                 .baseUrl("http://localhost:8081/user")

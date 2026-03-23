@@ -40,6 +40,7 @@ public class Inventory {
     private String status;
     private Long variantId;
     private String batchCode;
+    private Long cost;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

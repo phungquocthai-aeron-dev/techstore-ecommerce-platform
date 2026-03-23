@@ -1,16 +1,22 @@
 package com.techstore.order.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.techstore.event.dto.PostEvent;
@@ -27,7 +33,12 @@ import com.techstore.order.dto.response.CustomerOrderResponse;
 import com.techstore.order.dto.response.CustomerResponse;
 import com.techstore.order.dto.response.OrderDetailResponse;
 import com.techstore.order.dto.response.OrderResponse;
+import com.techstore.order.dto.response.OrderSummaryResponse;
+import com.techstore.order.dto.response.ProductSalesResponse;
+import com.techstore.order.dto.response.RevenueStatsResponse;
 import com.techstore.order.dto.response.ShippingInfo;
+import com.techstore.order.dto.response.TopLoyalCustomerResponse;
+import com.techstore.order.dto.response.TopVariantResponse;
 import com.techstore.order.dto.response.VariantInfo;
 import com.techstore.order.entity.Address;
 import com.techstore.order.entity.Coupon;
@@ -77,7 +88,18 @@ public class OrderServiceImpl implements OrderService {
     private final CouponRepository couponRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
+    private enum Period {
+        TODAY,
+        MONTH,
+        QUARTER,
+        YEAR,
+        CUSTOM
+    }
+
+    private static final Set<String> REVENUE_STATUSES = Set.of("PROCESSING", "READY_TO_SHIP", "SHIPPING", "DELIVERED");
+
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN','CUSTOMER', 'SALES_STAFF')")
     public List<CustomerOrderResponse> getOrdersByCustomer(Long customerId, String status) {
 
         List<Order> orders;
@@ -150,6 +172,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public List<AdminOrderResponse> getAllOrders(String status) {
 
         List<Order> orders;
@@ -232,6 +255,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public OrderResponse createOrder(OrderCreateRequest request, String ipAddress) {
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
@@ -320,9 +344,6 @@ public class OrderServiceImpl implements OrderService {
             couponRepository.save(coupon);
         }
 
-        order.setVat(total * 0.1);
-        order.setTotalPrice(total + order.getVat());
-
         order.setOrderDetails(details);
 
         ShippingProvider shippingProvider = shippingProviderRepository
@@ -345,6 +366,25 @@ public class OrderServiceImpl implements OrderService {
 
             order.setPaymentMethod(paymentMethod);
         }
+
+        double totalWeight =
+                details.stream().mapToDouble(OrderDetail::getTotalWeight).sum();
+
+        ShippingService shippingService = shippingFactory.getService(shippingProvider.getCode());
+
+        double shippingFee = 0;
+
+        try {
+            shippingFee = shippingService.calculateFee(request.getAddressId(), totalWeight);
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.SHIPPING_FEE_CALCULATION_FAILED);
+        }
+
+        order.setShippingFee(shippingFee);
+
+        order.setVat(total * 0.1);
+
+        order.setTotalPrice(total + order.getVat() + shippingFee);
 
         orderRepository.save(order);
 
@@ -386,6 +426,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public void confirmOrder(Long orderId, Long staffId) {
 
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -423,6 +464,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public void cancelOrder(Long orderId, Long staffId) {
 
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -462,6 +504,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public void updateStatus(Long orderId, String status) {
 
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -478,6 +521,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public void createRefund(Long detailId, String reason, Long staffId) {
 
         OrderDetail detail = orderDetailRepository
@@ -536,6 +580,371 @@ public class OrderServiceImpl implements OrderService {
                 .status(orderDetail.getStatus())
                 .totalWeight(orderDetail.getTotalWeight())
                 .variantId(orderDetail.getVariantId())
+                .build();
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
+    public RevenueStatsResponse getRevenueStats(String period, LocalDate from, LocalDate to) {
+
+        Period p = period == null ? Period.MONTH : Period.valueOf(period.toUpperCase());
+
+        LocalDateTime dtFrom;
+        LocalDateTime dtTo;
+
+        switch (p) {
+            case TODAY: {
+                LocalDate today = LocalDate.now();
+                dtFrom = today.atStartOfDay();
+                dtTo = today.atTime(23, 59, 59);
+                break;
+            }
+            case MONTH: {
+                LocalDate start = (from != null) ? from : LocalDate.now().withDayOfMonth(1);
+                LocalDate end = (to != null) ? to : LocalDate.now();
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            case QUARTER: {
+                LocalDate now = LocalDate.now();
+                int q = (now.getMonthValue() - 1) / 3;
+                LocalDate start =
+                        (from != null) ? from : now.withMonth(q * 3 + 1).withDayOfMonth(1);
+                LocalDate end = (to != null) ? to : now;
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            case YEAR: {
+                LocalDate start = (from != null) ? from : LocalDate.now().withDayOfYear(1);
+                LocalDate end = (to != null) ? to : LocalDate.now();
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            default: {
+                if (from == null || to == null) throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+                dtFrom = from.atStartOfDay();
+                dtTo = to.atTime(23, 59, 59);
+            }
+        }
+
+        List<Object[]> rows =
+                switch (p) {
+                    case TODAY -> orderRepository.revenueByDay(dtFrom, dtTo);
+                    case MONTH -> orderRepository.revenueByMonth(dtFrom, dtTo);
+                    case QUARTER -> orderRepository.revenueByQuarter(dtFrom, dtTo);
+                    case YEAR -> orderRepository.revenueByYear(dtFrom, dtTo);
+                    case CUSTOM -> {
+                        long days = ChronoUnit.DAYS.between(from, to);
+                        yield days <= 31
+                                ? orderRepository.revenueByDay(dtFrom, dtTo)
+                                : orderRepository.revenueByMonth(dtFrom, dtTo);
+                    }
+                };
+
+        List<RevenueStatsResponse.RevenueDataPoint> dataPoints = rows.stream()
+                .map(r -> RevenueStatsResponse.RevenueDataPoint.builder()
+                        .label(String.valueOf(r[0]))
+                        .revenue(((Number) r[1]).doubleValue())
+                        .orderCount(((Number) r[2]).longValue())
+                        .build())
+                .toList();
+
+        double totalRevenue = dataPoints.stream()
+                .mapToDouble(RevenueStatsResponse.RevenueDataPoint::getRevenue)
+                .sum();
+        long totalOrders = dataPoints.stream()
+                .mapToLong(RevenueStatsResponse.RevenueDataPoint::getOrderCount)
+                .sum();
+
+        return RevenueStatsResponse.builder()
+                .totalRevenue(totalRevenue)
+                .totalOrders(totalOrders)
+                .dataPoints(dataPoints)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
+    public List<TopVariantResponse> getTopVariants(int top, LocalDate from, LocalDate to) {
+
+        LocalDateTime dtFrom = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime dtTo = (to != null) ? to.atTime(23, 59, 59) : null;
+
+        int limit = (top <= 0) ? 10 : top;
+
+        List<Object[]> rows = orderRepository.topVariants(dtFrom, dtTo, PageRequest.of(0, limit));
+
+        List<Long> variantIds =
+                rows.stream().map(r -> ((Number) r[0]).longValue()).toList();
+
+        Map<Long, VariantInfo> variantMap = variantIds.isEmpty()
+                ? Map.of()
+                : productClient.getVariantsByIds(variantIds).getResult().stream()
+                        .collect(Collectors.toMap(VariantInfo::getId, v -> v));
+
+        return rows.stream()
+                .map(r -> {
+                    Long variantId = ((Number) r[0]).longValue();
+                    VariantInfo info = variantMap.get(variantId);
+                    return TopVariantResponse.builder()
+                            .variantId(variantId)
+                            .name(String.valueOf(r[1]))
+                            .imageUrl(info != null ? info.getImageUrl() : null)
+                            .totalQuantitySold(((Number) r[2]).longValue())
+                            .totalRevenue(((Number) r[3]).doubleValue())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
+    public OrderSummaryResponse getOrderSummary(String status, LocalDate from, LocalDate to) {
+
+        LocalDateTime dtFrom =
+                (from != null) ? from.atStartOfDay() : LocalDate.now().atStartOfDay();
+        LocalDateTime dtTo =
+                (to != null) ? to.atTime(23, 59, 59) : LocalDate.now().atTime(23, 59, 59);
+
+        String statusParam =
+                (status == null || status.isBlank() || status.equalsIgnoreCase("ALL")) ? null : status.toUpperCase();
+
+        List<Object[]> rows = orderRepository.orderSummaryByStatus(statusParam, dtFrom, dtTo);
+
+        List<OrderSummaryResponse.StatusCount> breakdown = rows.stream()
+                .map(r -> OrderSummaryResponse.StatusCount.builder()
+                        .status(String.valueOf(r[0]))
+                        .count(((Number) r[1]).longValue())
+                        .revenue(((Number) r[2]).doubleValue())
+                        .build())
+                .toList();
+
+        double totalRevenue = breakdown.stream()
+                .filter(s -> REVENUE_STATUSES.contains(s.getStatus()))
+                .mapToDouble(OrderSummaryResponse.StatusCount::getRevenue)
+                .sum();
+
+        long totalOrders = breakdown.stream()
+                .mapToLong(OrderSummaryResponse.StatusCount::getCount)
+                .sum();
+
+        return OrderSummaryResponse.builder()
+                .totalOrders(totalOrders)
+                .totalRevenue(totalRevenue)
+                .statusBreakdown(breakdown)
+                .build();
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
+    public List<TopLoyalCustomerResponse> getTopLoyalCustomers(int top, String period, LocalDate from, LocalDate to) {
+
+        LocalDateTime dtFrom;
+        LocalDateTime dtTo;
+
+        Period p = period == null ? Period.MONTH : Period.valueOf(period.toUpperCase());
+
+        switch (p) {
+            case TODAY: {
+                LocalDate today = LocalDate.now();
+                dtFrom = today.atStartOfDay();
+                dtTo = today.atTime(23, 59, 59);
+                break;
+            }
+            case MONTH: {
+                LocalDate start = (from != null) ? from : LocalDate.now().withDayOfMonth(1);
+                LocalDate end = (to != null) ? to : LocalDate.now();
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            case QUARTER: {
+                LocalDate now = LocalDate.now();
+                int q = (now.getMonthValue() - 1) / 3;
+                LocalDate start =
+                        (from != null) ? from : now.withMonth(q * 3 + 1).withDayOfMonth(1);
+                LocalDate end = (to != null) ? to : now;
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            case YEAR: {
+                LocalDate start = (from != null) ? from : LocalDate.now().withDayOfYear(1);
+                LocalDate end = (to != null) ? to : LocalDate.now();
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            default: {
+                if (from == null || to == null) throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+                dtFrom = from.atStartOfDay();
+                dtTo = to.atTime(23, 59, 59);
+            }
+        }
+
+        int limit = (top <= 0) ? 10 : top;
+
+        List<Object[]> rows = orderRepository.topLoyalCustomers(dtFrom, dtTo, PageRequest.of(0, limit));
+
+        // Batch fetch customer info
+        List<Long> customerIds =
+                rows.stream().map(r -> ((Number) r[0]).longValue()).toList();
+
+        Map<Long, CustomerResponse> customerMap = customerIds.stream().collect(Collectors.toMap(id -> id, id -> {
+            try {
+                return userClient.getCustomerById(id).getResult();
+            } catch (Exception e) {
+                log.warn("Không lấy được thông tin customer id={}", id);
+                return null;
+            }
+        }));
+
+        return rows.stream()
+                .map(r -> {
+                    Long customerId = ((Number) r[0]).longValue();
+                    long orderCount = ((Number) r[1]).longValue();
+                    double totalSpent = ((Number) r[2]).doubleValue();
+                    double score = 0.4 * orderCount + 0.6 * totalSpent;
+
+                    CustomerResponse customer = customerMap.get(customerId);
+
+                    return TopLoyalCustomerResponse.builder()
+                            .customerId(customerId)
+                            .fullName(customer != null ? customer.getFullName() : null)
+                            .email(customer != null ? customer.getEmail() : null)
+                            .phone(customer != null ? customer.getPhone() : null)
+                            .avatarUrl(customer != null ? customer.getAvatarUrl() : null)
+                            .orderCount(orderCount)
+                            .totalSpent(totalSpent)
+                            .loyaltyScore(score)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
+    public ProductSalesResponse getProductSales(Long productId, String period, LocalDate from, LocalDate to) {
+
+        Period p = period == null ? Period.MONTH : Period.valueOf(period.toUpperCase());
+
+        LocalDateTime dtFrom;
+        LocalDateTime dtTo;
+
+        switch (p) {
+            case TODAY: {
+                LocalDate today = LocalDate.now();
+                dtFrom = today.atStartOfDay();
+                dtTo = today.atTime(23, 59, 59);
+                break;
+            }
+            case MONTH: {
+                LocalDate start = (from != null) ? from : LocalDate.now().withDayOfMonth(1);
+                LocalDate end = (to != null) ? to : LocalDate.now();
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            case QUARTER: {
+                LocalDate now = LocalDate.now();
+                int q = (now.getMonthValue() - 1) / 3;
+                LocalDate start =
+                        (from != null) ? from : now.withMonth(q * 3 + 1).withDayOfMonth(1);
+                LocalDate end = (to != null) ? to : now;
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            case YEAR: {
+                LocalDate start = (from != null) ? from : LocalDate.now().withDayOfYear(1);
+                LocalDate end = (to != null) ? to : LocalDate.now();
+                dtFrom = start.atStartOfDay();
+                dtTo = end.atTime(23, 59, 59);
+                break;
+            }
+            default: {
+                if (from == null || to == null) throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+                dtFrom = from.atStartOfDay();
+                dtTo = to.atTime(23, 59, 59);
+            }
+        }
+
+        // Lấy danh sách variantId của product từ product-service
+        List<Long> variantIds = productClient.getVariantsByProductId(productId).getResult().stream()
+                .map(VariantInfo::getId)
+                .toList();
+
+        if (variantIds == null || variantIds.isEmpty()) {
+            return ProductSalesResponse.builder()
+                    .productId(productId)
+                    .period(p.name())
+                    .totalQuantitySold(0)
+                    .variants(List.of())
+                    .build();
+        }
+
+        // Chọn query phù hợp theo period
+        List<Object[]> rows =
+                switch (p) {
+                    case TODAY -> orderRepository.productSalesByHour(variantIds, dtFrom, dtTo);
+                    case MONTH -> orderRepository.productSalesByDay(variantIds, dtFrom, dtTo);
+                    case QUARTER, YEAR -> orderRepository.productSalesByMonth(variantIds, dtFrom, dtTo);
+                    case CUSTOM -> {
+                        long days = ChronoUnit.DAYS.between(from, to);
+                        yield days <= 31
+                                ? orderRepository.productSalesByDay(variantIds, dtFrom, dtTo)
+                                : orderRepository.productSalesByMonth(variantIds, dtFrom, dtTo);
+                    }
+                };
+
+        // Group rows theo variantId
+        // row: [variantId, variantName, label, qty]
+        Map<Long, List<Object[]>> groupedByVariant =
+                rows.stream().collect(Collectors.groupingBy(r -> ((Number) r[0]).longValue()));
+
+        List<ProductSalesResponse.VariantSales> variants = groupedByVariant.entrySet().stream()
+                .map(entry -> {
+                    Long variantId = entry.getKey();
+                    List<Object[]> variantRows = entry.getValue();
+
+                    String variantName = String.valueOf(variantRows.get(0)[1]);
+
+                    List<ProductSalesResponse.SalesDataPoint> dataPoints = variantRows.stream()
+                            .map(r -> ProductSalesResponse.SalesDataPoint.builder()
+                                    .label(String.valueOf(r[2]))
+                                    .quantitySold(((Number) r[3]).longValue())
+                                    .build())
+                            .toList();
+
+                    long totalQty = dataPoints.stream()
+                            .mapToLong(ProductSalesResponse.SalesDataPoint::getQuantitySold)
+                            .sum();
+
+                    return ProductSalesResponse.VariantSales.builder()
+                            .variantId(variantId)
+                            .variantName(variantName)
+                            .totalQuantitySold(totalQty)
+                            .dataPoints(dataPoints)
+                            .build();
+                })
+                .sorted(Comparator.comparingLong(ProductSalesResponse.VariantSales::getTotalQuantitySold)
+                        .reversed())
+                .toList();
+
+        long totalQuantitySold = variants.stream()
+                .mapToLong(ProductSalesResponse.VariantSales::getTotalQuantitySold)
+                .sum();
+
+        return ProductSalesResponse.builder()
+                .productId(productId)
+                .period(p.name())
+                .totalQuantitySold(totalQuantitySold)
+                .variants(variants)
                 .build();
     }
 

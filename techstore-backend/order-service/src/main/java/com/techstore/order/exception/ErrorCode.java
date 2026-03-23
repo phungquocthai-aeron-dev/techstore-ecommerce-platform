@@ -86,7 +86,8 @@ public enum ErrorCode {
     COUPON_EXPIRED(6008, "Coupon has expired or not started yet", HttpStatus.BAD_REQUEST),
     COUPON_LIMIT_REACHED(6009, "Coupon usage limit reached", HttpStatus.BAD_REQUEST),
     ORDER_NOT_ELIGIBLE_FOR_COUPON(6010, "Order does not meet coupon minimum value", HttpStatus.BAD_REQUEST),
-    ;
+    SHIPPING_FEE_CALCULATION_FAILED(6011, "Shipping fee calculation failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_DATE_RANGE(6012, "Invalid date range", HttpStatus.BAD_REQUEST);
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

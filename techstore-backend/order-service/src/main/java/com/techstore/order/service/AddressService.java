@@ -57,7 +57,7 @@ public class AddressService {
         return addressMapper.toResponse(addressRepo.save(address));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','CUSTOMER')")
+    @PreAuthorize("hasAnyRole('ADMIN','CUSTOMER', 'SALES_STAFF')")
     public List<AddressResponse> getByCustomerId(Long customerId) {
         return addressRepo.findByCustomerId(customerId).stream()
                 .map(addressMapper::toResponse)

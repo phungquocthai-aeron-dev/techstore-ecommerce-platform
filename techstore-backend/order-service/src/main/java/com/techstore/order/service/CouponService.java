@@ -92,6 +92,16 @@ public class CouponService {
                 && (coupon.getUsageLimit() == null || coupon.getUsedCount() < coupon.getUsageLimit());
     }
 
+    public List<CouponResponse> getAvailableCoupons() {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return couponRepo.findByStatusIgnoreCaseAndStartDateBeforeAndEndDateAfter("ACTIVE", now, now).stream()
+                .filter(coupon -> coupon.getUsageLimit() == null || coupon.getUsedCount() < coupon.getUsageLimit())
+                .map(couponMapper::toResponse)
+                .toList();
+    }
+
     private void validateDiscountType(String type) {
 
         if (type == null) {

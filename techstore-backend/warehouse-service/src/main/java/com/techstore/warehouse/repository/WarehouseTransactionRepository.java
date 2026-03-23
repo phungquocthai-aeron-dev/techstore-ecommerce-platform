@@ -34,4 +34,83 @@ public interface WarehouseTransactionRepository extends JpaRepository<WarehouseT
             @Param("type") String type,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    @Query(
+            value =
+                    """
+			SELECT
+				DATE_FORMAT(wt.created_at, '%Y-%m-%d %H:00') AS period,
+				COALESCE(SUM(wtd.quantity * wtd.cost), 0) AS totalCost,
+				COALESCE(SUM(wtd.quantity), 0) AS totalQuantity,
+				COUNT(DISTINCT wt.id) AS transactionCount
+			FROM warehouse_transaction wt
+			JOIN warehouse_transaction_detail wtd ON wtd.transaction_id = wt.id
+			WHERE wt.transaction_type = 'INBOUND'
+			AND wt.status = 'COMPLETED'
+			AND wt.created_at BETWEEN :from AND :to
+			GROUP BY DATE_FORMAT(wt.created_at, '%Y-%m-%d %H:00')
+			ORDER BY period ASC
+			""",
+            nativeQuery = true)
+    List<Object[]> findDailyInboundCost(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Thống kê theo THÁNG
+    @Query(
+            value =
+                    """
+		SELECT
+			DATE_FORMAT(wt.created_at, '%Y-%m') AS period,
+			COALESCE(SUM(wtd.quantity * wtd.cost), 0) AS totalCost,
+			COALESCE(SUM(wtd.quantity), 0) AS totalQuantity,
+			COUNT(DISTINCT wt.id) AS transactionCount
+		FROM warehouse_transaction wt
+		JOIN warehouse_transaction_detail wtd ON wtd.transaction_id = wt.id
+		WHERE wt.transaction_type = 'INBOUND'
+		AND wt.status = 'COMPLETED'
+		AND wt.created_at BETWEEN :from AND :to
+		GROUP BY DATE_FORMAT(wt.created_at, '%Y-%m')
+		ORDER BY period ASC
+		""",
+            nativeQuery = true)
+    List<Object[]> findMonthlyInboundCost(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Thống kê theo QUÝ
+    @Query(
+            value =
+                    """
+		SELECT
+			CONCAT(YEAR(wt.created_at), '-Q', QUARTER(wt.created_at)) AS period,
+			COALESCE(SUM(wtd.quantity * wtd.cost), 0) AS totalCost,
+			COALESCE(SUM(wtd.quantity), 0) AS totalQuantity,
+			COUNT(DISTINCT wt.id) AS transactionCount
+		FROM warehouse_transaction wt
+		JOIN warehouse_transaction_detail wtd ON wtd.transaction_id = wt.id
+		WHERE wt.transaction_type = 'INBOUND'
+		AND wt.status = 'COMPLETED'
+		AND wt.created_at BETWEEN :from AND :to
+		GROUP BY YEAR(wt.created_at), QUARTER(wt.created_at)
+		ORDER BY YEAR(wt.created_at), QUARTER(wt.created_at) ASC
+		""",
+            nativeQuery = true)
+    List<Object[]> findQuarterlyInboundCost(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Thống kê theo NĂM
+    @Query(
+            value =
+                    """
+		SELECT
+			CAST(YEAR(wt.created_at) AS CHAR) AS period,
+			COALESCE(SUM(wtd.quantity * wtd.cost), 0) AS totalCost,
+			COALESCE(SUM(wtd.quantity), 0) AS totalQuantity,
+			COUNT(DISTINCT wt.id) AS transactionCount
+		FROM warehouse_transaction wt
+		JOIN warehouse_transaction_detail wtd ON wtd.transaction_id = wt.id
+		WHERE wt.transaction_type = 'INBOUND'
+		AND wt.status = 'COMPLETED'
+		AND wt.created_at BETWEEN :from AND :to
+		GROUP BY YEAR(wt.created_at)
+		ORDER BY YEAR(wt.created_at) ASC
+		""",
+            nativeQuery = true)
+    List<Object[]> findYearlyInboundCost(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

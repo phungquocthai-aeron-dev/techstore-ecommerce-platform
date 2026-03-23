@@ -37,6 +37,7 @@ public enum ErrorCode {
     WAREHOUSE_NOT_FOUND(5001, "Warehouse not found", HttpStatus.NOT_FOUND),
     WAREHOUSE_EXISTED(5002, "Warehouse with this name already exists", HttpStatus.BAD_REQUEST),
     WAREHOUSE_INACTIVE(5003, "Warehouse is inactive", HttpStatus.BAD_REQUEST),
+    WAREHOUSE_TRANSACTION_DETAIL_NOT_FOUND(5004, "Warehouse transaction detail not found", HttpStatus.NOT_FOUND),
 
     // Supplier specific errors
     SUPPLIER_NOT_FOUND(5101, "Supplier not found", HttpStatus.NOT_FOUND),

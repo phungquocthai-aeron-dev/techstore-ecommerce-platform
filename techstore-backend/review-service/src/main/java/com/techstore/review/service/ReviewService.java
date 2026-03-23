@@ -3,6 +3,7 @@ package com.techstore.review.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
@@ -10,17 +11,22 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import com.techstore.event.dto.PostEvent;
+import com.techstore.review.client.ModerationClient;
 import com.techstore.review.client.OrderServiceClient;
 import com.techstore.review.client.ProductServiceClient;
 import com.techstore.review.client.UserServiceClient;
+import com.techstore.review.constant.ReviewStatus;
 import com.techstore.review.dto.request.CreateReplyRequest;
 import com.techstore.review.dto.request.CreateReviewRequest;
+import com.techstore.review.dto.request.ModerationRequest;
 import com.techstore.review.dto.request.ReplySearchRequest;
 import com.techstore.review.dto.request.ReviewSearchRequest;
 import com.techstore.review.dto.request.UpdateReplyRequest;
@@ -52,6 +58,10 @@ public class ReviewService {
     private final OrderServiceClient orderClient;
     private final ProductServiceClient productClient;
     private final UserServiceClient userClient;
+    private final ModerationClient moderationClient;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    private static final Set<String> VALID_STATUSES = Set.of("ACTIVE", "HIDDEN", "SPAM", "TOXIC");
 
     public PageResponse<ReviewResponse> searchReviews(ReviewSearchRequest req) {
 
@@ -118,7 +128,49 @@ public class ReviewService {
                 .build();
     }
 
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    public PageResponse<ReviewResponse> getAllReviews(int page, int size) {
+
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<Review> reviewPage = reviewRepo.findAllActive(pageable);
+        List<ReviewResponse> responses =
+                reviewPage.getContent().stream().map(mapper::toResponse).toList();
+
+        if (responses.isEmpty()) {
+            return buildPageResponse(responses, reviewPage);
+        }
+
+        List<Long> customerIds =
+                responses.stream().map(ReviewResponse::getCustomerId).distinct().toList();
+
+        List<Long> staffIds = responses.stream()
+                .map(ReviewResponse::getReply)
+                .filter(r -> r != null)
+                .map(ReplyResponse::getStaffId)
+                .distinct()
+                .toList();
+
+        Map<Long, CustomerResponse> customerMap = userClient.getCustomerByIds(customerIds).getResult().stream()
+                .collect(Collectors.toMap(CustomerResponse::getId, c -> c));
+
+        Map<Long, StaffResponse> staffMap = new HashMap<>();
+        if (!staffIds.isEmpty()) {
+            staffMap = userClient.getStaffByIds(staffIds).getResult().stream()
+                    .collect(Collectors.toMap(StaffResponse::getId, s -> s));
+        }
+
+        final Map<Long, StaffResponse> finalStaffMap = staffMap;
+        for (ReviewResponse review : responses) {
+            review.setCustomer(customerMap.get(review.getCustomerId()));
+            if (review.getReply() != null) {
+                review.getReply().setStaff(finalStaffMap.get(review.getReply().getStaffId()));
+            }
+        }
+
+        return buildPageResponse(responses, reviewPage);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public PageResponse<ReplyResponse> searchReplies(ReplySearchRequest req) {
 
         Sort sort = Sort.by(
@@ -165,10 +217,17 @@ public class ReviewService {
         var product =
                 productClient.getProductByVariantId(orderDetail.getVariantId()).getResult();
 
+        ModerationRequest modReq = new ModerationRequest();
+        modReq.setContent(req.getContent());
+
+        var modResult = moderationClient.predict(modReq).getResult();
+
+        String status = mapModerationToStatus(modResult.getLabel());
+
         Review review = Review.builder()
                 .content(req.getContent())
                 .rating(req.getRating())
-                .status("ACTIVE")
+                .status(status)
                 .productId(product.getId())
                 .variantId(orderDetail.getVariantId())
                 .orderDetailId(orderDetail.getId())
@@ -176,6 +235,15 @@ public class ReviewService {
                 .build();
 
         orderClient.markOrderDetailReviewed(orderDetail.getId());
+
+        String content = buildReviewContent(modResult.getLabel());
+        PostEvent event = PostEvent.builder()
+                .title("Cập nhật trạng thái đơn hàng")
+                .content(content)
+                .userId(getCurrentUserId().toString())
+                .build();
+
+        kafkaTemplate.send("post-delivery", event);
 
         return mapper.toResponse(reviewRepo.save(review));
     }
@@ -187,8 +255,21 @@ public class ReviewService {
 
         Review review = getReviewAndCheckPermission(id);
 
-        review.setContent(req.getContent());
         review.setRating(req.getRating());
+
+        if (req.getContent() != null
+                && !req.getContent().isBlank()
+                && !req.getContent().equals(review.getContent())) {
+
+            review.setContent(req.getContent());
+
+            ModerationRequest modReq = new ModerationRequest();
+            modReq.setContent(req.getContent());
+
+            var modResult = moderationClient.predict(modReq).getResult();
+
+            review.setStatus(mapModerationToStatus(modResult.getLabel()));
+        }
 
         return mapper.toResponse(reviewRepo.save(review));
     }
@@ -199,8 +280,24 @@ public class ReviewService {
     public void deleteReview(Long id) {
 
         Review review = getReviewAndCheckPermission(id);
-        review.setStatus("DELETED");
+        review.setStatus(ReviewStatus.HIDDEN.name());
         reviewRepo.save(review);
+    }
+
+    // ===================== UPDATE STATUS (STAFF/ADMIN) =====================
+
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
+    public ReviewResponse updateReviewStatus(Long id, String status) {
+
+        if (!VALID_STATUSES.contains(status)) {
+            throw new AppException(ErrorCode.INVALID_REVIEW_STATUS);
+        }
+
+        Review review = reviewRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
+
+        review.setStatus(status);
+
+        return mapper.toResponse(reviewRepo.save(review));
     }
 
     // ===================== GET REVIEWS =====================
@@ -271,7 +368,7 @@ public class ReviewService {
 
     // ===================== REPLY =====================
 
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public ReplyResponse reply(Long reviewId, CreateReplyRequest req) {
 
         Review review = reviewRepo.findById(reviewId).orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
@@ -284,9 +381,16 @@ public class ReviewService {
             throw new AppException(ErrorCode.REPLY_ALREADY_EXISTED);
         }
 
+        ModerationRequest modReq = new ModerationRequest();
+        modReq.setContent(req.getContent());
+
+        var modResult = moderationClient.predict(modReq).getResult();
+
+        String status = mapModerationToStatus(modResult.getLabel());
+
         Reply reply = Reply.builder()
                 .content(req.getContent())
-                .status("ACTIVE")
+                .status(status)
                 .staffId(getCurrentUserId())
                 .review(review)
                 .build();
@@ -294,21 +398,30 @@ public class ReviewService {
         return mapper.toReplyResponse(replyRepo.save(reply));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public ReplyResponse updateReply(Long id, UpdateReplyRequest req) {
 
         Reply reply = replyRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.REPLY_NOT_FOUND));
 
         reply.setContent(req.getContent());
 
+        ModerationRequest modReq = new ModerationRequest();
+        modReq.setContent(req.getContent());
+
+        var modResult = moderationClient.predict(modReq).getResult();
+
+        String status = mapModerationToStatus(modResult.getLabel());
+        reply.setStatus(status);
+
         return mapper.toReplyResponse(reply);
     }
 
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public void deleteReply(Long id) {
 
         Reply reply = replyRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.REPLY_NOT_FOUND));
 
-        reply.setStatus("DELETED");
+        reply.setStatus(ReviewStatus.HIDDEN.name());
         replyRepo.save(reply);
     }
 
@@ -336,5 +449,21 @@ public class ReviewService {
     private boolean isAdmin() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private String mapModerationToStatus(String label) {
+        return switch (label) {
+            case "Valid" -> "ACTIVE";
+            case "Spam" -> "SPAM";
+            case "Toxic" -> "TOXIC";
+            default -> "ACTIVE";
+        };
+    }
+
+    private String buildReviewContent(String label) {
+        return switch (label) {
+            case "Spam", "Toxic" -> "Đánh giá của bạn đã được ghi nhận nhưng cần kiểm duyệt trước khi hiển thị.";
+            default -> "Đánh giá của bạn đã được đăng thành công.";
+        };
     }
 }

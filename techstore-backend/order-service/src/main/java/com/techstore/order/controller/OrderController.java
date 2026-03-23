@@ -1,10 +1,19 @@
 package com.techstore.order.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.techstore.order.dto.request.OrderCreateRequest;
 import com.techstore.order.dto.response.AdminOrderResponse;
@@ -12,6 +21,11 @@ import com.techstore.order.dto.response.ApiResponse;
 import com.techstore.order.dto.response.CustomerOrderResponse;
 import com.techstore.order.dto.response.OrderDetailResponse;
 import com.techstore.order.dto.response.OrderResponse;
+import com.techstore.order.dto.response.OrderSummaryResponse;
+import com.techstore.order.dto.response.ProductSalesResponse;
+import com.techstore.order.dto.response.RevenueStatsResponse;
+import com.techstore.order.dto.response.TopLoyalCustomerResponse;
+import com.techstore.order.dto.response.TopVariantResponse;
 import com.techstore.order.service.OrderService;
 import com.techstore.order.util.VNPayUtils;
 
@@ -89,6 +103,60 @@ public class OrderController {
         orderService.markOrderDetailReviewed(id);
 
         return ApiResponse.<Void>builder().build();
+    }
+
+    @GetMapping("/stats/revenue")
+    public ApiResponse<RevenueStatsResponse> getRevenueStats(
+            @RequestParam(required = false, defaultValue = "MONTH") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<RevenueStatsResponse>builder()
+                .result(orderService.getRevenueStats(period, from, to))
+                .build();
+    }
+
+    @GetMapping("/stats/top-variants")
+    public ApiResponse<List<TopVariantResponse>> getTopVariants(
+            @RequestParam(required = false, defaultValue = "10") int top,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<List<TopVariantResponse>>builder()
+                .result(orderService.getTopVariants(top, from, to))
+                .build();
+    }
+
+    @GetMapping("/stats/summary")
+    public ApiResponse<OrderSummaryResponse> getOrderSummary(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponse.<OrderSummaryResponse>builder()
+                .result(orderService.getOrderSummary(status, from, to))
+                .build();
+    }
+
+    @GetMapping("/stats/top-loyal-customers")
+    public ApiResponse<List<TopLoyalCustomerResponse>> getTopLoyalCustomers(
+            @RequestParam(required = false, defaultValue = "10") int top,
+            @RequestParam(required = false, defaultValue = "MONTH") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        return ApiResponse.<List<TopLoyalCustomerResponse>>builder()
+                .result(orderService.getTopLoyalCustomers(top, period, from, to))
+                .build();
+    }
+
+    @GetMapping("/stats/product-sales/{productId}")
+    public ApiResponse<ProductSalesResponse> getProductSales(
+            @PathVariable Long productId,
+            @RequestParam(required = false, defaultValue = "MONTH") String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        return ApiResponse.<ProductSalesResponse>builder()
+                .result(orderService.getProductSales(productId, period, from, to))
+                .build();
     }
 
     @GetMapping("/{id}/print-label")

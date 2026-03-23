@@ -6,26 +6,30 @@ server:
 spring:
   application:
     name: review-service
+
   datasource:
-    url: "jdbc:mysql://localhost:3307/techstore_review"
-    driverClassName: "com.mysql.cj.jdbc.Driver"
-    username: root
-    password: root
+    url: ${DB_REVIEW_URL:jdbc:mysql://localhost:3307/techstore_review}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect    
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
 
   kafka:
-    bootstrap-servers: localhost:9094
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 app:
   services:
-    identity: http://localhost:8080/identity
-    file: http://localhost:8082/file
-    user: http://localhost:8081/user
-    product: http://localhost:8083/product
-    order: http://localhost:8086/order
+    identity: ${IDENTITY_SERVICE_URL:http://localhost:8080/identity}
+    file: ${FILE_SERVICE_URL:http://localhost:8082/file}
+    user: ${USER_SERVICE_URL:http://localhost:8081/user}
+    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
+    order: ${ORDER_SERVICE_URL:http://localhost:8086/order}
+    moderation: ${MODERATION_SERVICE_URL:http://localhost:8089/moderation}

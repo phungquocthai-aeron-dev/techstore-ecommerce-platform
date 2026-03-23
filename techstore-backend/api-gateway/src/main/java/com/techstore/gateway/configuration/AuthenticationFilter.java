@@ -62,7 +62,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                             Pattern.compile("/product/brands/.*"),
                             Pattern.compile("/product/categories(/.*)?"),
                             Pattern.compile("/order/coupons/.*"),
-                            Pattern.compile("/order/payment-methods/.*")
+                            Pattern.compile("/order/payment-methods/.*"),
+                            Pattern.compile("/chatbot/.*")
                     ),
                     HttpMethod.POST, List.of(
                             Pattern.compile("/identity/auth/.*"),

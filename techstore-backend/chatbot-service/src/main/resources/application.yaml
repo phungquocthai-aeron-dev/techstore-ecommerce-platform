@@ -6,33 +6,36 @@ server:
 spring:
   application:
     name: chatbot-service
+
   datasource:
-    url: "jdbc:mysql://localhost:3307/techstore_chatbot"
-    driverClassName: "com.mysql.cj.jdbc.Driver"
-    username: root
-    password: root
+    url: ${DB_CHATBOT_URL:jdbc:mysql://localhost:3307/techstore_chatbot}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect    
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
 
-
 app:
   services:
-    product: http://localhost:8083/product
-    warehouse: http://localhost:8084/warehouse
+    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
+    warehouse: ${WAREHOUSE_SERVICE_URL:http://localhost:8084/warehouse}
+    order: ${ORDER_SERVICE_URL:http://localhost:8086/order}
+
   gemini:
-    api-key: your-api-key
-    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
-    
+    api-key: ${GEMINI_API_KEY:your-api-key}
+    url: ${GEMINI_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent}
+
 feign:
   client:
     config:
       default:
         connect-timeout: 10000
         read-timeout: 15000
-        
+
 logging:
   level:
     com.techstore.chatbot: DEBUG

@@ -27,7 +27,7 @@ public class SupplierService {
     private final SupplierRepository supplierRepo;
     private final SupplierMapper supplierMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Transactional
     public SupplierResponse create(SupplierCreateRequest req) {
         log.info("Creating supplier with phone: {}", req.getPhone());
@@ -42,7 +42,7 @@ public class SupplierService {
         return supplierMapper.toResponse(supplierRepo.save(supplier));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Transactional
     public SupplierResponse update(Long id, SupplierUpdateRequest req) {
         log.info("Updating supplier with id: {}", id);
@@ -59,31 +59,31 @@ public class SupplierService {
         return supplierMapper.toResponse(supplierRepo.save(supplier));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public SupplierResponse getById(Long id) {
         return supplierMapper.toResponse(
                 supplierRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public SupplierResponse getByPhone(String phone) {
         return supplierMapper.toResponse(
                 supplierRepo.findByPhone(phone).orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<SupplierResponse> getAll() {
         return supplierRepo.findAll().stream().map(supplierMapper::toResponse).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<SupplierResponse> getByStatus(String status) {
         return supplierRepo.findByStatus(status).stream()
                 .map(supplierMapper::toResponse)
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<SupplierResponse> searchByName(String name) {
         return supplierRepo.findByNameContainingIgnoreCase(name).stream()
                 .map(supplierMapper::toResponse)
@@ -100,7 +100,7 @@ public class SupplierService {
         supplierRepo.delete(supplier);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     @Transactional
     public SupplierResponse updateStatus(Long id, String status) {
         log.info("Updating supplier status for id: {} to status: {}", id, status);

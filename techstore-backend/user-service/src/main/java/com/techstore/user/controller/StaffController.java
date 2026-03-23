@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +53,18 @@ public class StaffController {
 
         return ApiResponse.<StaffResponse>builder()
                 .result(staffService.findOne(id, email, phone))
+                .build();
+    }
+
+    @GetMapping("/paged")
+    public ApiResponse<Page<StaffResponse>> getAllPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+
+        return ApiResponse.<Page<StaffResponse>>builder()
+                .result(staffService.getAllPaged(page, size, sortBy, sortDir))
                 .build();
     }
 

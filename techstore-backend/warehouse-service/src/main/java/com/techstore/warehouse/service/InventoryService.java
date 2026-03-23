@@ -36,7 +36,7 @@ public class InventoryService {
     private final InventoryMapper inventoryMapper;
     private final ProductServiceClient productClient;
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     @Transactional
     public InventoryResponse update(Long id, InventoryUpdateRequest req) {
         log.info("Updating inventory with id: {}", id);
@@ -61,34 +61,34 @@ public class InventoryService {
         return buildInventoryResponse(saved);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF','SALES_STAFF')")
     public InventoryResponse getById(Long id) {
         Inventory inventory =
                 inventoryRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
         return buildInventoryResponse(inventory);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<InventoryResponse> getByWarehouse(Long warehouseId) {
         return buildInventoryResponsesBatch(inventoryRepo.findByWarehouseId(warehouseId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public List<InventoryResponse> getByVariant(Long variantId) {
         return buildInventoryResponsesBatch(inventoryRepo.findByVariantId(variantId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<InventoryResponse> getByWarehouseAndVariant(Long warehouseId, Long variantId) {
         return buildInventoryResponsesBatch(
                 inventoryRepo.findByWarehouseIdAndVariantIdOrderByCreatedAtAsc(warehouseId, variantId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<InventoryResponse> getAll() {
         return buildInventoryResponsesBatch(inventoryRepo.findAll());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
     public List<InventoryResponse> getByStatus(String status) {
         return buildInventoryResponsesBatch(inventoryRepo.findByStatus(status));
     }
@@ -117,7 +117,8 @@ public class InventoryService {
      * Tạo hoặc cập nhật inventory khi nhập hàng
      */
     @Transactional
-    public Inventory createOrUpdateInventory(Long warehouseId, Long variantId, Long quantity, String batchCode) {
+    public Inventory createOrUpdateInventory(
+            Long warehouseId, Long variantId, Long quantity, Long cost, String batchCode) {
         log.info(
                 "Creating or updating inventory for warehouse: {}, variant: {}, quantity: {}",
                 warehouseId,
@@ -145,12 +146,14 @@ public class InventoryService {
             if (inventory.getStock() > 0) {
                 inventory.setStatus(InventoryStatus.ACTIVE.name());
             }
+
         } else {
             // Create new inventory
             inventory = Inventory.builder()
                     .warehouse(warehouse)
                     .variantId(variantId)
                     .stock(quantity)
+                    .cost(cost)
                     .batchCode(batchCode)
                     .status(InventoryStatus.ACTIVE.name())
                     .build();

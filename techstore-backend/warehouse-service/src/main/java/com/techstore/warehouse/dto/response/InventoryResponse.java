@@ -21,4 +21,5 @@ public class InventoryResponse {
     private Long warehouseId;
     private String warehouseName;
     private VariantInfo variantInfo;
+    private Long cost;
 }

@@ -6,42 +6,47 @@ server:
 spring:
   application:
     name: identity-service
+
   datasource:
-    url: "jdbc:mysql://localhost:3307/techstore_identity"
-    driverClassName: "com.mysql.cj.jdbc.Driver"
-    username: root
-    password: root
+    url: ${DB_IDENTITY_URL:jdbc:mysql://localhost:3307/techstore_identity}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect    
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
+
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: "927045210043-prue4q9vqjb7f08jps9do3iqrtpnl8jk.apps.googleusercontent.com"
-            client-secret: "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"
+            client-id: ${GOOGLE_CLIENT_ID:927045210043-xxxx.apps.googleusercontent.com}
+            client-secret: ${GOOGLE_CLIENT_SECRET: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}
             scope:
               - email
               - profile
         provider:
           google:
             issuer-uri: https://accounts.google.com
+
   kafka:
-    bootstrap-servers: localhost:9094
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 jwt:
-  signerKey: "u00HlI390ctLn7BGyr0F2HczWiIskDBeX9WFOk25MEGnFoEjKwFoZh6h7gcX3Z3pJ0BAr9AbbGXelLMviWbZoZ"
-  valid-duration: 3600 # in second
-  refreshable-duration: 36000 # in seconds
+  signerKey: ${JWT_SIGNER_KEY:u00HlI390ctLn7BGyr0F2HczWiIskDBeX9WFOk25MEGnFoEjKwFoZh6h7gcX3Z3pJ0BAr9AbbGXelLMviWbZoZ}
+  valid-duration: ${JWT_VALID_DURATION:36000}
+  refreshable-duration: ${JWT_REFRESH_DURATION:604800}
 
 google:
-  client-id: "927045210043-prue4q9vqjb7f08jps9do3iqrtpnl8jk.apps.googleusercontent.com"
+  client-id: ${GOOGLE_CLIENT_ID:927045210043-xxxx.apps.googleusercontent.com}
 
 app:
   services:
-    user: http://localhost:8081/user
+    user: ${USER_SERVICE_URL:http://localhost:8081/user}

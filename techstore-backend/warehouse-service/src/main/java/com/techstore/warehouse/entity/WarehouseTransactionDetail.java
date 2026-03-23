@@ -28,6 +28,7 @@ public class WarehouseTransactionDetail {
     private Long quantity;
     private Long cost;
     private Long variantId;
+    private String batchCode;
 
     @ManyToOne
     @JoinColumn(name = "transaction_id")

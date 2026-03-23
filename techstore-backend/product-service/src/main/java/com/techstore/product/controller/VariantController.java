@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstore.product.dto.request.VariantUpdateImageRequestDTO;
 import com.techstore.product.dto.request.VariantUpdateRequestDTO;
 import com.techstore.product.dto.response.ApiResponse;
+import com.techstore.product.dto.response.PageResponseDTO;
 import com.techstore.product.dto.response.VariantResponseDTO;
 import com.techstore.product.service.VariantService;
 
@@ -24,6 +25,31 @@ public class VariantController {
 
     private final VariantService variantService;
     private final ObjectMapper objectMapper;
+
+    @GetMapping("/search")
+    public ApiResponse<PageResponseDTO<VariantResponseDTO>> searchVariants(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+
+        return ApiResponse.<PageResponseDTO<VariantResponseDTO>>builder()
+                .result(variantService.searchVariants(keyword, page, size, sortBy, sortDirection))
+                .build();
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<PageResponseDTO<VariantResponseDTO>> getAllActiveVariants(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+
+        return ApiResponse.<PageResponseDTO<VariantResponseDTO>>builder()
+                .result(variantService.getAllActiveVariants(page, size, sortBy, sortDirection))
+                .build();
+    }
 
     /**
      * Lấy variant theo ID

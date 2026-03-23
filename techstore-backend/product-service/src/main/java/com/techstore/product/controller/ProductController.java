@@ -68,7 +68,7 @@ public class ProductController {
     @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProductResponseDTO> updateImages(
             @PathVariable Long id,
-            @RequestPart("files") MultipartFile[] files,
+            @RequestPart(value = "files", required = false) MultipartFile[] files,
             @RequestPart(value = "images", required = false) String imagesJson)
             throws Exception {
 

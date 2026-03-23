@@ -46,7 +46,7 @@ public class FileService {
 
         return FileResponse.builder()
                 .originalFileName(file.getOriginalFilename())
-                .url(fileInfo.getUrl())
+                .url("http://localhost:8888/techstore/api/v1/file/media/download/" + fileInfo.getUrl())
                 .build();
     }
 
@@ -76,7 +76,7 @@ public class FileService {
 
             responses.add(FileResponse.builder()
                     .originalFileName(file.getOriginalFilename())
-                    .url(fileInfo.getUrl())
+                    .url("http://localhost:8888/techstore/api/v1/file/media/download/" + fileInfo.getUrl())
                     .build());
         }
 

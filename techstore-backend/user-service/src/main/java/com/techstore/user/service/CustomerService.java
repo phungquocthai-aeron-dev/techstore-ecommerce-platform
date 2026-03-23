@@ -2,6 +2,10 @@ package com.techstore.user.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,7 +42,18 @@ public class CustomerService {
     private final FileServiceClient fileClient;
     private final CustomerMapper customerMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
+    public Page<CustomerResponse> getAllPaged(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return customerRepo.findAll(pageable).map(customerMapper::toResponse);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public List<CustomerResponse> findCustomer(Long id, String email, String phone, String fullName) {
         if (id == null && email == null && phone == null && fullName == null) {
             throw new AppException(ErrorCode.INVALID_KEY);
@@ -54,19 +69,19 @@ public class CustomerService {
                 customerRepo.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public CustomerResponse getByEmail(String email) {
         return customerMapper.toResponse(
                 customerRepo.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public CustomerResponse getByPhone(String phone) {
         return customerMapper.toResponse(
                 customerRepo.findByPhone(phone).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
     public List<CustomerResponse> getAll() {
         return customerRepo.findAll().stream().map(customerMapper::toResponse).toList();
     }

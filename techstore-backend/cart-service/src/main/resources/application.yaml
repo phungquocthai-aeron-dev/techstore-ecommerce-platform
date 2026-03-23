@@ -8,10 +8,12 @@ spring:
     name: cart-service
 
   datasource:
-    url: jdbc:mysql://localhost:3307/techstore_cart
+    url: ${DB_CART_URL:jdbc:mysql://localhost:3307/techstore_cart}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: root
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      initialization-fail-timeout: 60000
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -21,9 +23,9 @@ spring:
 
   data:
     redis:
-      host: 127.0.0.1
-      port: 6380
-      password:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:}
       timeout: 2000ms
       database: 0
       lettuce:
@@ -39,7 +41,7 @@ cart:
 
 app:
   services:
-    identity: http://localhost:8080/identity
-    file: http://localhost:8082/file
-    product: http://localhost:8083/product
-    order: http://localhost:8084/order
+    identity: ${IDENTITY_SERVICE_URL:http://localhost:8080/identity}
+    file: ${FILE_SERVICE_URL:http://localhost:8082/file}
+    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
+    order: ${ORDER_SERVICE_URL:http://localhost:8086/order}

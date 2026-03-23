@@ -3,6 +3,11 @@ package com.techstore.user.service;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import com.techstore.event.dto.NotificationEvent;
 import com.techstore.user.client.NotificationClient;
 import com.techstore.user.constant.AccountStatus;
 import com.techstore.user.dto.request.ResetPasswordRequest;
@@ -38,7 +44,7 @@ public class StaffService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationClient notificationClient;
     private final OtpEventProducer otpEventProducer;
-    private final MailService mailService;
+    private final KafkaTemplate<String, NotificationEvent> kafkaTemplate;
 
     @PreAuthorize("hasRole('ADMIN')")
     public StaffResponse createStaff(StaffRequest req) {
@@ -61,12 +67,21 @@ public class StaffService {
 
         Staff saved = staffRepo.save(staff);
 
-        mailService.sendStaffAccount(saved.getEmail(), rawPassword);
+        String htmlBody = buildStaffAccountEmail(saved.getFullName(), saved.getEmail(), rawPassword);
+
+        NotificationEvent event = NotificationEvent.builder()
+                .channel("EMAIL")
+                .recipient(saved.getEmail())
+                .subject("Tài khoản nhân viên TechStore")
+                .body(htmlBody)
+                .build();
+
+        kafkaTemplate.send("notification-delivery", event);
 
         return staffMapper.toResponse(saved);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF', 'WAREHOUSE_STAFF')")
     public StaffResponse updateInfo(Long id, StaffRequest req) {
         Staff staff = getStaffAndCheckPermission(id);
 
@@ -76,7 +91,7 @@ public class StaffService {
         return staffMapper.toResponse(staffRepo.save(staff));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF', 'WAREHOUSE_STAFF')")
     public void updatePassword(Long id, String oldPw, String newPw, String passwordConfirm) {
         Staff staff = getStaffAndCheckPermission(id);
 
@@ -98,6 +113,17 @@ public class StaffService {
 
         staff.setPassword(passwordEncoder.encode(newPw));
         staffRepo.save(staff);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<StaffResponse> getAllPaged(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return staffRepo.findAll(pageable).map(staffMapper::toResponse);
     }
 
     public void forgotPassword(String email) {
@@ -162,7 +188,7 @@ public class StaffService {
         return staffMapper.toResponse(staffRepo.save(staff));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF', 'WAREHOUSE_STAFF')")
     public StaffResponse findById(Long id) {
         if (id == null) {
             throw new AppException(ErrorCode.INVALID_KEY);
@@ -182,7 +208,7 @@ public class StaffService {
         return staffRepo.findAllById(ids).stream().map(staffMapper::toResponse).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF', 'WAREHOUSE_STAFF')")
     public StaffResponse findOne(Long id, String email, String phone) {
         if (id == null && email == null && phone == null) {
             throw new AppException(ErrorCode.INVALID_KEY);
@@ -222,5 +248,35 @@ public class StaffService {
     private boolean isAdmin() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private String buildStaffAccountEmail(String name, String email, String password) {
+        return """
+			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+
+				<h2 style="color: #2c3e50;">Chào %s 👋</h2>
+
+				<p>Tài khoản nhân viên của bạn đã được tạo thành công.</p>
+
+				<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+					<p><strong>Email:</strong> %s</p>
+					<p><strong>Mật khẩu:</strong> %s</p>
+				</div>
+
+				<p style="color: #e74c3c;">
+					⚠️ Vui lòng đăng nhập và đổi mật khẩu ngay để đảm bảo an toàn.
+				</p>
+
+				<a href="http://localhost:4300/auth"
+				style="display:inline-block; padding:10px 20px; background:#4CAF50;
+						color:white; text-decoration:none; border-radius:5px;">
+					Đăng nhập ngay
+				</a>
+
+				<br/><br/>
+				<p style="color: #888;">TechStore Team</p>
+			</div>
+		"""
+                .formatted(name, email, password);
     }
 }

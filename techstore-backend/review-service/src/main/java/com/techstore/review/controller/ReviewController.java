@@ -57,6 +57,15 @@ public class ReviewController {
         return ApiResponse.<Void>builder().message("Delete review successfully").build();
     }
 
+    // ================= UPDATE STATUS (STAFF/ADMIN only) =================
+    @PatchMapping("/{id}/status")
+    public ApiResponse<ReviewResponse> updateStatus(@PathVariable Long id, @RequestParam String status) {
+        return ApiResponse.<ReviewResponse>builder()
+                .result(reviewService.updateReviewStatus(id, status))
+                .message("Update review status successfully")
+                .build();
+    }
+
     // ================= GET REVIEWS (PAGINATION) =================
     @GetMapping
     public ApiResponse<PageResponse<ReviewResponse>> getReviews(
@@ -67,6 +76,14 @@ public class ReviewController {
 
         return ApiResponse.<PageResponse<ReviewResponse>>builder()
                 .result(reviewService.getReviews(productId, rating, page, size))
+                .build();
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<PageResponse<ReviewResponse>> getAllReviews(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        return ApiResponse.<PageResponse<ReviewResponse>>builder()
+                .result(reviewService.getAllReviews(page, size))
                 .build();
     }
 

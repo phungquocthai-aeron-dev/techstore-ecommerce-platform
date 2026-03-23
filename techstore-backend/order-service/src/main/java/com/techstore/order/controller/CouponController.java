@@ -56,4 +56,12 @@ public class CouponController {
         couponService.delete(id);
         return ApiResponse.<Void>builder().build();
     }
+
+    @GetMapping("/available")
+    public ApiResponse<List<CouponResponse>> getAvailableCoupons() {
+
+        return ApiResponse.<List<CouponResponse>>builder()
+                .result(couponService.getAvailableCoupons())
+                .build();
+    }
 }

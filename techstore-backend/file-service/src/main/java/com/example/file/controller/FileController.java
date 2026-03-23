@@ -50,7 +50,8 @@ public class FileController {
     ResponseEntity<Resource> downloadImg(HttpServletRequest request) throws IOException {
 
         String requestUri = request.getRequestURI();
-        String filePath = requestUri.substring(requestUri.indexOf("/media/download/img/") + "/media/download/img/".length());
+        String filePath =
+                requestUri.substring(requestUri.indexOf("/media/download/img/") + "/media/download/img/".length());
         System.out.println("img/" + filePath);
         var fileData = fileService.download("img/" + filePath);
 
@@ -59,12 +60,13 @@ public class FileController {
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000")
                 .body(fileData.resource());
     }
-    
+
     @GetMapping("/media/download/media/**")
     ResponseEntity<Resource> downloadMedia(HttpServletRequest request) throws IOException {
 
         String requestUri = request.getRequestURI();
-        String filePath = requestUri.substring(requestUri.indexOf("/media/download/media/") + "/media/download/media/".length());
+        String filePath =
+                requestUri.substring(requestUri.indexOf("/media/download/media/") + "/media/download/media/".length());
         System.out.println("media/" + filePath);
         var fileData = fileService.download("media/" + filePath);
 

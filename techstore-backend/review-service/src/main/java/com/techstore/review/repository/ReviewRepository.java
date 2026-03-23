@@ -42,4 +42,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             @Param("hasReply") Boolean hasReply,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    @Query("""
+			SELECT r FROM Review r
+			WHERE r.status = 'ACTIVE'
+		""")
+    Page<Review> findAllActive(Pageable pageable);
 }

@@ -338,15 +338,19 @@ public class AuthenticationService {
         return signedJWT;
     }
 
-    private void saveInvalidatedToken(JWTClaimsSet claims) {
-        LocalDateTime expiredAt = claims.getExpirationTime()
-                .toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
+    public void saveInvalidatedToken(JWTClaimsSet claims) {
+        String jti = claims.getJWTID();
 
-        invalidatedTokenRepository.save(InvalidatedToken.builder()
-                .token(claims.getJWTID())
-                .expiredAt(expiredAt)
-                .build());
+        if (!invalidatedTokenRepository.existsById(jti)) {
+            Date expiryTime = claims.getExpirationTime();
+
+            LocalDateTime expiredAt =
+                    expiryTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+            InvalidatedToken token =
+                    InvalidatedToken.builder().token(jti).expiredAt(expiredAt).build();
+
+            invalidatedTokenRepository.save(token);
+        }
     }
 }

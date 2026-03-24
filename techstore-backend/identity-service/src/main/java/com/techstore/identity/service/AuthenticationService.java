@@ -94,7 +94,13 @@ public class AuthenticationService {
 
     public AuthenticationResponse authenticateStaff(AuthenticationRequest request) {
 
-        StaffAuthDTO staff = userServiceClient.getStaffByEmail(request.getUsername());
+        StaffAuthDTO staff = null;
+
+        try {
+            staff = userServiceClient.getStaffByEmail(request.getUsername());
+        } catch (Exception e) {
+            log.info(e.getMessage());
+        }
 
         if (staff == null || !passwordEncoder.matches(request.getPassword(), staff.getPassword())) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);

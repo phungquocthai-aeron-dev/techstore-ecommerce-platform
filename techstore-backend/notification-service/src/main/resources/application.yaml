@@ -38,4 +38,4 @@ spring:
 
 app:
   services:
-    user: ${USER_SERVICE_URL:http://localhost:8081/user}
+    user: ${USER_SERVICE_INTERNAL_URL:http://localhost:8081/user}

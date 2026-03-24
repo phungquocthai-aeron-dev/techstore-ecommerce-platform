@@ -49,8 +49,35 @@ public class FileRepository {
                 .build();
     }
 
+    //    public Resource read(FileMetadata fileMetadata) throws IOException {
+    //        var data = Files.readAllBytes(Path.of(fileMetadata.getPath()));
+    //        return new ByteArrayResource(data);
+    //    }
+
     public Resource read(FileMetadata fileMetadata) throws IOException {
-        var data = Files.readAllBytes(Path.of(fileMetadata.getPath()));
+        String path = normalizePath(fileMetadata.getPath());
+
+        var data = Files.readAllBytes(Path.of(path));
         return new ByteArrayResource(data);
+    }
+
+    private String normalizePath(String path) {
+        if (path == null) return null;
+
+        boolean isLinux = !System.getProperty("os.name").toLowerCase().contains("win");
+
+        if (isLinux) {
+            // Nếu là Windows absolute path
+            if (path.matches("^[A-Z]:\\\\.*")) {
+                // cắt phần "D:\...uploads"
+                int idx = path.indexOf("uploads");
+                if (idx != -1) {
+                    String relative = path.substring(idx + "uploads".length());
+                    return storageDir + relative.replace("\\", "/");
+                }
+            }
+        }
+
+        return path;
     }
 }

@@ -41,7 +41,7 @@ cart:
 
 app:
   services:
-    identity: ${IDENTITY_SERVICE_URL:http://localhost:8080/identity}
-    file: ${FILE_SERVICE_URL:http://localhost:8082/file}
-    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
-    order: ${ORDER_SERVICE_URL:http://localhost:8086/order}
+    identity: ${IDENTITY_SERVICE_INTERNAL_URL:http://localhost:8080/identity}
+    file: ${FILE_SERVICE_INTERNAL_URL:http://localhost:8082/file}
+    product: ${PRODUCT_SERVICE_INTERNAL_URL:http://localhost:8083/product}
+    order: ${ORDER_SERVICE_INTERNAL_URL:http://localhost:8086/order}

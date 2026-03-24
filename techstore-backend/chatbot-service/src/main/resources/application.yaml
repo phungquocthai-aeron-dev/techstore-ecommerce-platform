@@ -21,9 +21,9 @@ spring:
 
 app:
   services:
-    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
-    warehouse: ${WAREHOUSE_SERVICE_URL:http://localhost:8084/warehouse}
-    order: ${ORDER_SERVICE_URL:http://localhost:8086/order}
+    product: ${PRODUCT_SERVICE_INTERNAL_URL:http://localhost:8083/product}
+    warehouse: ${WAREHOUSE_SERVICE_INTERNAL_URL:http://localhost:8084/warehouse}
+    order: ${ORDER_SERVICE_INTERNAL_URL:http://localhost:8086/order}
 
   gemini:
     api-key: ${GEMINI_API_KEY:your-api-key}

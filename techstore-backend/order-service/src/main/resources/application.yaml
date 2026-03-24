@@ -27,10 +27,10 @@ spring:
 
 app:
   services:
-    user: ${USER_SERVICE_URL:http://localhost:8081/user}
-    warehouse: ${WAREHOUSE_SERVICE_URL:http://localhost:8084/warehouse}
-    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
-    cart: ${CART_SERVICE_URL:http://localhost:8085/cart}
+    user: ${USER_SERVICE_INTERNAL_URL:http://localhost:8081/user}
+    warehouse: ${WAREHOUSE_SERVICE_INTERNAL_URL:http://localhost:8084/warehouse}
+    product: ${PRODUCT_SERVICE_INTERNAL_URL:http://localhost:8083/product}
+    cart: ${CART_SERVICE_INTERNAL_URL:http://localhost:8085/cart}
 
   ghn:
     base-url: ${GHN_BASE_URL:https://dev-online-gateway.ghn.vn/shiip/public-api}

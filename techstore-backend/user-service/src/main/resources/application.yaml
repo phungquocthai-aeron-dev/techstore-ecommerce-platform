@@ -35,6 +35,6 @@ app:
     password: ${ADMIN_PASSWORD:admin}
 
   services:
-    identity: ${IDENTITY_SERVICE_URL:http://localhost:8080/identity}
-    file: ${FILE_SERVICE_URL:http://localhost:8082/file}
-    notification: ${NOTIFICATION_SERVICE_URL:http://localhost:8088/notification}
+    identity: ${IDENTITY_SERVICE_INTERNAL_URL:http://localhost:8080/identity}
+    file: ${FILE_SERVICE_INTERNAL_URL:http://localhost:8082/file}
+    notification: ${NOTIFICATION_SERVICE_INTERNAL_URL:http://localhost:8088/notification}

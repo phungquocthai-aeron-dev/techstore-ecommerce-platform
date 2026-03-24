@@ -27,7 +27,7 @@ spring:
 
 app:
   services:
-    identity: ${IDENTITY_SERVICE_URL:http://localhost:8080/identity}
-    file: ${FILE_SERVICE_URL:http://localhost:8082/file}
-    user: ${USER_SERVICE_URL:http://localhost:8081/user}
-    product: ${PRODUCT_SERVICE_URL:http://localhost:8083/product}
+    identity: ${IDENTITY_SERVICE_INTERNAL_URL:http://localhost:8080/identity}
+    file: ${FILE_SERVICE_INTERNAL_URL:http://localhost:8082/file}
+    user: ${USER_SERVICE_INTERNAL_URL:http://localhost:8081/user}
+    product: ${PRODUCT_SERVICE_INTERNAL_URL:http://localhost:8083/product}

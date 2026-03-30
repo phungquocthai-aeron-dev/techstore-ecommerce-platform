@@ -99,6 +99,23 @@ export class StaffService {
     );
   }
 
+  // GET /staffs/chat-available
+  getChatAvailableStaff(): Observable<ApiResponse<StaffResponse[]>> {
+    return this.http.get<ApiResponse<StaffResponse[]>>(
+      `${this.baseUrl}/chat-available`
+    );
+  }
+
+  // GET /staffs/by-role?roleName=
+  getByRole(roleName: string): Observable<ApiResponse<StaffResponse[]>> {
+    const params = new HttpParams().set('roleName', roleName);
+  
+    return this.http.get<ApiResponse<StaffResponse[]>>(
+      `${this.baseUrl}/by-role`,
+      { params }
+    );
+  }
+
   // GET /staffs/search
   search(params: {
     id?: number;

@@ -14,7 +14,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'home',
+        redirectTo: 'dashboard',
         pathMatch: 'full'
       },
       // {
@@ -25,11 +25,18 @@ export const routes: Routes = [
       //       .then(m => m.DashboardComponent)
       // },
       {
-        path: 'home',
+        path: 'dashboard',
         canActivate: [roleGuard],
         loadComponent: () =>
-          import('./features/product/product.component')
-            .then(m => m.ProductManagementComponent)
+          import('./features/dashboard/dashboard.component')
+            .then(m => m.DashboardComponent)
+      },
+      {
+        path: 'statistics',
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/statistics/statistics.component')
+            .then(m => m.StatisticsComponent)
       },
       {
         path: 'profile',
@@ -37,6 +44,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/profile.component')
             .then(m => m.ProfileComponent)
+      },
+      {
+      path: 'products',
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/product/product.component')
+            .then(m => m.ProductManagementComponent)
       },
       {
         path: 'orders',
@@ -107,6 +121,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/review/review.component')
             .then(m => m.ReviewComponent)
+      },
+      {
+        path: 'chats',
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/chat/chat.component')
+            .then(m => m.AdminChatComponent)
       },
     ]
   },

@@ -61,12 +61,17 @@ const ROLE_ALLOWED_ROUTES: Record<AppRole, string[]> = {
     'orders',
     'coupons',
     'customers',
-    'reviews'
+    'reviews',
+    'dashboard',
+    'statistics',
+    'chats',
   ],
   WAREHOUSE_STAFF: [
     'home',
     'warehouses',
     'suppliers',
+    'dashboard',
+    'statistics',
   ],
 };
 

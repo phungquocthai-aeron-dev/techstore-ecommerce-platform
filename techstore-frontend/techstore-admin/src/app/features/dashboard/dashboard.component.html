@@ -1,0 +1,361 @@
+<div class="db-root">
+  <!-- ══════════════ TOPBAR ══════════════ -->
+  <div class="db-topbar">
+    <div class="db-topbar-left">
+      <div class="db-logo-mark"><i class="bi bi-speedometer2"></i></div>
+      <div>
+        <div class="db-topbar-title">Tổng Quan</div>
+        <div class="db-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Dashboard</span>
+        </div>
+      </div>
+    </div>
+    <div class="db-topbar-right">
+      <span class="db-date-chip"
+        ><i class="bi bi-calendar3"></i> {{ today | date: "dd/MM/yyyy" }}</span
+      >
+      <button
+        class="db-refresh-btn"
+        (click)="loadDashboard()"
+        [disabled]="loading"
+      >
+        <i class="bi bi-arrow-clockwise" [class.spin]="loading"></i>
+        Làm mới
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════ LOADING ══════════════ -->
+  <div class="db-loading-bar" *ngIf="loading">
+    <div class="db-loading-inner"></div>
+  </div>
+
+  <!-- ══════════════ KPI CARDS ══════════════ -->
+  <div class="db-kpi-grid">
+    <!-- Doanh thu -->
+    <div class="db-kpi">
+      <div class="db-kpi-header">
+        <div class="db-kpi-icon" style="--kc: #e11d48; --kb: #fff1f2">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <span class="db-kpi-trend up" *ngIf="totalRevenue > 0">
+          <i class="bi bi-arrow-up-short"></i> Tháng này
+        </span>
+      </div>
+      <div class="db-kpi-value">{{ formatShort(totalRevenue) }}</div>
+      <div class="db-kpi-label">Doanh thu tháng</div>
+      <div class="db-kpi-bar" style="--kc: #e11d48"></div>
+    </div>
+
+    <!-- Đơn hàng -->
+    <div class="db-kpi">
+      <div class="db-kpi-header">
+        <div class="db-kpi-icon" style="--kc: #0ea5e9; --kb: #f0f9ff">
+          <i class="bi bi-bag-check-fill"></i>
+        </div>
+        <span class="db-kpi-trend up" *ngIf="totalOrders > 0">
+          <i class="bi bi-arrow-up-short"></i> +{{ pendingOrders }} chờ
+        </span>
+      </div>
+      <div class="db-kpi-value">{{ totalOrders }}</div>
+      <div class="db-kpi-label">Tổng đơn hàng</div>
+      <div class="db-kpi-bar" style="--kc: #0ea5e9"></div>
+    </div>
+
+    <!-- Khách hàng -->
+    <div class="db-kpi">
+      <div class="db-kpi-header">
+        <div class="db-kpi-icon" style="--kc: #10b981; --kb: #ecfdf5">
+          <i class="bi bi-people-fill"></i>
+        </div>
+      </div>
+      <div class="db-kpi-value">{{ totalCustomers }}</div>
+      <div class="db-kpi-label">Khách hàng</div>
+      <div class="db-kpi-bar" style="--kc: #10b981"></div>
+    </div>
+
+    <!-- Chờ xử lý -->
+    <div class="db-kpi">
+      <div class="db-kpi-header">
+        <div class="db-kpi-icon" style="--kc: #f59e0b; --kb: #fffbeb">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <span class="db-kpi-trend warn" *ngIf="pendingOrders > 0">
+          <i class="bi bi-exclamation-circle"></i> Cần xử lý
+        </span>
+      </div>
+      <div class="db-kpi-value">{{ pendingOrders }}</div>
+      <div class="db-kpi-label">Đơn chờ xác nhận</div>
+      <div class="db-kpi-bar" style="--kc: #f59e0b"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MAIN CONTENT ══════════════ -->
+  <div class="db-main-grid">
+    <!-- LEFT: Revenue Chart + Recent Orders -->
+    <div class="db-left-col">
+      <!-- Revenue Chart -->
+      <div class="db-card db-chart-card">
+        <div class="db-card-header">
+          <div class="db-card-title">
+            <i class="bi bi-bar-chart-line-fill"></i>
+            Doanh thu tháng này
+          </div>
+          <span class="db-card-badge"
+            >{{ revenueStats?.totalOrders ?? 0 }} đơn</span
+          >
+        </div>
+
+        <div
+          class="db-chart-wrap"
+          *ngIf="revenueStats && revenueStats.dataPoints.length > 0"
+        >
+          <div class="db-chart-bars">
+            <div
+              class="db-chart-col"
+              *ngFor="let pt of revenueStats.dataPoints"
+            >
+              <div class="db-bar-tooltip">{{ formatShort(pt.revenue) }}</div>
+              <div
+                class="db-bar"
+                [style.height.%]="getBarHeight(pt.revenue)"
+                [class.highlight]="pt.revenue === chartMax"
+              ></div>
+              <div class="db-bar-label">{{ pt.label }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="db-chart-empty"
+          *ngIf="!revenueStats || revenueStats.dataPoints.length === 0"
+        >
+          <i class="bi bi-bar-chart"></i> Chưa có dữ liệu
+        </div>
+
+        <div class="db-chart-footer">
+          <div class="db-chart-stat">
+            <span class="db-chart-stat-val">{{
+              formatShort(totalRevenue)
+            }}</span>
+            <span class="db-chart-stat-lbl">Tổng doanh thu</span>
+          </div>
+          <div class="db-chart-stat">
+            <span class="db-chart-stat-val">{{
+              revenueStats?.totalOrders ?? 0
+            }}</span>
+            <span class="db-chart-stat-lbl">Đơn hoàn thành</span>
+          </div>
+          <div
+            class="db-chart-stat"
+            *ngIf="revenueStats && revenueStats.totalOrders > 0"
+          >
+            <span class="db-chart-stat-val">
+              {{ formatShort(totalRevenue / (revenueStats.totalOrders || 1)) }}
+            </span>
+            <span class="db-chart-stat-lbl">Trung bình/đơn</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Orders -->
+      <div class="db-card">
+        <div class="db-card-header">
+          <div class="db-card-title">
+            <i class="bi bi-clock-history"></i>
+            Đơn hàng gần đây
+          </div>
+          <span class="db-card-badge">{{ recentOrders.length }} đơn</span>
+        </div>
+
+        <div class="db-table-wrap" *ngIf="recentOrders.length > 0">
+          <table class="db-table">
+            <thead>
+              <tr>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let o of recentOrders">
+                <td>
+                  <span class="db-order-id">#{{ o.orderId }}</span>
+                </td>
+                <td>
+                  <div class="db-customer-mini">
+                    <div
+                      class="db-mini-avatar"
+                      [style.background]="getAvatarBg(o.customerName)"
+                    >
+                      {{ getInitial(o.customerName) }}
+                    </div>
+                    <div>
+                      <div class="db-mini-name">{{ o.customerName }}</div>
+                      <div class="db-mini-phone">{{ o.customerPhone }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="db-amount">{{ formatShort(o.totalPrice) }}</span>
+                </td>
+                <td>
+                  <span
+                    class="db-status"
+                    [class]="'db-st-' + getStatusCss(o.status)"
+                  >
+                    {{ getStatusLabel(o.status) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="db-date">{{
+                    o.createdAt | date: "dd/MM HH:mm"
+                  }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="db-empty" *ngIf="recentOrders.length === 0 && !loading">
+          <i class="bi bi-inbox"></i> Chưa có đơn hàng
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Order Status + Top Variants + Top Customers -->
+    <div class="db-right-col">
+      <!-- Order Status Summary -->
+      <div class="db-card">
+        <div class="db-card-header">
+          <div class="db-card-title">
+            <i class="bi bi-pie-chart-fill"></i>
+            Tình trạng đơn hàng
+          </div>
+        </div>
+        <div class="db-status-list" *ngIf="orderSummary">
+          <div
+            class="db-status-row"
+            *ngFor="let sb of orderSummary.statusBreakdown"
+          >
+            <div class="db-status-info">
+              <span
+                class="db-status"
+                [class]="'db-st-' + getStatusCss(sb.status)"
+              >
+                {{ getStatusLabel(sb.status) }}
+              </span>
+            </div>
+            <div class="db-status-right">
+              <span class="db-status-count">{{ sb.count }}</span>
+              <div class="db-status-progress-wrap">
+                <div
+                  class="db-status-progress"
+                  [class]="'db-sp-' + getStatusCss(sb.status)"
+                  [style.width.%]="
+                    (sb.count / (orderSummary.totalOrders || 1)) * 100
+                  "
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="db-empty" *ngIf="!orderSummary && !loading">
+          <i class="bi bi-pie-chart"></i> Chưa có dữ liệu
+        </div>
+      </div>
+
+      <!-- Top Variants -->
+      <div class="db-card">
+        <div class="db-card-header">
+          <div class="db-card-title">
+            <i class="bi bi-trophy-fill"></i>
+            Sản phẩm bán chạy
+          </div>
+          <span class="db-card-badge">Top 5</span>
+        </div>
+        <div class="db-top-list" *ngIf="topVariants.length > 0">
+          <div class="db-top-item" *ngFor="let v of topVariants; let i = index">
+            <div
+              class="db-rank"
+              [class.gold]="i === 0"
+              [class.silver]="i === 1"
+              [class.bronze]="i === 2"
+            >
+              {{ i + 1 }}
+            </div>
+            <img
+              *ngIf="v.imageUrl"
+              [src]="v.imageUrl"
+              [alt]="v.name"
+              class="db-top-img"
+            />
+            <div *ngIf="!v.imageUrl" class="db-top-img-ph">
+              <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="db-top-info">
+              <div class="db-top-name">{{ v.name }}</div>
+              <div class="db-top-sub">{{ v.totalQuantitySold }} đã bán</div>
+            </div>
+            <div class="db-top-rev">{{ formatShort(v.totalRevenue) }}</div>
+          </div>
+        </div>
+        <div class="db-empty" *ngIf="topVariants.length === 0 && !loading">
+          <i class="bi bi-trophy"></i> Chưa có dữ liệu
+        </div>
+      </div>
+
+      <!-- Top Loyal Customers -->
+      <div class="db-card">
+        <div class="db-card-header">
+          <div class="db-card-title">
+            <i class="bi bi-star-fill"></i>
+            Khách hàng thân thiết
+          </div>
+          <span class="db-card-badge">Top 5</span>
+        </div>
+        <div class="db-top-list" *ngIf="topCustomers.length > 0">
+          <div
+            class="db-top-item"
+            *ngFor="let c of topCustomers; let i = index"
+          >
+            <div
+              class="db-rank"
+              [class.gold]="i === 0"
+              [class.silver]="i === 1"
+              [class.bronze]="i === 2"
+            >
+              {{ i + 1 }}
+            </div>
+            <img
+              *ngIf="c.avatarUrl"
+              [src]="c.avatarUrl"
+              [alt]="c.fullName"
+              class="db-top-img round"
+            />
+            <div
+              *ngIf="!c.avatarUrl"
+              class="db-mini-avatar"
+              [style.background]="getAvatarBg(c.fullName)"
+            >
+              {{ getInitial(c.fullName) }}
+            </div>
+            <div class="db-top-info">
+              <div class="db-top-name">{{ c.fullName ?? "Ẩn danh" }}</div>
+              <div class="db-top-sub">
+                {{ c.orderCount }} đơn · score {{ c.loyaltyScore }}
+              </div>
+            </div>
+            <div class="db-top-rev">{{ formatShort(c.totalSpent) }}</div>
+          </div>
+        </div>
+        <div class="db-empty" *ngIf="topCustomers.length === 0 && !loading">
+          <i class="bi bi-star"></i> Chưa có dữ liệu
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

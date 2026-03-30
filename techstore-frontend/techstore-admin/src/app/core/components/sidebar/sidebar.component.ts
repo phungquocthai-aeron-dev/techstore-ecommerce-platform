@@ -24,7 +24,7 @@ export class SidebarComponent {
   constructor(
     private staffService: StaffService,
     private authService: AuthService,
-    public permService: PermissionService, // public để dùng trong template
+    public permService: PermissionService,
     private router: Router
   ) {
     this.currentStaff$ = this.staffService.currentStaff$;
@@ -48,8 +48,14 @@ export class SidebarComponent {
 
   logout(): void {
     this.authService.logout().subscribe({
-      next:  () => this.router.navigate(['/auth']),
-      error: () => this.router.navigate(['/auth'])
+      next: () => {
+        this.staffService.clearCurrentStaff();
+        this.router.navigate(['/auth']);
+      },
+      error: () => {
+        this.staffService.clearCurrentStaff();
+        this.router.navigate(['/auth']);
+      }
     });
   }
 }

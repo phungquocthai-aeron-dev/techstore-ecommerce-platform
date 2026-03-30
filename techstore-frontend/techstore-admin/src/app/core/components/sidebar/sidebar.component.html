@@ -13,17 +13,24 @@
   <!-- ── Scroll area ── -->
   <div class="sidebar-scroll">
     <!-- Tổng quan: ADMIN & SALES_STAFF -->
-    <div class="sidebar-section" *ngIf="canAccess('dashboard')">
+    <div
+      class="sidebar-section"
+      *ngIf="canAccess('dashboard') || canAccess('statistics')"
+    >
       <div class="section-label">Tổng quan</div>
       <ul>
-        <li>
+        <li *ngIf="canAccess('dashboard')">
           <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
             <i class="bi bi-speedometer2"></i>
             <span>Tổng quan</span>
           </a>
         </li>
-        <li>
-          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
+        <li *ngIf="canAccess('statistics')">
+          <a
+            class="nav-link"
+            routerLink="/statistics"
+            routerLinkActive="active"
+          >
             <i class="bi bi-reception-4"></i>
             <span>Thống kê</span>
           </a>
@@ -35,13 +42,13 @@
     <div
       class="sidebar-section"
       *ngIf="
-        canAccess('home') || canAccess('categories') || canAccess('brands')
+        canAccess('products') || canAccess('categories') || canAccess('brands')
       "
     >
       <div class="section-label">Danh mục quản lý</div>
       <ul>
-        <li *ngIf="canAccess('home')">
-          <a class="nav-link" routerLink="/home" routerLinkActive="active">
+        <li *ngIf="canAccess('products')">
+          <a class="nav-link" routerLink="/products" routerLinkActive="active">
             <i class="bi bi-box-seam"></i>
             <span>Sản phẩm</span>
           </a>
@@ -106,6 +113,12 @@
           <a class="nav-link" routerLink="/staffs" routerLinkActive="active">
             <i class="bi bi-person-badge"></i>
             <span>Nhân viên</span>
+          </a>
+        </li>
+        <li *ngIf="canAccess('chats')">
+          <a class="nav-link" routerLink="/chats" routerLinkActive="active">
+            <i class="bi bi-chat-dots"></i>
+            <span>Tin nhắn</span>
           </a>
         </li>
         <li *ngIf="canAccess('reviews')">

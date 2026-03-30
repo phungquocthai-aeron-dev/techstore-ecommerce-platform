@@ -1,0 +1,547 @@
+<div class="st-root">
+  <!-- ══════════════ TOPBAR ══════════════ -->
+  <div class="st-topbar">
+    <div class="st-topbar-left">
+      <div class="st-logo-mark"><i class="bi bi-graph-up-arrow"></i></div>
+      <div>
+        <div class="st-topbar-title">Thống Kê</div>
+        <div class="st-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span
+          ><span class="cur">Thống kê</span>
+        </div>
+      </div>
+    </div>
+    <div class="st-topbar-right">
+      <button class="st-refresh-btn" (click)="loadAll()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise" [class.spin]="loading"></i>
+        Làm mới
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════ PERIOD FILTER ══════════════ -->
+  <div class="st-filter-bar">
+    <div class="st-period-tabs">
+      <button
+        class="st-period-btn"
+        *ngFor="let p of periodOptions"
+        [class.active]="selectedPeriod === p.value"
+        (click)="selectedPeriod = p.value; onPeriodChange()"
+      >
+        {{ p.label }}
+      </button>
+    </div>
+
+    <div class="st-date-range" *ngIf="selectedPeriod === 'CUSTOM'">
+      <input
+        class="st-date-input"
+        type="date"
+        [(ngModel)]="fromDate"
+        placeholder="Từ ngày"
+      />
+      <span class="st-date-sep">—</span>
+      <input
+        class="st-date-input"
+        type="date"
+        [(ngModel)]="toDate"
+        placeholder="Đến ngày"
+      />
+      <button
+        class="st-apply-btn"
+        (click)="applyCustomRange()"
+        [disabled]="!fromDate || !toDate"
+      >
+        <i class="bi bi-check-lg"></i> Áp dụng
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════ LOADING BAR ══════════════ -->
+  <div class="st-loading-bar" *ngIf="loading">
+    <div class="st-loading-inner"></div>
+  </div>
+
+  <!-- ══════════════ KPI ROW ══════════════ -->
+  <div class="st-kpi-row">
+    <div class="st-kpi">
+      <div class="st-kpi-icon" style="--kc: #e11d48; --kb: #fff1f2">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div class="st-kpi-body">
+        <div class="st-kpi-val">{{ formatShort(totalRevenue) }}</div>
+        <div class="st-kpi-lbl">Tổng doanh thu</div>
+      </div>
+    </div>
+    <div class="st-kpi">
+      <div class="st-kpi-icon" style="--kc: #0ea5e9; --kb: #f0f9ff">
+        <i class="bi bi-bag-check-fill"></i>
+      </div>
+      <div class="st-kpi-body">
+        <div class="st-kpi-val">{{ totalOrderCount }}</div>
+        <div class="st-kpi-lbl">Đơn hoàn thành</div>
+      </div>
+    </div>
+    <div class="st-kpi">
+      <div class="st-kpi-icon" style="--kc: #10b981; --kb: #ecfdf5">
+        <i class="bi bi-receipt"></i>
+      </div>
+      <div class="st-kpi-body">
+        <div class="st-kpi-val">{{ formatShort(avgOrderValue) }}</div>
+        <div class="st-kpi-lbl">Giá trị TB/đơn</div>
+      </div>
+    </div>
+    <div class="st-kpi">
+      <div class="st-kpi-icon" style="--kc: #7c3aed; --kb: #f5f3ff">
+        <i class="bi bi-building-fill"></i>
+      </div>
+      <div class="st-kpi-body">
+        <div class="st-kpi-val">
+          {{ formatShort(warehouseStats?.grandTotalCost ?? 0) }}
+        </div>
+        <div class="st-kpi-lbl">Chi phí nhập kho</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ TABS ══════════════ -->
+  <div class="st-tabs">
+    <button
+      class="st-tab"
+      *ngFor="let t of tabs"
+      [class.active]="activeTab === t.key"
+      (click)="switchTab(t.key)"
+    >
+      <i class="bi" [class]="t.icon"></i>
+      {{ t.label }}
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB: DOANH THU
+  ══════════════════════════════════ -->
+  <div class="st-content" *ngIf="activeTab === 'revenue'">
+    <div class="st-card st-chart-card">
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-bar-chart-line-fill"></i>
+          Biểu đồ doanh thu
+        </div>
+        <div class="st-card-meta" *ngIf="revenueStats">
+          Tổng <strong>{{ formatShort(totalRevenue) }}</strong> ·
+          {{ totalOrderCount }} đơn
+        </div>
+      </div>
+
+      <div
+        class="st-chart-area"
+        *ngIf="revenueStats && revenueStats.dataPoints.length > 0"
+      >
+        <div class="st-chart-bars">
+          <div class="st-chart-col" *ngFor="let pt of revenueStats.dataPoints">
+            <div class="st-bar-tooltip">
+              <strong>{{ formatShort(pt.revenue) }}</strong>
+              <span>{{ pt.orderCount }} đơn</span>
+            </div>
+            <div
+              class="st-bar"
+              [style.height.%]="getBarH(pt.revenue, revenueMax)"
+            ></div>
+            <div class="st-bar-label">{{ pt.label }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="st-empty"
+        *ngIf="!revenueStats || revenueStats.dataPoints.length === 0"
+      >
+        <i class="bi bi-bar-chart"></i> Chưa có dữ liệu doanh thu
+      </div>
+    </div>
+
+    <!-- Revenue breakdown table -->
+    <div
+      class="st-card"
+      *ngIf="revenueStats && revenueStats.dataPoints.length > 0"
+    >
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-table"></i> Chi tiết doanh thu
+        </div>
+      </div>
+      <div class="st-table-wrap">
+        <table class="st-table">
+          <thead>
+            <tr>
+              <th>Kỳ</th>
+              <th class="right">Doanh thu</th>
+              <th class="right">Số đơn</th>
+              <th class="right">TB/đơn</th>
+              <th>Tỷ trọng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pt of revenueStats.dataPoints">
+              <td>
+                <span class="st-period-lbl">{{ pt.label }}</span>
+              </td>
+              <td class="right">
+                <span class="st-amount">{{ formatShort(pt.revenue) }}</span>
+              </td>
+              <td class="right">
+                <span class="st-num">{{ pt.orderCount }}</span>
+              </td>
+              <td class="right">
+                <span class="st-num">{{
+                  formatShort(
+                    pt.orderCount > 0 ? pt.revenue / pt.orderCount : 0
+                  )
+                }}</span>
+              </td>
+              <td>
+                <div class="st-inline-bar-wrap">
+                  <div
+                    class="st-inline-bar"
+                    [style.width.%]="getBarW(pt.revenue, revenueMax)"
+                  ></div>
+                  <span
+                    >{{ ((pt.revenue / revenueMax) * 100).toFixed(0) }}%</span
+                  >
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td><strong>Tổng cộng</strong></td>
+              <td class="right">
+                <strong>{{ formatShort(totalRevenue) }}</strong>
+              </td>
+              <td class="right">
+                <strong>{{ totalOrderCount }}</strong>
+              </td>
+              <td class="right">
+                <strong>{{ formatShort(avgOrderValue) }}</strong>
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB: ĐƠN HÀNG
+  ══════════════════════════════════ -->
+  <div class="st-content" *ngIf="activeTab === 'orders'">
+    <!-- Summary Cards -->
+    <div class="st-order-kpis" *ngIf="orderSummary">
+      <div class="st-order-kpi">
+        <div class="st-ok-val">{{ orderSummary.totalOrders }}</div>
+        <div class="st-ok-lbl">Tổng đơn</div>
+      </div>
+      <div class="st-order-kpi accent">
+        <div class="st-ok-val">
+          {{ formatShort(orderSummary.totalRevenue) }}
+        </div>
+        <div class="st-ok-lbl">Tổng doanh thu</div>
+      </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="st-card" *ngIf="orderSummary">
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-pie-chart-fill"></i> Phân tích trạng thái đơn
+        </div>
+      </div>
+      <div class="st-status-breakdown">
+        <div
+          class="st-status-row"
+          *ngFor="let sb of orderSummary.statusBreakdown"
+        >
+          <div class="st-sb-left">
+            <span class="st-badge" [class]="'st-st-' + getStatusCss(sb.status)">
+              {{ getStatusLabel(sb.status) }}
+            </span>
+          </div>
+          <div class="st-sb-bar-wrap">
+            <div
+              class="st-sb-bar"
+              [style.width.%]="getBarW(sb.count, orderSummary.totalOrders)"
+              [style.background]="getStatusColor(sb.status)"
+            ></div>
+          </div>
+          <div class="st-sb-right">
+            <span class="st-sb-count">{{ sb.count }}</span>
+            <span class="st-sb-pct"
+              >{{
+                ((sb.count / orderSummary.totalOrders) * 100).toFixed(1)
+              }}%</span
+            >
+          </div>
+          <div class="st-sb-rev">{{ formatShort(sb.revenue) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="st-empty-card" *ngIf="!orderSummary && !loading">
+      <i class="bi bi-inbox"></i> Chưa có dữ liệu đơn hàng
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB: SẢN PHẨM
+  ══════════════════════════════════ -->
+  <div class="st-content" *ngIf="activeTab === 'products'">
+    <div class="st-card">
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-trophy-fill"></i> Top sản phẩm bán chạy
+        </div>
+        <div class="st-card-actions">
+          <label class="st-ctrl-label">Hiển thị top</label>
+          <select
+            class="st-select"
+            [(ngModel)]="topVariantsCount"
+            (ngModelChange)="loadAll()"
+          >
+            <option [value]="5">Top 5</option>
+            <option [value]="10">Top 10</option>
+            <option [value]="20">Top 20</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="st-product-list" *ngIf="topVariants.length > 0">
+        <div
+          class="st-product-row"
+          *ngFor="let v of topVariants; let i = index"
+        >
+          <div
+            class="st-rank"
+            [class.gold]="i === 0"
+            [class.silver]="i === 1"
+            [class.bronze]="i === 2"
+          >
+            {{ i + 1 }}
+          </div>
+          <img
+            *ngIf="v.imageUrl"
+            [src]="v.imageUrl"
+            [alt]="v.name"
+            class="st-prod-img"
+          />
+          <div *ngIf="!v.imageUrl" class="st-prod-img-ph">
+            <i class="bi bi-box-seam"></i>
+          </div>
+          <div class="st-prod-info">
+            <div class="st-prod-name">{{ v.name }}</div>
+            <div class="st-prod-id">ID #{{ v.variantId }}</div>
+          </div>
+          <div class="st-prod-bar-wrap">
+            <div class="st-prod-bar-track">
+              <div
+                class="st-prod-bar-fill"
+                [style.width.%]="getBarW(v.totalQuantitySold, variantMax)"
+              ></div>
+            </div>
+            <span class="st-prod-qty">{{ v.totalQuantitySold }} sp</span>
+          </div>
+          <div class="st-prod-rev">{{ formatShort(v.totalRevenue) }}</div>
+        </div>
+      </div>
+
+      <div class="st-empty" *ngIf="topVariants.length === 0 && !loading">
+        <i class="bi bi-trophy"></i> Chưa có dữ liệu
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB: KHÁCH HÀNG
+  ══════════════════════════════════ -->
+  <div class="st-content" *ngIf="activeTab === 'customers'">
+    <div class="st-card">
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-star-fill"></i> Khách hàng thân thiết nhất
+        </div>
+        <div class="st-card-actions">
+          <label class="st-ctrl-label">Hiển thị</label>
+          <select
+            class="st-select"
+            [(ngModel)]="topCustomersCount"
+            (ngModelChange)="loadAll()"
+          >
+            <option [value]="5">Top 5</option>
+            <option [value]="10">Top 10</option>
+            <option [value]="20">Top 20</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="st-customer-list" *ngIf="topCustomers.length > 0">
+        <div
+          class="st-customer-row"
+          *ngFor="let c of topCustomers; let i = index"
+        >
+          <div
+            class="st-rank"
+            [class.gold]="i === 0"
+            [class.silver]="i === 1"
+            [class.bronze]="i === 2"
+          >
+            {{ i + 1 }}
+          </div>
+          <img
+            *ngIf="c.avatarUrl"
+            [src]="c.avatarUrl"
+            class="st-cust-avatar round"
+          />
+          <div
+            *ngIf="!c.avatarUrl"
+            class="st-cust-avatar-ph"
+            [style.background]="getAvatarBg(c.fullName)"
+          >
+            {{ getInitial(c.fullName) }}
+          </div>
+          <div class="st-cust-info">
+            <div class="st-cust-name">{{ c.fullName ?? "Ẩn danh" }}</div>
+            <div class="st-cust-meta">{{ c.email }}</div>
+          </div>
+          <div class="st-cust-stats">
+            <div class="st-cust-stat">
+              <span class="st-cust-stat-val">{{ c.orderCount }}</span>
+              <span class="st-cust-stat-lbl">đơn</span>
+            </div>
+            <div class="st-cust-stat">
+              <span class="st-cust-stat-val">{{ c.loyaltyScore }}</span>
+              <span class="st-cust-stat-lbl">điểm</span>
+            </div>
+          </div>
+          <div class="st-cust-spent">{{ formatShort(c.totalSpent) }}</div>
+        </div>
+      </div>
+
+      <div class="st-empty" *ngIf="topCustomers.length === 0 && !loading">
+        <i class="bi bi-people"></i> Chưa có dữ liệu
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB: NHẬP KHO
+  ══════════════════════════════════ -->
+  <div class="st-content" *ngIf="activeTab === 'warehouse'">
+    <!-- Warehouse KPI -->
+    <div class="st-order-kpis" *ngIf="warehouseStats">
+      <div class="st-order-kpi">
+        <div class="st-ok-val">{{ warehouseStats.grandTransactionCount }}</div>
+        <div class="st-ok-lbl">Giao dịch</div>
+      </div>
+      <div class="st-order-kpi">
+        <div class="st-ok-val">
+          {{ warehouseStats.grandTotalQuantity | number }}
+        </div>
+        <div class="st-ok-lbl">Tổng số lượng</div>
+      </div>
+      <div class="st-order-kpi accent">
+        <div class="st-ok-val">
+          {{ formatShort(warehouseStats.grandTotalCost) }}
+        </div>
+        <div class="st-ok-lbl">Tổng chi phí</div>
+      </div>
+    </div>
+
+    <!-- Chart + Table -->
+    <div
+      class="st-card st-chart-card"
+      *ngIf="warehouseStats && warehouseStats.data.length > 0"
+    >
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-bar-chart-steps"></i> Biểu đồ chi phí nhập kho
+        </div>
+      </div>
+      <div class="st-chart-area">
+        <div class="st-chart-bars">
+          <div class="st-chart-col wh" *ngFor="let pt of warehouseStats.data">
+            <div class="st-bar-tooltip">
+              <strong>{{ formatShort(pt.totalCost) }}</strong>
+              <span>{{ pt.totalQuantity }} sp</span>
+            </div>
+            <div
+              class="st-bar wh-bar"
+              [style.height.%]="getBarH(pt.totalCost, warehouseMax)"
+            ></div>
+            <div class="st-bar-label">{{ pt.period }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="st-card"
+      *ngIf="warehouseStats && warehouseStats.data.length > 0"
+    >
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-table"></i> Chi tiết nhập kho
+        </div>
+      </div>
+      <div class="st-table-wrap">
+        <table class="st-table">
+          <thead>
+            <tr>
+              <th>Kỳ</th>
+              <th class="right">Chi phí</th>
+              <th class="right">Số lượng</th>
+              <th class="right">Giao dịch</th>
+              <th>Tỷ trọng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pt of warehouseStats.data">
+              <td>
+                <span class="st-period-lbl">{{ pt.period }}</span>
+              </td>
+              <td class="right">
+                <span class="st-amount wh">{{
+                  formatShort(pt.totalCost)
+                }}</span>
+              </td>
+              <td class="right">
+                <span class="st-num">{{ pt.totalQuantity }}</span>
+              </td>
+              <td class="right">
+                <span class="st-num">{{ pt.transactionCount }}</span>
+              </td>
+              <td>
+                <div class="st-inline-bar-wrap">
+                  <div
+                    class="st-inline-bar wh"
+                    [style.width.%]="getBarW(pt.totalCost, warehouseMax)"
+                  ></div>
+                  <span
+                    >{{
+                      ((pt.totalCost / warehouseMax) * 100).toFixed(0)
+                    }}%</span
+                  >
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+      class="st-empty-card"
+      *ngIf="!warehouseStats || (warehouseStats.data.length === 0 && !loading)"
+    >
+      <i class="bi bi-building"></i> Chưa có dữ liệu nhập kho
+    </div>
+  </div>
+</div>

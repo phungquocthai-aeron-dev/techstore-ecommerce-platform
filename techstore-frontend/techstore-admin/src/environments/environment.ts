@@ -11,4 +11,6 @@ export const environment = {
     orderUrl: 'http://localhost:8888/techstore/api/v1/order',
     warehouseUrl: 'http://localhost:8888/techstore/api/v1/warehouse',
     reviewUrl: 'http://localhost:8888/techstore/api/v1/review',
+    chatUrl: 'http://localhost:8888/techstore/api/v1/chat',
+    chatSocketUrl: 'http://localhost:8099',
 };

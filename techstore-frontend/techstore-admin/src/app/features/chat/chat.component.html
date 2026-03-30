@@ -1,0 +1,317 @@
+<!-- ═══════════════════════════════════════════════════════
+     ADMIN CHAT — Full-page messaging interface
+     Matches TechStore Admin design system (Nunito, steel-blue)
+═══════════════════════════════════════════════════════ -->
+
+<div class="ac-root">
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="ac-sidebar">
+    <!-- Header -->
+    <div class="ac-sidebar-header">
+      <div class="ac-sidebar-title-row">
+        <div class="ac-sidebar-logo">
+          <i class="bi bi-chat-dots-fill"></i>
+        </div>
+        <div>
+          <div class="ac-sidebar-title">Hỗ trợ khách hàng</div>
+          <div class="ac-sidebar-sub">
+            {{ conversations.length }} cuộc hội thoại
+          </div>
+        </div>
+        <span class="ac-unread-glob" *ngIf="totalUnread() > 0">{{
+          totalUnread()
+        }}</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="ac-tabs">
+        <button
+          class="ac-tab"
+          [class.active]="sideTab === 'chats'"
+          (click)="sideTab = 'chats'"
+        >
+          <i class="bi bi-chat-left-text"></i> Hội thoại
+        </button>
+        <button
+          class="ac-tab"
+          [class.active]="sideTab === 'customers'"
+          (click)="sideTab = 'customers'"
+        >
+          <i class="bi bi-person-lines-fill"></i> Khách hàng
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Tab: CHATS ── -->
+    <ng-container *ngIf="sideTab === 'chats'">
+      <div class="ac-search-wrap">
+        <i class="bi bi-search ac-search-icon"></i>
+        <input
+          class="ac-search"
+          type="text"
+          placeholder="Tìm hội thoại..."
+          [(ngModel)]="convSearch"
+        />
+        <button
+          *ngIf="convSearch"
+          class="ac-search-clear"
+          (click)="convSearch = ''"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="ac-conv-list">
+        <!-- Loading -->
+        <div class="ac-loading" *ngIf="loadingConvs">
+          <div class="ac-spinner-sm"></div>
+          <span>Đang tải...</span>
+        </div>
+
+        <!-- Empty -->
+        <div
+          class="ac-conv-empty"
+          *ngIf="!loadingConvs && filteredConvs.length === 0"
+        >
+          <i class="bi bi-chat-square"></i>
+          <p>Chưa có hội thoại nào</p>
+          <button class="ac-btn-text" (click)="sideTab = 'customers'">
+            Bắt đầu nhắn tin
+          </button>
+        </div>
+
+        <!-- List -->
+        <div
+          class="ac-conv-item"
+          *ngFor="let conv of filteredConvs"
+          [class.active]="activeConv?.id === conv.id"
+          (click)="selectConv(conv)"
+        >
+          <div class="ac-avatar-wrap">
+            <img
+              *ngIf="getConvAvatar(conv)"
+              [src]="getConvAvatar(conv)"
+              class="ac-avatar-img"
+              [alt]="getConvName(conv)"
+            />
+            <div
+              *ngIf="!getConvAvatar(conv)"
+              class="ac-avatar-letter"
+              [style.background]="getAvatarBg(getConvName(conv))"
+            >
+              {{ getInitial(getConvName(conv)) }}
+            </div>
+            <span class="ac-online-dot"></span>
+          </div>
+          <div class="ac-conv-info">
+            <div class="ac-conv-name">{{ getConvName(conv) }}</div>
+            <div class="ac-conv-meta">
+              <span class="ac-conv-sub">Khách hàng</span>
+              <span class="ac-conv-time">{{
+                formatTime(conv.modifiedDate || conv.createdDate)
+              }}</span>
+            </div>
+          </div>
+          <span class="ac-badge" *ngIf="(conv._unread || 0) > 0">{{
+            conv._unread
+          }}</span>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ── Tab: CUSTOMERS ── -->
+    <ng-container *ngIf="sideTab === 'customers'">
+      <div class="ac-search-wrap">
+        <i class="bi bi-search ac-search-icon"></i>
+        <input
+          class="ac-search"
+          type="text"
+          placeholder="Tên, email, SĐT..."
+          [(ngModel)]="customerSearch"
+        />
+        <button
+          *ngIf="customerSearch"
+          class="ac-search-clear"
+          (click)="customerSearch = ''"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="ac-conv-list">
+        <div class="ac-loading" *ngIf="loadingCustomers">
+          <div class="ac-spinner-sm"></div>
+          <span>Đang tải...</span>
+        </div>
+
+        <div
+          class="ac-conv-item ac-customer-item"
+          *ngFor="let c of filteredCustomers"
+          (click)="startChatWith(c)"
+        >
+          <div class="ac-avatar-wrap">
+            <img
+              *ngIf="c.avatarUrl"
+              [src]="c.avatarUrl"
+              class="ac-avatar-img"
+              [alt]="c.fullName"
+            />
+            <div
+              *ngIf="!c.avatarUrl"
+              class="ac-avatar-letter"
+              [style.background]="getAvatarBg(c.fullName)"
+            >
+              {{ getInitial(c.fullName) }}
+            </div>
+          </div>
+          <div class="ac-conv-info">
+            <div class="ac-conv-name">{{ c.fullName }}</div>
+            <div class="ac-conv-meta">
+              <span class="ac-conv-sub">{{ c.email }}</span>
+            </div>
+          </div>
+          <i class="bi bi-chat-plus ac-start-icon"></i>
+        </div>
+
+        <div
+          class="ac-conv-empty"
+          *ngIf="!loadingCustomers && filteredCustomers.length === 0"
+        >
+          <i class="bi bi-person-x"></i>
+          <p>Không tìm thấy khách hàng</p>
+        </div>
+      </div>
+    </ng-container>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="ac-main">
+    <!-- No active conversation -->
+    <div class="ac-no-conv" *ngIf="!activeConv">
+      <div class="ac-no-conv-icon">
+        <i class="bi bi-chat-heart-fill"></i>
+      </div>
+      <h3>Chào mừng đến Hỗ trợ khách hàng</h3>
+      <p>
+        Chọn một hội thoại từ danh sách bên trái<br />hoặc bắt đầu nhắn tin với
+        khách hàng mới.
+      </p>
+      <button class="ac-btn ac-btn-primary" (click)="sideTab = 'customers'">
+        <i class="bi bi-person-plus"></i> Bắt đầu hội thoại
+      </button>
+    </div>
+
+    <!-- Active conversation -->
+    <ng-container *ngIf="activeConv">
+      <!-- Header -->
+      <div class="ac-main-header">
+        <div class="ac-header-left">
+          <div class="ac-avatar-wrap">
+            <img
+              *ngIf="getConvAvatar(activeConv)"
+              [src]="getConvAvatar(activeConv)"
+              class="ac-avatar-img"
+            />
+            <div
+              *ngIf="!getConvAvatar(activeConv)"
+              class="ac-avatar-letter"
+              [style.background]="getAvatarBg(getConvName(activeConv))"
+            >
+              {{ getInitial(getConvName(activeConv)) }}
+            </div>
+            <span class="ac-online-dot"></span>
+          </div>
+          <div>
+            <div class="ac-header-name">{{ getConvName(activeConv) }}</div>
+            <div class="ac-header-status">
+              <span class="ac-status-dot"></span> Đang hoạt động
+            </div>
+          </div>
+        </div>
+        <div class="ac-header-right">
+          <div class="ac-header-tag">
+            <i class="bi bi-person-fill"></i> Khách hàng
+          </div>
+          <div class="ac-header-tag ac-tag-id">
+            <i class="bi bi-hash"></i>{{ activeConv.id.slice(0, 8) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="ac-messages" #msgBox>
+        <!-- Loading -->
+        <div class="ac-msgs-loading" *ngIf="loadingMsgs">
+          <div class="ac-spinner-md"></div>
+          <span>Đang tải tin nhắn...</span>
+        </div>
+
+        <!-- Empty -->
+        <div
+          class="ac-msgs-empty"
+          *ngIf="!loadingMsgs && messages.length === 0"
+        >
+          <i class="bi bi-chat-square-dots"></i>
+          <p>Chưa có tin nhắn. Hãy bắt đầu hội thoại!</p>
+        </div>
+
+        <!-- Message list -->
+        <ng-container *ngIf="!loadingMsgs">
+          <!-- Date separator (first message) -->
+          <div class="ac-date-sep" *ngIf="messages.length > 0">
+            <span>{{ messages[0].createdDate | date: "dd/MM/yyyy" }}</span>
+          </div>
+
+          <div
+            class="ac-msg-row"
+            *ngFor="let msg of messages"
+            [class.ac-msg-me]="msg.me"
+            [class.ac-msg-other]="!msg.me"
+          >
+            <!-- Avatar (other side only) -->
+            <div class="ac-msg-avatar" *ngIf="!msg.me">
+              <div
+                class="ac-avatar-letter ac-avatar-xs"
+                [style.background]="getAvatarBg(msg.sender.username || 'K')"
+              >
+                {{ getInitial(msg.sender.username || "K") }}
+              </div>
+            </div>
+
+            <div class="ac-msg-content">
+              <span class="ac-msg-sender" *ngIf="!msg.me">{{
+                msg.sender.username || "Khách hàng"
+              }}</span>
+              <div class="ac-msg-bubble">{{ msg.message }}</div>
+              <span class="ac-msg-time">{{
+                formatFullTime(msg.createdDate)
+              }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Input -->
+      <div class="ac-input-bar">
+        <div class="ac-input-wrap">
+          <textarea
+            class="ac-textarea"
+            placeholder="Nhập tin nhắn hỗ trợ..."
+            [(ngModel)]="newMessage"
+            (keydown)="onEnter($event)"
+            rows="1"
+          ></textarea>
+        </div>
+        <button
+          class="ac-send-btn"
+          (click)="sendMessage()"
+          [disabled]="!newMessage.trim() || sending"
+          [title]="'Gửi (Enter)'"
+        >
+          <span *ngIf="sending" class="ac-send-spinner"></span>
+          <i *ngIf="!sending" class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </ng-container>
+  </main>
+</div>

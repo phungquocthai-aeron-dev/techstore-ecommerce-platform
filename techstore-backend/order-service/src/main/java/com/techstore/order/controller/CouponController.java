@@ -64,4 +64,36 @@ public class CouponController {
                 .result(couponService.getAvailableCoupons())
                 .build();
     }
+
+    // GET /coupons/ids?ids=1,2,3
+    @GetMapping("/ids")
+    public ApiResponse<List<CouponResponse>> getByIds(@RequestParam List<Long> ids) {
+
+        return ApiResponse.<List<CouponResponse>>builder()
+                .result(couponService.getByIds(ids))
+                .build();
+    }
+
+    // GET /coupons/customer/{customerId}
+    @GetMapping("/customer/{customerId}")
+    public ApiResponse<List<CouponResponse>> getCouponsByCustomer(@PathVariable Long customerId) {
+
+        return ApiResponse.<List<CouponResponse>>builder()
+                .result(couponService.getCouponsByCustomer(customerId))
+                .build();
+    }
+
+    // POST /coupons/customer/{customerId}/{couponId}
+    @PostMapping("/customer/{customerId}/{couponId}")
+    public ApiResponse<Void> assignCouponToCustomer(@PathVariable Long customerId, @PathVariable Long couponId) {
+        couponService.assignCouponToCustomer(customerId, couponId);
+        return ApiResponse.<Void>builder().build();
+    }
+
+    // DELETE /coupons/customer/{customerId}/{couponId}
+    @DeleteMapping("/customer/{customerId}/{couponId}")
+    public ApiResponse<Void> removeCouponFromCustomer(@PathVariable Long customerId, @PathVariable Long couponId) {
+        couponService.removeCouponFromCustomer(customerId, couponId);
+        return ApiResponse.<Void>builder().build();
+    }
 }

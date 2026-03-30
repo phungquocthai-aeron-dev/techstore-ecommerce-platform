@@ -14,4 +14,6 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 
     List<Coupon> findByStatusIgnoreCaseAndStartDateBeforeAndEndDateAfter(
             String status, LocalDateTime now1, LocalDateTime now2);
+
+    List<Coupon> findByIdIn(List<Long> ids);
 }

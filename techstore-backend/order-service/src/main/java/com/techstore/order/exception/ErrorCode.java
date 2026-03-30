@@ -87,7 +87,12 @@ public enum ErrorCode {
     COUPON_LIMIT_REACHED(6009, "Coupon usage limit reached", HttpStatus.BAD_REQUEST),
     ORDER_NOT_ELIGIBLE_FOR_COUPON(6010, "Order does not meet coupon minimum value", HttpStatus.BAD_REQUEST),
     SHIPPING_FEE_CALCULATION_FAILED(6011, "Shipping fee calculation failed", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_DATE_RANGE(6012, "Invalid date range", HttpStatus.BAD_REQUEST);
+    INVALID_DATE_RANGE(6012, "Invalid date range", HttpStatus.BAD_REQUEST),
+
+    COUPON_IDS_EMPTY(4001, "Danh sách ID không được rỗng", HttpStatus.BAD_REQUEST),
+    CUSTOMER_COUPON_ALREADY_ASSIGNED(4002, "Coupon đã được gán cho khách hàng này", HttpStatus.CONFLICT),
+    CUSTOMER_COUPON_NOT_FOUND(4003, "Khách hàng không sở hữu coupon này", HttpStatus.NOT_FOUND),
+    ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

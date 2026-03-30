@@ -1,0 +1,465 @@
+<!-- ╔══════════════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TECH GALAXY QUIZ GAME                            ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════════════╝ -->
+
+<div class="galaxy-root">
+  <!-- ░░ BACKGROUND LAYERS ░░ -->
+  <div class="bg-stars">
+    <span
+      *ngFor="let s of [].constructor(60); let i = index"
+      class="star"
+      [style.left.%]="(i * 17 + 3) % 100"
+      [style.top.%]="(i * 23 + 7) % 100"
+      [style.animation-delay.s]="(i * 0.3) % 4"
+      [style.width.px]="(i % 3) + 1"
+      [style.height.px]="(i % 3) + 1"
+    ></span>
+  </div>
+  <div class="bg-nebula"></div>
+
+  <!-- ░░ TOASTS ░░ -->
+  <div class="toast-stack">
+    <div
+      *ngFor="let t of toasts; trackBy: trackByToast"
+      class="toast"
+      [ngClass]="'toast--' + t.type"
+    >
+      {{ t.message }}
+    </div>
+  </div>
+
+  <!-- ░░ TOP NAV BAR ░░ -->
+  <header class="topbar" *ngIf="screen !== 'playing'">
+    <div class="topbar__logo">⚙ TECH GALAXY</div>
+    <nav class="topbar__nav">
+      <button
+        class="nav-btn"
+        [class.active]="screen === 'intro'"
+        (click)="goTo('intro')"
+      >
+        🏠 Trang chủ
+      </button>
+      <button
+        class="nav-btn"
+        [class.active]="screen === 'shop'"
+        (click)="goTo('shop')"
+      >
+        🏪 Cửa hàng
+      </button>
+      <button
+        class="nav-btn"
+        [class.active]="screen === 'history'"
+        (click)="goTo('history')"
+      >
+        📋 Lịch sử
+      </button>
+    </nav>
+    <div class="topbar__pts">
+      <span class="pts-icon">⭐</span>
+      <span class="pts-val">{{ userPoints }}</span>
+      <span class="pts-label">điểm</span>
+    </div>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN: INTRO                                        -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section
+    class="screen screen--intro"
+    *ngIf="screen === 'intro' && !isSubmitting"
+  >
+    <div class="intro__ship">🚀</div>
+    <h1 class="intro__title">TECH GALAXY<br /><span>EXPLORER</span></h1>
+    <p class="intro__sub">
+      Du hành qua dải ngân hà công nghệ. Trả lời đúng để tích lũy điểm và đổi
+      những ưu đãi hấp dẫn!
+    </p>
+
+    <!-- Planet trail preview -->
+    <div class="planet-trail" *ngIf="!isLoadingGame">
+      <div
+        *ngFor="let p of PLANET_CONFIGS; let i = index"
+        class="trail-planet"
+        [style.color]="p.color"
+        [style.animation-delay.ms]="i * 80"
+      >
+        {{ p.icon }}
+      </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="stat-cards" *ngIf="dailyInfo">
+      <div class="stat-card">
+        <div class="stat-card__val">{{ dailyInfo.remainingPlays }}</div>
+        <div class="stat-card__label">Lượt còn lại</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__val">{{ dailyInfo.maxPlays }}</div>
+        <div class="stat-card__label">Lượt / ngày</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__val">{{ userPoints }}</div>
+        <div class="stat-card__label">Tổng điểm ⭐</div>
+      </div>
+    </div>
+
+    <!-- No plays left -->
+    <div class="done-card" *ngIf="dailyInfo && !dailyInfo.canPlay">
+      <div class="done-card__icon">🛸</div>
+      <div class="done-card__title">ĐÃ KHÁM PHÁ HÔM NAY</div>
+      <p class="done-card__desc">
+        Quay lại ngày mai để tiếp tục chinh phục vũ trụ!
+      </p>
+      <div class="done-card__timer">
+        ⏳ Lượt mới sau: <strong>{{ countdownToMidnight }}</strong>
+      </div>
+      <div class="done-card__actions">
+        <button class="btn btn--outline" (click)="goTo('shop')">
+          🏪 Đổi coupon
+        </button>
+        <button class="btn btn--outline" (click)="goTo('history')">
+          📋 Lịch sử
+        </button>
+      </div>
+    </div>
+
+    <!-- Launch button -->
+    <button
+      class="btn btn--launch"
+      *ngIf="dailyInfo?.canPlay"
+      [disabled]="isLoadingGame"
+      (click)="startGame()"
+    >
+      <span *ngIf="!isLoadingGame">🚀 PHÓNG PHI THUYỀN</span>
+      <span *ngIf="isLoadingGame" class="loading-dots"
+        >Đang tải<span>.</span><span>.</span><span>.</span></span
+      >
+    </button>
+
+    <div class="intro__pills" *ngIf="dailyInfo?.canPlay">
+      <span class="pill">🪐 10 hành tinh</span>
+      <span class="pill">⏱ 20s / câu</span>
+      <span class="pill">⭐ Tích điểm đổi quà</span>
+    </div>
+  </section>
+
+  <!-- Loading overlay while submitting -->
+  <section class="screen screen--loading" *ngIf="isSubmitting">
+    <div class="loading-ship">🚀</div>
+    <p class="loading-text">
+      Đang tính kết quả<span class="loading-dots"
+        ><span>.</span><span>.</span><span>.</span></span
+      >
+    </p>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN: PLAYING                                      -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section
+    class="screen screen--playing"
+    *ngIf="screen === 'playing' && currentQuestion"
+  >
+    <!-- Playing header -->
+    <div class="play-header">
+      <div class="play-planet">
+        <span
+          class="play-planet__icon"
+          [style.color]="PLANET_CONFIGS[currentQIndex].color"
+        >
+          {{ PLANET_CONFIGS[currentQIndex].icon }}
+        </span>
+        <span class="play-planet__name">{{
+          PLANET_CONFIGS[currentQIndex].name
+        }}</span>
+      </div>
+      <div class="play-hud">
+        <div class="hud-item">
+          <span class="hud-item__label">HÀNH TINH</span>
+          <span class="hud-item__val"
+            >{{ currentQIndex + 1
+            }}<span class="hud-item__denom">/{{ questions.length }}</span></span
+          >
+        </div>
+        <div class="hud-item">
+          <span class="hud-item__label">ĐIỂM</span>
+          <span class="hud-item__val">{{ userAnswers.length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="prog-bar">
+      <div class="prog-bar__fill" [style.width.%]="progressPercent"></div>
+    </div>
+
+    <!-- Timer ring -->
+    <div class="timer-wrap" [class.timer--danger]="timerDanger">
+      <svg class="timer-svg" viewBox="0 0 60 60">
+        <circle class="timer-bg" cx="30" cy="30" r="26" />
+        <circle
+          class="timer-arc"
+          cx="30"
+          cy="30"
+          r="26"
+          [style.stroke-dashoffset]="
+            (163.36 * (1 - timerPercent / 100)).toFixed(2)
+          "
+          style="stroke-dasharray: 163.36"
+        />
+      </svg>
+      <span class="timer-val">{{ timeLeft }}</span>
+    </div>
+
+    <!-- Planet map strip -->
+    <div class="q-planet-strip">
+      <div
+        *ngFor="let p of PLANET_CONFIGS; let i = index"
+        class="strip-dot"
+        [style.background]="i < currentQIndex ? p.color : 'transparent'"
+        [style.border-color]="p.color"
+        [class.strip-dot--current]="i === currentQIndex"
+      ></div>
+    </div>
+
+    <!-- Question card -->
+    <div class="q-card">
+      <div class="q-card__num">Câu {{ currentQIndex + 1 }}</div>
+      <p class="q-card__text">{{ currentQuestion.content }}</p>
+
+      <!-- Answers -->
+      <div class="answers-grid">
+        <button
+          *ngFor="
+            let ans of currentQuestion.answers;
+            let i = index;
+            trackBy: trackByAnswer
+          "
+          class="ans-btn"
+          [class.ans-btn--selected]="
+            selectedAnswerId === ans.id && !answerLocked
+          "
+          [class.ans-btn--locked-selected]="
+            answerLocked && selectedAnswerId === ans.id
+          "
+          [disabled]="answerLocked"
+          (click)="selectAnswer(ans.id)"
+        >
+          <span class="ans-letter">{{ letterOf(i) }}</span>
+          <span class="ans-text">{{ ans.content }}</span>
+        </button>
+      </div>
+
+      <!-- Skipped message -->
+      <div class="skip-msg" *ngIf="answerLocked && !selectedAnswerId">
+        ⏱ Hết giờ! Chuyển câu tiếp theo...
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN: RESULT                                       -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section
+    class="screen screen--result"
+    *ngIf="screen === 'result' && gameResult"
+  >
+    <div class="result-wrap">
+      <!-- Trophy -->
+      <div class="result-trophy">{{ resultLevel.icon }}</div>
+
+      <!-- Score ring -->
+      <div class="score-ring">
+        <svg viewBox="0 0 120 120" width="140" height="140">
+          <circle class="ring-bg" cx="60" cy="60" r="52" />
+          <circle
+            class="ring-arc"
+            cx="60"
+            cy="60"
+            r="52"
+            [style.stroke]="resultLevel.color"
+            [attr.stroke-dasharray]="scoreArcCirc"
+            [attr.stroke-dashoffset]="scoreArc"
+          />
+        </svg>
+        <div class="ring-inner">
+          <span class="ring-num">{{ gameResult.correctCount }}</span>
+          <span class="ring-denom">/ {{ gameResult.totalQuestions }}</span>
+        </div>
+      </div>
+
+      <!-- Level -->
+      <div class="result-level" [style.color]="resultLevel.color">
+        {{ resultLevel.label }}
+      </div>
+      <p class="result-desc">{{ resultLevel.desc }}</p>
+
+      <!-- Points earned -->
+      <div class="result-pts-card">
+        <div class="result-pts-card__row">
+          <span>Lượt này:</span>
+          <strong>+{{ gameResult.score }} điểm</strong>
+        </div>
+        <div class="result-pts-card__row">
+          <span>Tổng tích lũy:</span>
+          <strong class="highlight">⭐ {{ gameResult.totalPoints }}</strong>
+        </div>
+      </div>
+
+      <!-- Answer review -->
+      <details class="review-toggle">
+        <summary>📋 Xem lại đáp án</summary>
+        <div class="review-list">
+          <div
+            *ngFor="let r of gameResult.answerResults; let i = index"
+            class="review-item"
+            [class.review-item--correct]="r.isCorrect"
+            [class.review-item--wrong]="!r.isCorrect"
+          >
+            <div class="review-item__q">
+              <span class="review-item__num">{{ i + 1 }}</span>
+              <span>{{ r.questionContent }}</span>
+              <span class="review-item__badge">{{
+                r.isCorrect ? "✅" : "❌"
+              }}</span>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Actions -->
+      <div class="result-actions">
+        <button
+          class="btn btn--launch"
+          (click)="goTo('intro')"
+          *ngIf="dailyInfo?.canPlay"
+        >
+          🚀 Chơi thêm ({{ dailyInfo?.remainingPlays }} lượt)
+        </button>
+        <button class="btn btn--outline" (click)="goTo('shop')">
+          🏪 Đổi điểm lấy coupon
+        </button>
+        <button class="btn btn--ghost" (click)="goTo('intro')">
+          ← Về trang chủ
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN: SHOP                                         -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section class="screen screen--shop" *ngIf="screen === 'shop'">
+    <div class="shop-header">
+      <h2 class="shop-title">🏪 CỬA HÀNG ĐỔI ĐIỂM</h2>
+      <div class="shop-pts">
+        Bạn có <strong>⭐ {{ userPoints }}</strong> điểm
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="shop-loading" *ngIf="isLoadingCoupons">
+      <span class="spinner"></span> Đang tải...
+    </div>
+
+    <!-- Empty -->
+    <div
+      class="shop-empty"
+      *ngIf="!isLoadingCoupons && availableCoupons.length === 0"
+    >
+      <span>🪐</span>
+      <p>Chưa có coupon nào khả dụng</p>
+    </div>
+
+    <!-- Coupon grid -->
+    <div class="coupon-grid" *ngIf="!isLoadingCoupons">
+      <div
+        *ngFor="let c of availableCoupons; trackBy: trackByCoupon"
+        class="coupon-card"
+        [class.coupon-card--disabled]="!c.canRedeem"
+      >
+        <!-- Discount badge -->
+        <div
+          class="coupon-card__badge"
+          [class.coupon-card__badge--pct]="c.discountType === 'PERCENTAGE'"
+        >
+          {{ discountLabel(c) }}
+        </div>
+
+        <div class="coupon-card__body">
+          <h3 class="coupon-card__name">{{ c.couponName }}</h3>
+          <p class="coupon-card__desc">{{ c.description }}</p>
+
+          <div class="coupon-card__meta">
+            <span>🎫 Còn lại: {{ c.quantity }}</span>
+            <span>📅 HSD: {{ c.endDate | date: "dd/MM/yyyy" }}</span>
+          </div>
+
+          <div class="coupon-card__cost">
+            <span class="cost-icon">⭐</span>
+            <span class="cost-val">{{ c.pointsRequired }}</span>
+            <span class="cost-label">điểm</span>
+          </div>
+
+          <div
+            class="coupon-card__insufficient"
+            *ngIf="!c.canRedeem && userPoints < c.pointsRequired"
+          >
+            Cần thêm {{ c.pointsRequired - userPoints }} điểm
+          </div>
+          <div
+            class="coupon-card__insufficient"
+            *ngIf="!c.canRedeem && c.quantity === 0"
+          >
+            Đã hết coupon
+          </div>
+
+          <button
+            class="btn btn--redeem"
+            [disabled]="!c.canRedeem || isRedeeming"
+            (click)="redeemCoupon(c)"
+          >
+            <span *ngIf="redeemingId !== c.id">Đổi ngay</span>
+            <span *ngIf="redeemingId === c.id" class="loading-dots"
+              >Đang đổi<span>.</span><span>.</span><span>.</span></span
+            >
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN: HISTORY                                      -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section class="screen screen--history" *ngIf="screen === 'history'">
+    <div class="shop-header">
+      <h2 class="shop-title">📋 LỊCH SỬ ĐỔI COUPON</h2>
+      <div class="shop-pts">
+        Tổng điểm: <strong>⭐ {{ userPoints }}</strong>
+      </div>
+    </div>
+
+    <div class="shop-empty" *ngIf="couponHistory.length === 0">
+      <span>🗂</span>
+      <p>Chưa có lịch sử đổi coupon nào</p>
+    </div>
+
+    <div class="history-list">
+      <div
+        *ngFor="let h of couponHistory; trackBy: trackByHistory"
+        class="history-item"
+      >
+        <div class="history-item__icon">🎫</div>
+        <div class="history-item__body">
+          <div class="history-item__id">Coupon #{{ h.couponId }}</div>
+          <div class="history-item__date">
+            {{ h.redeemedAt | date: "dd/MM/yyyy HH:mm" }}
+          </div>
+        </div>
+        <div class="history-item__pts">-{{ h.pointsSpent }} ⭐</div>
+      </div>
+    </div>
+  </section>
+</div>
+<!-- /galaxy-root -->

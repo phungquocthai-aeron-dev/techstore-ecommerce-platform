@@ -1,0 +1,189 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     CHAT WIDGET — floating button + panel
+════════════════════════════════════════════════════════════════ -->
+
+<!-- Floating Toggle Button -->
+<div class="chat-fab" (click)="toggleChat()" [class.active]="isOpen">
+  <i
+    class="bi"
+    [class.bi-chat-dots-fill]="!isOpen"
+    [class.bi-x-lg]="isOpen"
+  ></i>
+  <span class="fab-badge" *ngIf="!isOpen && conversations.length > 0">
+    {{ conversations.length }}
+  </span>
+</div>
+
+<!-- Chat Panel -->
+<div class="chat-panel" [class.open]="isOpen">
+  <!-- ── Left sidebar: conversation list ── -->
+  <div class="chat-sidebar">
+    <div class="sidebar-header">
+      <h6>Tin nhắn</h6>
+      <button
+        class="btn-new-chat"
+        (click)="showNewChat = !showNewChat"
+        title="Nhắn tin mới"
+      >
+        <i class="bi bi-pencil-square"></i>
+      </button>
+    </div>
+
+    <!-- New chat: staff list -->
+    <div class="new-chat-panel" *ngIf="showNewChat">
+      <p class="new-chat-label">Chọn nhân viên hỗ trợ</p>
+      <div class="staff-list">
+        <div
+          class="staff-item"
+          *ngFor="let staff of filteredStaff"
+          (click)="startChatWithStaff(staff)"
+        >
+          <div class="avatar-wrap">
+            <span class="avatar-placeholder">{{ staff.fullName[0] }}</span>
+            <span class="online-dot"></span>
+          </div>
+          <div class="staff-info">
+            <span class="staff-name">{{ staff.fullName }}</span>
+            <span class="staff-role">{{ staff.roles }}</span>
+          </div>
+        </div>
+        <p class="no-staff" *ngIf="filteredStaff.length === 0">
+          Không có nhân viên trực tuyến
+        </p>
+      </div>
+    </div>
+
+    <!-- Conversation list -->
+    <div class="conv-list" *ngIf="!showNewChat">
+      <div *ngIf="loadingConversations" class="loading-state">
+        <span class="dot-pulse"></span>
+      </div>
+
+      <div
+        class="conv-item"
+        *ngFor="let conv of conversations"
+        [class.active]="activeConversation?.id === conv.id"
+        (click)="selectConversation(conv)"
+      >
+        <div class="avatar-wrap">
+          <img
+            *ngIf="getConvAvatar(conv)"
+            [src]="getConvAvatar(conv)"
+            class="avatar-img"
+          />
+          <span *ngIf="!getConvAvatar(conv)" class="avatar-placeholder">
+            {{ getConvDisplayName(conv)[0] }}
+          </span>
+          <span class="online-dot"></span>
+        </div>
+        <div class="conv-info">
+          <span class="conv-name">{{ getConvDisplayName(conv) }}</span>
+          <span class="conv-sub">Nhân viên hỗ trợ</span>
+        </div>
+        <span class="unread-badge" *ngIf="getUnread(conv) > 0">{{
+          getUnread(conv)
+        }}</span>
+      </div>
+
+      <div
+        class="empty-conv"
+        *ngIf="!loadingConversations && conversations.length === 0"
+      >
+        <i class="bi bi-chat-square-text"></i>
+        <p>Chưa có cuộc trò chuyện</p>
+        <button class="btn-start" (click)="showNewChat = true">
+          Bắt đầu nhắn tin
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: message area ── -->
+  <div class="chat-main">
+    <!-- No conversation selected -->
+    <div class="no-conv-selected" *ngIf="!activeConversation">
+      <i class="bi bi-chat-heart"></i>
+      <p>Chọn một cuộc trò chuyện<br />hoặc bắt đầu chat mới</p>
+    </div>
+
+    <!-- Active conversation -->
+    <ng-container *ngIf="activeConversation">
+      <!-- Header -->
+      <div class="chat-main-header">
+        <div class="avatar-wrap">
+          <img
+            *ngIf="getConvAvatar(activeConversation)"
+            [src]="getConvAvatar(activeConversation)"
+            class="avatar-img"
+          />
+          <span
+            *ngIf="!getConvAvatar(activeConversation)"
+            class="avatar-placeholder"
+          >
+            {{ getConvDisplayName(activeConversation)[0] }}
+          </span>
+          <span class="online-dot"></span>
+        </div>
+        <div>
+          <div class="header-name">
+            {{ getConvDisplayName(activeConversation) }}
+          </div>
+          <div class="header-sub">Đang hoạt động</div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="message-list" #messageContainer>
+        <div *ngIf="loadingMessages" class="loading-msgs">
+          <span class="dot-pulse"></span>
+        </div>
+
+        <ng-container *ngIf="!loadingMessages">
+          <div
+            class="msg-row"
+            *ngFor="let msg of messages"
+            [class.msg-me]="msg.me"
+            [class.msg-other]="!msg.me"
+          >
+            <!-- Avatar (other side) -->
+            <div class="msg-avatar" *ngIf="!msg.me">
+              <span class="avatar-placeholder sm">{{
+                msg.sender.username[0] || "S"
+              }}</span>
+            </div>
+
+            <div class="msg-bubble-wrap">
+              <div class="msg-bubble">{{ msg.message }}</div>
+              <span class="msg-time">{{ formatTime(msg.createdDate) }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <div
+          class="empty-msgs"
+          *ngIf="!loadingMessages && messages.length === 0"
+        >
+          <p>Hãy bắt đầu cuộc trò chuyện 👋</p>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-bar">
+        <textarea
+          class="chat-input"
+          placeholder="Nhập tin nhắn..."
+          [(ngModel)]="newMessage"
+          (keydown)="onEnter($event)"
+          rows="1"
+        ></textarea>
+        <button
+          class="btn-send"
+          (click)="sendMessage()"
+          [disabled]="!newMessage.trim() || sending"
+        >
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </ng-container>
+  </div>
+</div>

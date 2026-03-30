@@ -1,7 +1,7 @@
 /* ===== CHAT TRIGGER ===== */
 .chat-trigger {
   position: fixed;
-  bottom: 2rem;
+  bottom: 7rem;
   right: 2rem;
   width: 56px;
   height: 56px;
@@ -48,8 +48,8 @@
 /* ===== CHAT WINDOW ===== */
 .chatbot-window {
   position: fixed;
-  bottom: 6rem;
-  right: 2rem;
+  bottom: 2rem;
+  right: 7rem;
   width: 360px;
   max-height: 520px;
   background: var(--color-bg-secondary);

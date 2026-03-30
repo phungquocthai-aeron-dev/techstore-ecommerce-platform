@@ -62,7 +62,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/user/profile.component')
             .then(m => m.ProfileComponent)
-      }
+      },
+      {
+        path: 'quizgame',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/quizgame/quizgame.component')
+            .then(m => m.QuizGameComponent)
+      },
     ]
   },
 

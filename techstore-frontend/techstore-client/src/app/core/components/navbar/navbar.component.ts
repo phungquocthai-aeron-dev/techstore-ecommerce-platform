@@ -24,6 +24,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   avatarUrl: string | null = null;
 
   private destroy$ = new Subject<void>();
+  private isLoadingUser = false;
 
   constructor(
     private router: Router,
@@ -34,26 +35,31 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isLightTheme = document.body.classList.contains('light-theme');
-    this.isLoggedIn = this.tokenService.isLoggedIn();
 
-    // Subscribe theo dõi thay đổi user (avatar update, profile update,...)
+    this.tokenService.getLoggedIn()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        this.isLoggedIn = status;
+
+      if (status && !this.customerService.currentUser && !this.isLoadingUser) {
+        this.isLoadingUser = true;
+        this.loadUserFromToken();
+      }
+
+        if (!status) {
+          this.customerName = '';
+          this.avatarUrl = null;
+        }
+      });
+
     this.customerService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         if (user) {
           this.customerName = user.fullName;
           this.avatarUrl = user.avatarUrl;
-          console.log(user.avatarUrl)
-          this.isLoggedIn = true;
-        } else {
-          this.isLoggedIn = this.tokenService.isLoggedIn();
         }
       });
-
-    // Nếu đã có token nhưng chưa có user trong state → load từ API
-    if (this.isLoggedIn && !this.customerService.currentUser) {
-      this.loadUserFromToken();
-    }
   }
 
   ngOnDestroy(): void {
@@ -67,23 +73,24 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (!token) return;
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const customerId = payload.sub ? Number(payload.sub) : null;
+      const customerId = Number(this.tokenService.getUserId());
 
       if (customerId) {
         this.customerService.loadCurrentUser(customerId)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe({
-            error: () => {
-              // Token hết hạn hoặc lỗi → clear
-              this.tokenService.removeToken();
-              this.isLoggedIn = false;
-            }
-          });
-      }
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => this.isLoadingUser = false,
+          error: () => {
+            this.isLoadingUser = false;
+            this.tokenService.removeToken();
+          }
+        });
+      } else {
+      this.isLoadingUser = false;
+      this.tokenService.removeToken();
+    }
     } catch {
       this.tokenService.removeToken();
-      this.isLoggedIn = false;
     }
   }
 
@@ -114,15 +121,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.authService.logout().subscribe({
       next: () => {
         this.customerService.clearCurrentUser();
-        this.isLoggedIn = false;
         this.customerName = '';
         this.avatarUrl = null;
+        this.isLoadingUser = false;
         this.router.navigate(['/home']);
       },
       error: () => {
         this.tokenService.removeToken();
         this.customerService.clearCurrentUser();
-        this.isLoggedIn = false;
+        this.isLoadingUser = false;
         this.router.navigate(['/home']);
       }
     });

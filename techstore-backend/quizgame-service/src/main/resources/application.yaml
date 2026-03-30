@@ -1,3 +1,37 @@
+server:
+  port: 8091
+  servlet:
+    context-path: /quizgame
+
 spring:
   application:
-    name: quizgame
+    name: quizgame-service
+
+  datasource:
+    url: ${DB_QUIZGAME_URL:jdbc:mysql://localhost:3307/techstore_quizgame}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+app:
+  game:
+    max-plays-per-day: ${MAX_PLAYS_PER_DAY_OF_QUIZGAME:3}
+    questions-per-game: ${QUESTIONS_PER_DAY_OF_QUIZGAME:10}
+
+  services:
+    identity: ${IDENTITY_SERVICE_INTERNAL_URL:http://localhost:8080/identity}
+    warehouse: ${WAREHOUSE_SERVICE_INTERNAL_URL:http://localhost:8084/warehouse}
+    product: ${PRODUCT_SERVICE_INTERNAL_URL:http://localhost:8083/product}
+    order: ${ORDER_SERVICE_INTERNAL_URL:http://localhost:8086/order}

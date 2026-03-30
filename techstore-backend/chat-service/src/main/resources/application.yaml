@@ -1,0 +1,28 @@
+server:
+  port: 8092
+  servlet:
+    context-path: /chat
+
+spring:
+  application:
+    name: chat-service
+
+  data:
+    mongodb:
+      uri: ${MONGO_CHAT_URI:mongodb://root:root@localhost:27018/techstore-chat?authSource=admin}
+      auto-index-creation: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+socket:
+  port: ${CHAT_SERVICE_SOCKET_PORT:8099}
+  origin: ${CHAT_SERVICE_SOCKET_ORIGIN:*}
+      
+app:
+  services:
+    identity: ${IDENTITY_SERVICE_INTERNAL_URL:http://localhost:8080/identity}
+    user: ${USER_SERVICE_INTERNAL_URL:http://localhost:8081/user}

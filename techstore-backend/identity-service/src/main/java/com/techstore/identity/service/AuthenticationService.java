@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.annotation.PostConstruct;
@@ -80,16 +81,27 @@ public class AuthenticationService {
     }
 
     public IntrospectResponse introspect(IntrospectRequest request) {
+        log.info("Token: " + request.getToken());
+        SignedJWT jwt = null;
         var token = request.getToken();
         boolean isValid = true;
 
         try {
-            verifyToken(token, false);
+            jwt = verifyToken(token, false);
         } catch (AppException | JOSEException | ParseException e) {
             isValid = false;
         }
 
-        return IntrospectResponse.builder().valid(isValid).build();
+        String userID = null;
+
+        try {
+            userID = Objects.nonNull(jwt) ? jwt.getJWTClaimsSet().getSubject() : null;
+        } catch (ParseException e) {
+            log.error(e.toString());
+        }
+        log.info("UID: " + userID);
+
+        return IntrospectResponse.builder().valid(isValid).userID(userID).build();
     }
 
     public AuthenticationResponse authenticateStaff(AuthenticationRequest request) {

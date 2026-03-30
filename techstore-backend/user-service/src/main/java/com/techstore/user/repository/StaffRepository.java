@@ -2,6 +2,7 @@ package com.techstore.user.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,20 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
     Optional<Staff> findByPhone(String phone);
 
     boolean existsByEmail(String email);
+
+    @Query("""
+			SELECT DISTINCT s FROM Staff s
+			JOIN s.roles r
+			WHERE r.name IN :roleNames
+		""")
+    List<Staff> findByRoleNames(Set<String> roleNames);
+
+    @Query("""
+			SELECT s FROM Staff s
+			JOIN s.roles r
+			WHERE r.name = :roleName
+		""")
+    List<Staff> findByRoleName(String roleName);
 
     @EntityGraph(attributePaths = "roles")
     @Query(

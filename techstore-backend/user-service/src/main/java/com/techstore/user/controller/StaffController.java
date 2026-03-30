@@ -127,4 +127,19 @@ public class StaffController {
         staffService.updateStatus(id, status);
         return ApiResponse.<Void>builder().build();
     }
+
+    @GetMapping("/by-role")
+    public ApiResponse<List<StaffResponse>> getByRole(@RequestParam String roleName) {
+
+        return ApiResponse.<List<StaffResponse>>builder()
+                .result(staffService.getByRole(roleName))
+                .build();
+    }
+
+    @GetMapping("/chat-available")
+    public ApiResponse<List<StaffResponse>> getChatAvailableStaff() {
+        return ApiResponse.<List<StaffResponse>>builder()
+                .result(staffService.getChatAvailableStaff())
+                .build();
+    }
 }

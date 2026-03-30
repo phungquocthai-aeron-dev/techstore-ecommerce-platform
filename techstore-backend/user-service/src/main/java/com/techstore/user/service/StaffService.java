@@ -188,7 +188,6 @@ public class StaffService {
         return staffMapper.toResponse(staffRepo.save(staff));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF', 'WAREHOUSE_STAFF')")
     public StaffResponse findById(Long id) {
         if (id == null) {
             throw new AppException(ErrorCode.INVALID_KEY);
@@ -227,6 +226,27 @@ public class StaffService {
         return staffRepo.search(id, email, phone, fullName).stream()
                 .map(staffMapper::toResponse)
                 .toList();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<StaffResponse> getByRole(String roleName) {
+
+        if (roleName == null || roleName.trim().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_KEY);
+        }
+
+        List<Staff> staffs = staffRepo.findByRoleName(roleName);
+
+        return staffs.stream().map(staffMapper::toResponse).toList();
+    }
+
+    public List<StaffResponse> getChatAvailableStaff() {
+
+        Set<String> roles = Set.of("ADMIN", "SALES_STAFF");
+
+        List<Staff> staffs = staffRepo.findByRoleNames(roles);
+
+        return staffs.stream().map(staffMapper::toResponse).toList();
     }
 
     private Staff getStaffAndCheckPermission(Long id) {

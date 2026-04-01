@@ -11,4 +11,6 @@ export const environment = {
     quizGameUrl: 'http://localhost:8888/techstore/api/v1/quizgame',
     chatUrl: 'http://localhost:8888/techstore/api/v1/chat',
     chatSocketUrl: 'http://localhost:8099',
+    chatBotUrl: 'http://localhost:8888/techstore/api/v1/chatbot',
+    // chatBotWsUrl: 'ws://localhost:8888/techstore/api/v1/chatbot',
 };

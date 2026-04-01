@@ -34,9 +34,10 @@ function waitForNewTokenAndRetry(req: HttpRequest<unknown>, next: HttpHandlerFn)
 }
 
 // ─── Public endpoints không cần auth và không được refresh ───────
-const PUBLIC_URLS = ['identity/auth/refresh', 'identity/auth/token', 'identity/auth/register', 'identity/auth/introspect'];
+const PUBLIC_URLS = ['identity/auth/refresh', 'identity/auth/token', 'identity/auth/register', 'identity/auth/introspect', 'chatbot/session'];
 
 function isPublicUrl(url: string): boolean {
+  console.warn(url)
   return PUBLIC_URLS.some(path => url.includes(path));
 }
 

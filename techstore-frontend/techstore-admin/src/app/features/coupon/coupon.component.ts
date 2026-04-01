@@ -15,6 +15,7 @@ const EMPTY_FORM = (): CouponRequest => ({
   startDate:     '',
   endDate:       '',
   usageLimit:    1,
+  couponType: 'PUBLIC',
 });
 
 @Component({
@@ -126,6 +127,7 @@ export class CouponComponent implements OnInit {
       startDate:     this.toInputDateTime(c.startDate),
       endDate:       this.toInputDateTime(c.endDate),
       usageLimit:    c.usageLimit,
+      couponType: 'PUBLIC'
     };
     this.showModal = true;
   }

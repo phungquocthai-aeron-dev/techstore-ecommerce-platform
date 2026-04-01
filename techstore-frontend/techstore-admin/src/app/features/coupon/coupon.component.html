@@ -340,6 +340,14 @@
             </div>
             <span class="form-hint">Để 0 nếu không giới hạn</span>
           </div>
+          <!-- Coupon Type (chỉ create) -->
+          <div class="form-group" *ngIf="!editingId">
+            <label>Phạm vi áp dụng</label>
+            <select [(ngModel)]="form.couponType">
+              <option value="PUBLIC">Áp dụng cho tất cả khách hàng</option>
+              <option value="PRIVATE">Chỉ áp dụng cho khách hàng cụ thể</option>
+            </select>
+          </div>
         </div>
 
         <!-- Row 4 -->

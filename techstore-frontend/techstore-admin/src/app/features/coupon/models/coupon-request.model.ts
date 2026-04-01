@@ -7,4 +7,5 @@ export interface CouponRequest {
   startDate: string;
   endDate: string;
   usageLimit: number;
+  couponType: string;
 }

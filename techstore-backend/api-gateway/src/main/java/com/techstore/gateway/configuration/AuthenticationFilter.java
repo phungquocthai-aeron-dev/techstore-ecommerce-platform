@@ -70,7 +70,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                             Pattern.compile("/identity/users/registration"),
                             Pattern.compile("/identity/oauth2/.*"),
                             Pattern.compile("/identity/login/.*"),
-                            Pattern.compile("/user/customers/register")
+                            Pattern.compile("/user/customers/register"),
+                            Pattern.compile("/chatbot/ws/.*"),
+                            Pattern.compile("/chatbot/session")
                     )
             );
 

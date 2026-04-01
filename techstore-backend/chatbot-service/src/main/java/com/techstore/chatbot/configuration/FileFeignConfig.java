@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import feign.Request;
 import feign.RequestInterceptor;
@@ -23,7 +22,7 @@ public class FileFeignConfig {
 
     @Bean
     Request.Options feignRequestOptions() {
-        return new Request.Options(Duration.ofSeconds(3), Duration.ofSeconds(3), true);
+        return new Request.Options(Duration.ofSeconds(5), Duration.ofSeconds(5), true);
     }
 
     @Bean
@@ -37,14 +36,9 @@ public class FileFeignConfig {
     }
 
     @Bean
-    Decoder feignDecoder() {
+    Decoder feignDecoder(ObjectMapper objectMapper) {
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(mapper);
-
-        return new OptionalDecoder(
-                new ResponseEntityDecoder(new SpringDecoder(() -> new HttpMessageConverters(converter))));
+        return new OptionalDecoder(new ResponseEntityDecoder(new SpringDecoder(
+                () -> new HttpMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper)))));
     }
 }

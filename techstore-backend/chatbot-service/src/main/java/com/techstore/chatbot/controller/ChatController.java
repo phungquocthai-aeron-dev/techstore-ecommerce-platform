@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/chat")
 @RequiredArgsConstructor
 @Slf4j
 public class ChatController {
@@ -34,7 +34,6 @@ public class ChatController {
             @Valid @RequestBody ChatRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
 
-        // Extract userId từ JWT nếu có
         Long userId = jwtUtil.extractUserIdFromHeader(authHeader);
 
         log.info("Chat request: userId={}, sessionId={}", userId, request.getSessionId());

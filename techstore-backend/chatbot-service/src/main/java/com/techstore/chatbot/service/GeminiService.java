@@ -42,9 +42,20 @@ public class GeminiService {
             log.info("  [Gemini]   url    : {}", geminiUrl);
             log.info("  [Gemini]   prompt : \"{}\"", promptPreview.replace("\n", "\\n"));
 
+            //            Map<String, Object> requestBody = Map.of(
+            //                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
+            //                    "generationConfig", Map.of("temperature", 0.2, "maxOutputTokens", 1024));
+
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
-                    "generationConfig", Map.of("temperature", 0.7, "maxOutputTokens", 1024));
+                    "generationConfig",
+                            Map.of(
+                                    "response_mime_type",
+                                    "application/json",
+                                    "temperature",
+                                    0.1,
+                                    "maxOutputTokens",
+                                    512));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -56,7 +67,14 @@ public class GeminiService {
 
             log.info("  [Gemini] ◄ Response received in {} ms", elapsed);
 
+            log.info("GEMINI CONTENT RESPONSE");
+            log.info(responseJson);
             String text = extractTextFromResponse(responseJson);
+
+            if (text == null || text.isEmpty()) {
+                log.warn("[Gemini] Empty response: {}", responseJson);
+                throw new AppException(ErrorCode.GEMINI_API_ERROR);
+            }
 
             // Log usage metadata nếu có
             logUsageMetadata(responseJson);

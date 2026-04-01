@@ -73,10 +73,20 @@ public class NlpIntentService {
         String rawJson = geminiService.generateContent(prompt);
 
         // Gemini đôi khi wrap JSON trong ```json ... ``` — cần strip
-        String cleanJson =
-                rawJson.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
+        //        String cleanJson =
+        //                rawJson.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
+        String cleanJson = rawJson.trim();
 
-        return objectMapper.readValue(cleanJson, IntentAnalysisResult.class);
+        try {
+            return objectMapper.readValue(cleanJson, IntentAnalysisResult.class);
+        } catch (Exception ex) {
+            log.warn("[NLP] Parse failed, retry Gemini");
+
+            String retryPrompt = buildRetryPrompt(message);
+            String retryJson = geminiService.generateContent(retryPrompt);
+
+            return objectMapper.readValue(retryJson.trim(), IntentAnalysisResult.class);
+        }
     }
 
     /**
@@ -88,41 +98,114 @@ public class NlpIntentService {
      * - Yêu cầu chuẩn hóa tiếng lóng, lỗi chính tả
      * - Yêu cầu trả về JSON thuần không có markdown
      */
+    //    private String buildAnalysisPrompt(String message) {
+    //        return """
+    //				Bạn là hệ thống phân tích NLP cho TechStore — cửa hàng bán smartphone, laptop, linh kiện PC, phụ kiện.
+    //
+    //				Phân tích câu sau và trả về JSON theo đúng format bên dưới. CHỈ trả về JSON, không giải thích.
+    //
+    //				Câu cần phân tích: "%s"
+    //
+    //				Các intent có thể có:
+    //				- PRODUCT_SEARCH: tìm/mua/xem sản phẩm (có thể kèm giá)
+    //				- STOCK_CHECK: hỏi còn hàng/tồn kho
+    //				- COMPARE: so sánh 2 sản phẩm
+    //				- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, khuyến mãi, liên hệ)
+    //				- COUPON: hỏi mã giảm giá, coupon, voucher, ưu đãi
+    //				- AI_ADVICE: tư vấn, gợi ý, câu hỏi kỹ thuật, chào hỏi
+    //
+    //				Lưu ý đặc biệt:
+    //				- Chuẩn hóa tiếng lóng: "củ" = triệu, "em" = tôi muốn mua, "chơi game" = gaming
+    //				- Sửa lỗi chính tả: "bào dứ" → "bao nhiêu", "lấp top" → "laptop"
+    //				- Hiểu câu dài phức tạp, đại từ ("nó", "cái đó"): trích xuất entity chính
+    //				- Giá: chuyển về đơn vị VNĐ (20 triệu = 20000000, 20 củ = 20000000)
+    //				- keyword: chỉ tên sản phẩm, KHÔNG chứa từ chỉ giá/số tiền
+    //				- Luôn suy luận và chuẩn hóa ngôn ngữ người dùng về dạng chuẩn trong lĩnh vực công nghệ.
+    //				- Nếu gặp tiếng lóng, từ viết tắt, hoặc cách nói không chính xác, hãy suy đoán nghĩa hợp lý nhất dựa trên ngữ
+    // cảnh.
+    //				- Nếu câu có nhiều cách hiểu, chọn cách hiểu phổ biến nhất trong ngữ cảnh mua bán thiết bị công nghệ.
+    //				- Nếu thiếu thông tin (ví dụ: "con này", "cái đó"), hãy cố gắng suy ra sản phẩm chính từ câu hoặc ngữ cảnh gần
+    // nhất.
+    //				- Nếu không chắc chắn hoàn toàn, vẫn phải đưa ra kết quả tốt nhất kèm confidence thấp hơn.
+    //				- Được phép suy luận để chuẩn hóa câu (ví dụ: sửa lỗi chính tả, hiểu tiếng lóng, viết tắt)
+    //				- Chỉ suy luận trong phạm vi hợp lý dựa trên ngữ cảnh câu
+    //				- Không được tự tạo thông tin hoàn toàn mới không liên quan đến câu
+    //				- Nếu có nhiều cách hiểu, chọn cách phổ biến nhất trong ngữ cảnh mua bán công nghệ
+    //				- Nếu vẫn không chắc chắn, giữ giá trị null và giảm confidence
+    //				- keyword: chỉ chứa tên sản phẩm hoặc loại sản phẩm (ví dụ: "laptop", "iphone 15", "laptop gaming"), KHÔNG
+    // chứa giá, số tiền hoặc từ mô tả khác.
+    //				- Nếu intent là COMPARE:
+    //						+ compareProductA và compareProductB bắt buộc phải có nếu có thể xác định
+    //						+ keyword phải để null
+    //				- Nếu intent là FAQ:
+    //						+ faqTopic phải là một trong: "bảo hành", "đổi trả", "giao hàng", "thanh toán", "trả góp", "khuyến mãi",
+    // "liên hệ"
+    //				- Trả về JSON hợp lệ, không có markdown, không có giải thích, không có text ngoài JSON.
+    //				- Tất cả field phải tồn tại, nếu không có giá trị thì để null.
+    //
+    //				Trả về JSON:
+    //				{
+    //				"intent": "PRODUCT_SEARCH",
+    //				"keyword": "laptop gaming",
+    //				"minPrice": null,
+    //				"maxPrice": 20000000,
+    //				"compareProductA": null,
+    //				"compareProductB": null,
+    //				"faqTopic": null,
+    //				"confidence": 0.95
+    //				}
+    //				"""
+    //                .formatted(message);
+    //    }
+
     private String buildAnalysisPrompt(String message) {
         return """
-				Bạn là hệ thống phân tích NLP cho TechStore — cửa hàng bán smartphone, laptop, linh kiện PC, phụ kiện.
+		Bạn là hệ thống phân tích NLP cho TechStore — cửa hàng bán smartphone, laptop, linh kiện PC, phụ kiện.
 
-				Phân tích câu sau và trả về JSON theo đúng format bên dưới. CHỈ trả về JSON, không giải thích.
+		Phân tích câu sau và trả về JSON theo đúng format bên dưới. CHỈ trả về JSON, không giải thích.
 
-				Câu cần phân tích: "%s"
+		Câu cần phân tích: "%s"
 
-				Các intent có thể có:
-				- PRODUCT_SEARCH: tìm/mua/xem sản phẩm (có thể kèm giá)
-				- STOCK_CHECK: hỏi còn hàng/tồn kho
-				- COMPARE: so sánh 2 sản phẩm
-				- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, khuyến mãi, liên hệ)
-				- COUPON: hỏi mã giảm giá, coupon, voucher, ưu đãi
-				- AI_ADVICE: tư vấn, gợi ý, câu hỏi kỹ thuật, chào hỏi
+		Các intent:
+		- PRODUCT_SEARCH: tìm/mua/xem sản phẩm (có thể kèm giá)
+		- STOCK_CHECK: hỏi còn hàng/tồn kho
+		- COMPARE: so sánh 2 sản phẩm
+		- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, khuyến mãi, liên hệ)
+		- COUPON: hỏi mã giảm giá, ưu đãi
+		- AI_ADVICE: tư vấn, gợi ý, kỹ thuật, chào hỏi
 
-				Lưu ý đặc biệt:
-				- Chuẩn hóa tiếng lóng: "củ" = triệu, "em" = tôi muốn mua, "chơi game" = gaming
-				- Sửa lỗi chính tả: "bào dứ" → "bao nhiêu", "lấp top" → "laptop"
-				- Hiểu câu dài phức tạp, đại từ ("nó", "cái đó"): trích xuất entity chính
-				- Giá: chuyển về đơn vị VNĐ (20 triệu = 20000000, 20 củ = 20000000)
-				- keyword: chỉ tên sản phẩm, KHÔNG chứa từ chỉ giá/số tiền
+		Quy tắc xử lý:
+		- Chuẩn hóa ngôn ngữ: sửa lỗi chính tả, hiểu tiếng lóng ("củ"=triệu, "lấp top"=laptop, "chơi game"=gaming)
+		- Hiểu ngữ cảnh: xử lý câu phức tạp, đại từ ("nó", "cái đó")
+		- Giá: chuyển về VNĐ (20 triệu / 20 củ → 20000000)
+		- keyword: chỉ chứa tên sản phẩm hoặc loại sản phẩm, không chứa giá hoặc số tiền
 
-				Trả về JSON:
-				{
-				"intent": "PRODUCT_SEARCH",
-				"keyword": "laptop gaming",
-				"minPrice": null,
-				"maxPrice": 20000000,
-				"compareProductA": null,
-				"compareProductB": null,
-				"faqTopic": null,
-				"confidence": 0.95
-				}
-				"""
+		Quy tắc suy luận:
+		- Suy luận hợp lý dựa trên ngữ cảnh, không bịa thông tin
+		- Nếu nhiều cách hiểu phải chọn cách phổ biến nhất
+		- Nếu thiếu dữ liệu phải suy đoán hợp lý hoặc để null
+		- Nếu không chắc chắn phải giảm confidence
+
+		Quy tắc theo intent:
+		- COMPARE:
+		+ compareProductA và compareProductB phải có nếu xác định được
+		+ keyword = null
+		- FAQ:
+		+ faqTopic ∈ ["bảo hành","đổi trả","giao hàng","thanh toán","trả góp","khuyến mãi","liên hệ"]
+
+		Trả về JSON hợp lệ, tất cả field phải tồn tại (null nếu không có):
+
+		{
+		"intent": "PRODUCT_SEARCH",
+		"keyword": "laptop gaming",
+		"minPrice": null,
+		"maxPrice": 20000000,
+		"compareProductA": null,
+		"compareProductB": null,
+		"faqTopic": null,
+		"confidence": 0.95
+		}
+			"""
                 .formatted(message);
     }
 
@@ -170,5 +253,27 @@ public class NlpIntentService {
     private boolean isCouponQuery(String message) {
         String lower = message.toLowerCase();
         return lower.matches(".*\\b(mã giảm giá|coupon|voucher|ưu đãi|mã khuyến mãi|giảm giá|mã|code giảm).*");
+    }
+
+    private String buildRetryPrompt(String message) {
+        return """
+			Phân tích câu sau và trả về JSON hợp lệ.
+
+			Câu: "%s"
+
+			Chỉ trả về JSON, không markdown, không giải thích.
+
+			{
+			"intent": "PRODUCT_SEARCH",
+			"keyword": null,
+			"minPrice": null,
+			"maxPrice": null,
+			"compareProductA": null,
+			"compareProductB": null,
+			"faqTopic": null,
+			"confidence": 0.5
+			}
+			"""
+                .formatted(message);
     }
 }

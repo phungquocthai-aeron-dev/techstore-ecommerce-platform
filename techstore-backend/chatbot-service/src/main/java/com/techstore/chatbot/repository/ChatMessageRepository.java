@@ -2,21 +2,11 @@ package com.techstore.chatbot.repository;
 
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.techstore.chatbot.entiry.ChatMessage;
+import com.techstore.chatbot.entity.ChatMessage;
 
-@Repository
-public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+public interface ChatMessageRepository extends MongoRepository<ChatMessage, String> {
 
-    /**
-     * Lấy lịch sử chat theo sessionId, sắp xếp theo thời gian tăng dần
-     */
-    List<ChatMessage> findBySessionIdOrderByCreatedAtAsc(String sessionId);
-
-    /**
-     * Lấy lịch sử chat theo userId, sắp xếp theo thời gian tăng dần
-     */
-    List<ChatMessage> findByUserIdOrderByCreatedAtAsc(Long userId);
+    List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(String conversationId);
 }

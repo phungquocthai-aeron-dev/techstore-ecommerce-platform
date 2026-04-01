@@ -14,7 +14,7 @@ public class FileFeignConfig {
 
     @Bean
     Request.Options feignRequestOptions() {
-        return new Request.Options(Duration.ofSeconds(3), Duration.ofSeconds(3), true);
+        return new Request.Options(Duration.ofSeconds(5), Duration.ofSeconds(5), true);
     }
 
     @Bean

@@ -8,6 +8,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.techstore.event.dto.PostEvent;
+import com.techstore.order.constant.DiscountType;
+import com.techstore.order.dto.request.CouponCreateRequest;
 import com.techstore.order.dto.request.CouponRequest;
 import com.techstore.order.dto.response.CouponResponse;
 import com.techstore.order.entity.Coupon;
@@ -30,16 +32,28 @@ public class CouponService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @PreAuthorize("hasRole('ADMIN')")
-    public CouponResponse create(CouponRequest request) {
+    public CouponResponse create(CouponCreateRequest request) {
 
         if (couponRepo.findByName(request.getName()).isPresent()) {
             throw new AppException(ErrorCode.COUPON_EXISTED);
         }
 
         validateDiscountType(request.getDiscountType());
+        validateDate(request.getStartDate(), request.getEndDate());
 
-        Coupon coupon = couponMapper.toEntity(request);
-        coupon.setDiscountType(request.getDiscountType().toUpperCase());
+        Coupon coupon = new Coupon();
+        coupon.setMaxDiscount(request.getMaxDiscount());
+        coupon.setMinOrderValue(request.getMinOrderValue());
+        coupon.setStartDate(request.getStartDate());
+        coupon.setEndDate(request.getEndDate());
+        coupon.setUsageLimit(request.getUsageLimit());
+        coupon.setName(request.getName());
+        coupon.setDiscountValue(request.getDiscountValue());
+        coupon.setCouponType(
+                request.getCouponType() == null
+                        ? "PUBLIC"
+                        : request.getCouponType().toUpperCase());
+        coupon.setDiscountType(DiscountType.from(request.getDiscountType()).name());
         coupon.setStatus("ACTIVE");
         coupon.setUsedCount(0);
 
@@ -97,9 +111,7 @@ public class CouponService {
 
     public List<CouponResponse> getAvailableCoupons() {
 
-        LocalDateTime now = LocalDateTime.now();
-
-        return couponRepo.findByStatusIgnoreCaseAndStartDateBeforeAndEndDateAfter("ACTIVE", now, now).stream()
+        return couponRepo.findValidPublicCoupons("ACTIVE", "PUBLIC", LocalDateTime.now()).stream()
                 .filter(coupon -> coupon.getUsageLimit() == null || coupon.getUsedCount() < coupon.getUsageLimit())
                 .map(couponMapper::toResponse)
                 .toList();
@@ -191,5 +203,20 @@ public class CouponService {
                 + usageLimit
                 + expiry
                 + " Nhanh tay sử dụng ngay!";
+    }
+
+    private void validateDate(LocalDateTime start, LocalDateTime end) {
+
+        if (start == null || end == null) {
+            throw new AppException(ErrorCode.INVALID_DATE);
+        }
+
+        if (!start.isBefore(end)) {
+            throw new AppException(ErrorCode.INVALID_DATE);
+        }
+
+        if (end.isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.INVALID_DATE);
+        }
     }
 }

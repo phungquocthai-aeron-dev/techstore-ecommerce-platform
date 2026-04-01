@@ -40,6 +40,9 @@ public class Coupon {
     private Integer usedCount;
     private String status;
 
+    @Builder.Default
+    private String couponType = "PUBLIC";
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

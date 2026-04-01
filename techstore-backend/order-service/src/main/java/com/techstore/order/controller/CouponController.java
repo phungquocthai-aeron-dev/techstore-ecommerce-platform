@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
+import com.techstore.order.dto.request.CouponCreateRequest;
 import com.techstore.order.dto.request.CouponRequest;
 import com.techstore.order.dto.response.ApiResponse;
 import com.techstore.order.dto.response.CouponResponse;
@@ -19,7 +20,7 @@ public class CouponController {
     private final CouponService couponService;
 
     @PostMapping
-    public ApiResponse<CouponResponse> create(@RequestBody CouponRequest request) {
+    public ApiResponse<CouponResponse> create(@RequestBody CouponCreateRequest request) {
 
         return ApiResponse.<CouponResponse>builder()
                 .result(couponService.create(request))

@@ -92,6 +92,8 @@ public enum ErrorCode {
     COUPON_IDS_EMPTY(4001, "Danh sách ID không được rỗng", HttpStatus.BAD_REQUEST),
     CUSTOMER_COUPON_ALREADY_ASSIGNED(4002, "Coupon đã được gán cho khách hàng này", HttpStatus.CONFLICT),
     CUSTOMER_COUPON_NOT_FOUND(4003, "Khách hàng không sở hữu coupon này", HttpStatus.NOT_FOUND),
+    INVALID_COUPON_TYPE(4004, "Loại coupon không hợp lệ", HttpStatus.BAD_REQUEST),
+    INVALID_DATE(4004, "Ngày không hợp lệ", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

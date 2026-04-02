@@ -67,6 +67,13 @@ public enum ErrorCode {
     INVALID_PRICE(4003, "Invalid price", HttpStatus.BAD_REQUEST),
     INVALID_COLOR(4004, "Invalid variant color", HttpStatus.BAD_REQUEST),
     VARIANT_IMAGE_NOT_FOUND(4005, "Variant image not found", HttpStatus.BAD_REQUEST),
+
+    TOPIC_NOT_FOUND(404, "Chủ đề không tồn tại", HttpStatus.BAD_REQUEST),
+    TOPIC_NAME_EXISTED(409, "Tên chủ đề đã tồn tại", HttpStatus.BAD_REQUEST),
+    QUESTION_NOT_FOUND(404, "Câu hỏi không tồn tại", HttpStatus.BAD_REQUEST),
+    ANSWER_NOT_FOUND(404, "Đáp án không tồn tại", HttpStatus.BAD_REQUEST),
+    QUESTION_MUST_HAVE_ONE_CORRECT_ANSWER(400, "Câu hỏi phải có đúng 1 đáp án đúng", HttpStatus.BAD_REQUEST),
+    ANSWER_NOT_BELONG_TO_QUESTION(400, "Đáp án không thuộc câu hỏi này", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

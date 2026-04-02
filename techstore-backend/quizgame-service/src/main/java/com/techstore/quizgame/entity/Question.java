@@ -2,21 +2,9 @@ package com.techstore.quizgame.entity;
 
 import java.util.List;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "questions")
@@ -31,15 +19,18 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Nội dung câu hỏi
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    // Chủ đề: JAVA, SPRING, DATABASE, v.v.
-    @Column(nullable = false, length = 100)
-    private String topic;
+    // Giữ lại field String topic để tương thích ngược (hoặc có thể xóa nếu không cần)
+    @Column(length = 100)
+    private String topicName; // đổi tên để tránh xung đột
 
-    // Cascade: khi xóa question thì xóa luôn answers
+    // Quan hệ FK tới bảng topics
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "topic_id")
+    private Topic topic;
+
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Answer> answers;
 }

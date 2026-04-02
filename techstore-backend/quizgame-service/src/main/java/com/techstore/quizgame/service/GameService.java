@@ -223,7 +223,8 @@ public class GameService {
         return QuestionResponseDTO.builder()
                 .id(question.getId())
                 .content(question.getContent())
-                .topic(question.getTopic())
+                .topicId(question.getTopic() != null ? question.getTopic().getId() : null)
+                .topicName(question.getTopic() != null ? question.getTopic().getName() : null)
                 .answers(answerDTOs)
                 .build();
     }

@@ -18,5 +18,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query(value = "SELECT * FROM questions WHERE topic = :topic ORDER BY RAND()", nativeQuery = true)
     List<Question> findRandomQuestionsByTopic(@Param("topic") String topic, Pageable pageable);
 
-    long countByTopic(String topic);
+    long countByTopic_Name(String name);
+    
+    long countByTopic_Id(Long topicId);
+
+    List<Question> findByTopicId(Long topicId);
 }

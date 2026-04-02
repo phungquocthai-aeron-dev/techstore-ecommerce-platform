@@ -1,7 +1,5 @@
 package com.techstore.quizgame.dto.response;
 
-import java.util.List;
-
 import lombok.*;
 
 @Getter
@@ -9,10 +7,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class QuestionResponseDTO {
+public class AnswerDetailResponseDTO {
+
     private Long id;
     private String content;
-    private String topicName;
-    private Long topicId;
-    private List<AnswerResponseDTO> answers;
+    private Boolean isCorrect;
 }

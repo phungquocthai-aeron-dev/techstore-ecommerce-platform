@@ -9,10 +9,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class QuestionResponseDTO {
+public class QuestionDetailResponseDTO {
+
     private Long id;
     private String content;
-    private String topicName;
     private Long topicId;
-    private List<AnswerResponseDTO> answers;
+    private String topicName;
+    private List<AnswerDetailResponseDTO> answers;
 }

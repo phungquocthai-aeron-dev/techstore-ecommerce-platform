@@ -106,22 +106,22 @@ public class FaqService {
         faqMap.put("hotline", faqMap.get("liên hệ"));
         faqMap.put("địa chỉ", faqMap.get("liên hệ"));
 
-        // ===== Khuyến mãi =====
-        faqMap.put(
-                "khuyến mãi",
-                """
-				🎁 **Chương trình khuyến mãi hiện tại:**
-
-				• Giảm 5% cho thành viên đăng ký mới.
-				• Tặng tai nghe khi mua smartphone từ 10 triệu.
-				• Giảm thêm 10% khi thanh toán qua MoMo.
-				• Flash sale mỗi ngày 12h và 20h — giảm đến 30%!
-
-				🔔 Đăng ký nhận thông báo để không bỏ lỡ deal hot nhé!
-				""");
-
-        faqMap.put("giảm giá", faqMap.get("khuyến mãi"));
-        faqMap.put("sale", faqMap.get("khuyến mãi"));
+        //        // ===== Khuyến mãi =====
+        //        faqMap.put(
+        //                "khuyến mãi",
+        //                """
+        //				🎁 **Chương trình khuyến mãi hiện tại:**
+        //
+        //				• Giảm 5% cho thành viên đăng ký mới.
+        //				• Tặng tai nghe khi mua smartphone từ 10 triệu.
+        //				• Giảm thêm 10% khi thanh toán qua MoMo.
+        //				• Flash sale mỗi ngày 12h và 20h — giảm đến 30%!
+        //
+        //				🔔 Đăng ký nhận thông báo để không bỏ lỡ deal hot nhé!
+        //				""");
+        //
+        //        faqMap.put("giảm giá", faqMap.get("khuyến mãi"));
+        //        faqMap.put("sale", faqMap.get("khuyến mãi"));
     }
 
     /**

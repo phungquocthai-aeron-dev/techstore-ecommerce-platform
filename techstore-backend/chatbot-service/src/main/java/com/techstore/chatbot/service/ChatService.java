@@ -128,7 +128,7 @@ public class ChatService {
                         intent.getMaxPrice());
                 // Truyền intent đã parse sẵn để không cần parse lại
                 yield productChatService.handleProductSearchFromIntent(
-                        intent.getKeyword(), intent.getMinPrice(), intent.getMaxPrice());
+                        intent.getKeyword(), intent.getMinPrice(), intent.getMaxPrice(), intent.getBrandNames());
             }
 
             default -> {

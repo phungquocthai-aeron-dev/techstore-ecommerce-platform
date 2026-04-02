@@ -1,7 +1,9 @@
 package com.techstore.chatbot.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.techstore.chatbot.client.ProductServiceClient;
 import com.techstore.chatbot.client.WarehouseServiceClient;
 import com.techstore.chatbot.constant.ResponseType;
+import com.techstore.chatbot.dto.response.ApiResponse;
 import com.techstore.chatbot.dto.response.ChatResponse;
 import com.techstore.chatbot.dto.response.PageResponseDTO;
 import com.techstore.chatbot.dto.response.ProductListResponseDTO;
@@ -29,8 +32,10 @@ public class ProductChatService {
     private final MessageParser messageParser;
 
     // ─── Gọi từ NlpIntentService — keyword + giá đã được parse sẵn ───────────
-    public ChatResponse handleProductSearchFromIntent(String keyword, Double minPrice, Double maxPrice) {
-        return doProductSearch(keyword, minPrice, maxPrice);
+    public ChatResponse handleProductSearchFromIntent(
+            String keyword, Double minPrice, Double maxPrice, List<String> brandNames) {
+        if (minPrice == null) minPrice = 0.0;
+        return doProductSearch(keyword, minPrice, maxPrice, brandNames);
     }
 
     // ─── Gọi trực tiếp từ message gốc (fallback khi không qua NLP) ───────────
@@ -38,22 +43,51 @@ public class ProductChatService {
         String keyword = messageParser.extractSearchKeyword(message);
         Double minPrice = messageParser.parseMinPrice(message);
         Double maxPrice = messageParser.parseMaxPrice(message);
-        return doProductSearch(keyword, minPrice, maxPrice);
+        return doProductSearch(keyword, minPrice, maxPrice, null);
     }
 
     // ─── Core logic tìm kiếm ─────────────────────────────────────────────────
-    private ChatResponse doProductSearch(String keyword, Double minPrice, Double maxPrice) {
+    private ChatResponse doProductSearch(String keyword, Double minPrice, Double maxPrice, List<String> brandNames) {
         try {
-            log.info("  [ProductSearch] keyword=\"{}\", minPrice={}, maxPrice={}", keyword, minPrice, maxPrice);
-            log.info(
-                    "  [ProductSearch] → GET product-service/products/search" + "?keyword={}&minPrice={}&maxPrice={}",
-                    keyword,
-                    minPrice,
-                    maxPrice);
+            // ── chuẩn hóa giá ──
+            double safeMinPrice = minPrice != null ? minPrice : 0.0;
+            Double safeMaxPrice = maxPrice; // giữ nguyên nếu null → Feign bỏ param
 
-            PageResponseDTO<ProductListResponseDTO> result = productServiceClient
-                    .searchProducts(keyword, null, null, minPrice, maxPrice, 0, 10, "id", "DESC")
-                    .getResult();
+            log.info("  [ProductSearch] keyword=\"{}\", minPrice={}, maxPrice={}", keyword, safeMinPrice, safeMaxPrice);
+            log.info(
+                    "  [ProductSearch] → GET product-service/products/search?keyword={}&minPrice={}&maxPrice={}",
+                    keyword,
+                    safeMinPrice,
+                    safeMaxPrice);
+            log.info("  [ProductSearch] brandNames={}", brandNames != null ? brandNames : "null");
+
+            if (brandNames != null) {
+                brandNames = brandNames.stream()
+                        .filter(Objects::nonNull)
+                        .filter(s -> !s.isBlank())
+                        .toList();
+
+                if (brandNames.isEmpty()) {
+                    brandNames = null;
+                }
+            }
+
+            // ── gọi Feign client ──
+            //            PageResponseDTO<ProductListResponseDTO> result = productServiceClient
+            //                    .searchProducts(keyword, brandNames, null, safeMinPrice, safeMaxPrice, 0, 10, "id",
+            // "DESC")
+            //                    .getResult();
+            ApiResponse<PageResponseDTO<ProductListResponseDTO>> response = productServiceClient.searchProducts(
+                    keyword, brandNames, null, safeMinPrice, safeMaxPrice, 0, 10, "id", "DESC");
+
+            if (response == null || response.getResult() == null) {
+                log.error("[ProductSearch] API response null: {}", response);
+                throw new RuntimeException("Product API returned null");
+            }
+
+            log.info("[ProductSearch] RAW response: {}", response);
+
+            PageResponseDTO<ProductListResponseDTO> result = response.getResult();
 
             int found = result != null && result.getContent() != null
                     ? result.getContent().size()
@@ -81,16 +115,21 @@ public class ProductChatService {
                     p.getBrandName(),
                     p.getBasePrice() != null ? String.format("%,.0f", p.getBasePrice()) : "N/A"));
 
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("total", result.getTotalElements());
+            metadata.put("showing", products.size());
+            metadata.put("keyword", keyword != null ? keyword : "");
+            metadata.put("minPrice", safeMinPrice);
+
+            if (safeMaxPrice != null) {
+                metadata.put("maxPrice", safeMaxPrice);
+            }
+
             return ChatResponse.builder()
                     .type(ResponseType.PRODUCT_LIST)
-                    .message(buildSearchSummary(products, keyword, minPrice, maxPrice))
+                    .message(buildSearchSummary(products, keyword, safeMinPrice, safeMaxPrice))
                     .data(products)
-                    .metadata(Map.of(
-                            "total", result.getTotalElements(),
-                            "showing", products.size(),
-                            "keyword", keyword != null ? keyword : "",
-                            "minPrice", minPrice != null ? minPrice : "",
-                            "maxPrice", maxPrice != null ? maxPrice : ""))
+                    .metadata(metadata)
                     .build();
 
         } catch (Exception ex) {

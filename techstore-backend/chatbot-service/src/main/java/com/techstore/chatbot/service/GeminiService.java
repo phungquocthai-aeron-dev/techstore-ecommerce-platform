@@ -55,7 +55,7 @@ public class GeminiService {
                                     "temperature",
                                     0.1,
                                     "maxOutputTokens",
-                                    512));
+                                    1024));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -70,6 +70,11 @@ public class GeminiService {
             log.info("GEMINI CONTENT RESPONSE");
             log.info(responseJson);
             String text = extractTextFromResponse(responseJson);
+
+            if (text == null || !text.trim().endsWith("}")) {
+                log.warn("[Gemini] JSON bị cắt, retry với prompt ngắn hơn...");
+                return retryShortPrompt(prompt);
+            }
 
             if (text == null || text.isEmpty()) {
                 log.warn("[Gemini] Empty response: {}", responseJson);
@@ -92,19 +97,91 @@ public class GeminiService {
         }
     }
 
+    private String retryShortPrompt(String originalPrompt) {
+        try {
+            String shortPrompt =
+                    """
+			Phân tích câu và trả về JSON:
+
+			"%s"
+
+			{
+			"intent": "PRODUCT_SEARCH",
+			"keyword": null,
+			"brandNames": null,
+			"minPrice": null,
+			"maxPrice": null,
+			"compareProductA": null,
+			"compareProductB": null,
+			"faqTopic": null,
+			"confidence": 0.8
+			}
+			"""
+                            .formatted(originalPrompt);
+
+            Map<String, Object> requestBody = Map.of(
+                    "contents", List.of(Map.of("parts", List.of(Map.of("text", shortPrompt)))),
+                    "generationConfig",
+                            Map.of(
+                                    "response_mime_type",
+                                    "application/json",
+                                    "temperature",
+                                    0.1,
+                                    "maxOutputTokens",
+                                    256));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String url = geminiUrl + "?key=" + apiKey;
+
+            String response = restTemplate.postForObject(url, new HttpEntity<>(requestBody, headers), String.class);
+
+            return extractTextFromResponse(response);
+
+        } catch (Exception ex) {
+            log.error("[Gemini] Retry failed", ex);
+            throw new AppException(ErrorCode.GEMINI_API_ERROR);
+        }
+    }
+
+    //    private String extractTextFromResponse(String responseJson) {
+    //        try {
+    //            JsonNode root = objectMapper.readTree(responseJson);
+    //            return root.path("candidates")
+    //                    .get(0)
+    //                    .path("content")
+    //                    .path("parts")
+    //                    .get(0)
+    //                    .path("text")
+    //                    .asText();
+    //        } catch (Exception ex) {
+    //            log.error("  [Gemini] ✗ Failed to parse response: {}", responseJson);
+    //            throw new AppException(ErrorCode.GEMINI_API_ERROR);
+    //        }
+    //    }
+
     private String extractTextFromResponse(String responseJson) {
         try {
             JsonNode root = objectMapper.readTree(responseJson);
-            return root.path("candidates")
-                    .get(0)
+
+            JsonNode textNode = root.path("candidates")
+                    .path(0)
                     .path("content")
                     .path("parts")
-                    .get(0)
-                    .path("text")
-                    .asText();
+                    .path(0)
+                    .path("text");
+
+            if (textNode.isMissingNode()) {
+                log.error("[Gemini] Missing text field: {}", responseJson);
+                return null;
+            }
+
+            return textNode.asText();
+
         } catch (Exception ex) {
             log.error("  [Gemini] ✗ Failed to parse response: {}", responseJson);
-            throw new AppException(ErrorCode.GEMINI_API_ERROR);
+            return null;
         }
     }
 

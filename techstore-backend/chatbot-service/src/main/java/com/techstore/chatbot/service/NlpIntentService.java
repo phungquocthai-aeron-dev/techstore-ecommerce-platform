@@ -167,10 +167,10 @@ public class NlpIntentService {
 		Câu cần phân tích: "%s"
 
 		Các intent:
-		- PRODUCT_SEARCH: tìm/mua/xem sản phẩm (có thể kèm giá)
+		- PRODUCT_SEARCH: tìm/mua/xem sản phẩm (có thể kèm giá hoặc tên hãng nếu có)
 		- STOCK_CHECK: hỏi còn hàng/tồn kho
 		- COMPARE: so sánh 2 sản phẩm
-		- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, khuyến mãi, liên hệ)
+		- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, liên hệ)
 		- COUPON: hỏi mã giảm giá, ưu đãi
 		- AI_ADVICE: tư vấn, gợi ý, kỹ thuật, chào hỏi
 
@@ -179,6 +179,9 @@ public class NlpIntentService {
 		- Hiểu ngữ cảnh: xử lý câu phức tạp, đại từ ("nó", "cái đó")
 		- Giá: chuyển về VNĐ (20 triệu / 20 củ → 20000000)
 		- keyword: chỉ chứa tên sản phẩm hoặc loại sản phẩm, không chứa giá hoặc số tiền
+		- Nếu câu người dùng nhắc tới tên hãng sản phẩm, điền tất cả hãng hợp lệ vào field "brandNames" (mảng, null nếu không có), chỉ tính các hãng thuộc smartphone, laptop, PC, linh kiện PC, phụ kiện điện tử
+		Ví dụ: "tìm laptop Dell và ASUS dưới 20 triệu" → brandNames: ["Dell", "ASUS"].
+
 
 		Quy tắc suy luận:
 		- Suy luận hợp lý dựa trên ngữ cảnh, không bịa thông tin

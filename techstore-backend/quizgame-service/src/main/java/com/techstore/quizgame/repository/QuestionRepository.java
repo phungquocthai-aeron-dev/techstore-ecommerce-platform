@@ -11,7 +11,6 @@ import com.techstore.quizgame.entity.Question;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
-    // Dùng Pageable để giới hạn số lượng — Spring tự thêm LIMIT vào query
     @Query(value = "SELECT * FROM questions ORDER BY RAND()", nativeQuery = true)
     List<Question> findRandomQuestions(Pageable pageable);
 
@@ -19,7 +18,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findRandomQuestionsByTopic(@Param("topic") String topic, Pageable pageable);
 
     long countByTopic_Name(String name);
-    
+
     long countByTopic_Id(Long topicId);
 
     List<Question> findByTopicId(Long topicId);

@@ -3,7 +3,7 @@
 <!-- ╚══════════════════════════════════════════════════════════════════════╝ -->
 
 <div class="galaxy-root">
-  <!-- ░░ BACKGROUND LAYERS ░░ -->
+  <!-- ░░ BACKGROUND STARS ░░ -->
   <div class="bg-stars">
     <span
       *ngFor="let s of [].constructor(60); let i = index"
@@ -28,9 +28,11 @@
     </div>
   </div>
 
-  <!-- ░░ TOP NAV BAR ░░ -->
+  <!-- ░░ TOP NAV (hidden during play) ░░ -->
   <header class="topbar" *ngIf="screen !== 'playing'">
-    <div class="topbar__logo">⚙ TECH GALAXY</div>
+    <a href="/home" style="text-decoration: none">
+      <div class="topbar__logo">TECHSTORE GALAXY</div>
+    </a>
     <nav class="topbar__nav">
       <button
         class="nav-btn"
@@ -64,10 +66,7 @@
   <!-- ════════════════════════════════════════════════════ -->
   <!-- SCREEN: INTRO                                        -->
   <!-- ════════════════════════════════════════════════════ -->
-  <section
-    class="screen screen--intro"
-    *ngIf="screen === 'intro' && !isSubmitting"
-  >
+  <section class="screen screen--intro" *ngIf="screen === 'intro'">
     <div class="intro__ship">🚀</div>
     <h1 class="intro__title">TECH GALAXY<br /><span>EXPLORER</span></h1>
     <p class="intro__sub">
@@ -75,19 +74,17 @@
       những ưu đãi hấp dẫn!
     </p>
 
-    <!-- Planet trail preview -->
     <div class="planet-trail" *ngIf="!isLoadingGame">
       <div
         *ngFor="let p of PLANET_CONFIGS; let i = index"
         class="trail-planet"
-        [style.color]="p.color"
+        [style.color]="p.col"
         [style.animation-delay.ms]="i * 80"
       >
         {{ p.icon }}
       </div>
     </div>
 
-    <!-- Stats cards -->
     <div class="stat-cards" *ngIf="dailyInfo">
       <div class="stat-card">
         <div class="stat-card__val">{{ dailyInfo.remainingPlays }}</div>
@@ -103,7 +100,6 @@
       </div>
     </div>
 
-    <!-- No plays left -->
     <div class="done-card" *ngIf="dailyInfo && !dailyInfo.canPlay">
       <div class="done-card__icon">🛸</div>
       <div class="done-card__title">ĐÃ KHÁM PHÁ HÔM NAY</div>
@@ -123,7 +119,6 @@
       </div>
     </div>
 
-    <!-- Launch button -->
     <button
       class="btn btn--launch"
       *ngIf="dailyInfo?.canPlay"
@@ -143,7 +138,9 @@
     </div>
   </section>
 
-  <!-- Loading overlay while submitting -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN: SUBMITTING (loading overlay)                 -->
+  <!-- ════════════════════════════════════════════════════ -->
   <section class="screen screen--loading" *ngIf="isSubmitting">
     <div class="loading-ship">🚀</div>
     <p class="loading-text">
@@ -154,104 +151,111 @@
   </section>
 
   <!-- ════════════════════════════════════════════════════ -->
-  <!-- SCREEN: PLAYING                                      -->
+  <!-- SCREEN: PLAYING — GALAXY CANVAS                     -->
   <!-- ════════════════════════════════════════════════════ -->
   <section
-    class="screen screen--playing"
-    *ngIf="screen === 'playing' && currentQuestion"
+    class="screen screen--galaxy"
+    *ngIf="screen === 'playing' && !isSubmitting"
   >
-    <!-- Playing header -->
-    <div class="play-header">
-      <div class="play-planet">
-        <span
-          class="play-planet__icon"
-          [style.color]="PLANET_CONFIGS[currentQIndex].color"
+    <!-- HUD bar -->
+    <div class="galaxy-hud">
+      <div class="hud-logo">⚙ TECH GALAXY</div>
+      <div class="hud-center">
+        <div class="hud-prog-wrap">
+          <div
+            class="hud-prog-fill"
+            [style.width.%]="(userAnswers.length / questions.length) * 100"
+          ></div>
+        </div>
+        <span class="hud-prog-label"
+          >{{ userAnswers.length }} / {{ questions.length }}</span
         >
-          {{ PLANET_CONFIGS[currentQIndex].icon }}
-        </span>
-        <span class="play-planet__name">{{
-          PLANET_CONFIGS[currentQIndex].name
-        }}</span>
       </div>
-      <div class="play-hud">
-        <div class="hud-item">
-          <span class="hud-item__label">HÀNH TINH</span>
-          <span class="hud-item__val"
-            >{{ currentQIndex + 1
-            }}<span class="hud-item__denom">/{{ questions.length }}</span></span
-          >
-        </div>
-        <div class="hud-item">
-          <span class="hud-item__label">ĐIỂM</span>
-          <span class="hud-item__val">{{ userAnswers.length }}</span>
-        </div>
+      <div class="hud-score">
+        ĐIỂM&nbsp;<span>{{ userAnswers.length }}</span>
       </div>
     </div>
 
-    <!-- Progress bar -->
-    <div class="prog-bar">
-      <div class="prog-bar__fill" [style.width.%]="progressPercent"></div>
+    <!-- Galaxy canvas -->
+    <canvas #galaxyCanvas class="galaxy-canvas"></canvas>
+
+    <!-- Hint -->
+    <div class="planet-hint" *ngIf="showHint && !qPanelOpen">
+      ▲ CHỌN HÀNH TINH TIẾP THEO ▲
     </div>
 
-    <!-- Timer ring -->
-    <div class="timer-wrap" [class.timer--danger]="timerDanger">
-      <svg class="timer-svg" viewBox="0 0 60 60">
-        <circle class="timer-bg" cx="30" cy="30" r="26" />
-        <circle
-          class="timer-arc"
-          cx="30"
-          cy="30"
-          r="26"
-          [style.stroke-dashoffset]="
-            (163.36 * (1 - timerPercent / 100)).toFixed(2)
-          "
-          style="stroke-dasharray: 163.36"
-        />
-      </svg>
-      <span class="timer-val">{{ timeLeft }}</span>
-    </div>
+    <!-- Question Panel -->
+    <div
+      class="qpanel"
+      [class.qpanel--open]="qPanelOpen"
+      *ngIf="currentGalaxyQ"
+    >
+      <!-- Panel header -->
+      <div class="qpanel__header">
+        <div
+          class="qpanel__planet-badge"
+          *ngIf="PLANET_CONFIGS[currentQIndex] as p"
+          [style.color]="p.col"
+        >
+          {{ p.icon }} {{ p.name }}
+        </div>
+        <div class="qpanel__prog-wrap">
+          <div
+            class="qpanel__prog-fill"
+            [style.width.%]="(currentQIndex / questions.length) * 100"
+            [style.background]="PLANET_CONFIGS[currentQIndex].col"
+          ></div>
+        </div>
+        <!-- Timer ring -->
+        <div class="qpanel__timer" [class.timer--danger]="timerDanger">
+          <svg viewBox="0 0 44 44" class="timer-svg">
+            <circle class="timer-bg" cx="22" cy="22" r="18" />
+            <circle
+              class="timer-arc"
+              cx="22"
+              cy="22"
+              r="18"
+              [style.stroke-dashoffset]="
+                (113.1 * (1 - timerPercent / 100)).toFixed(2)
+              "
+              [class.arc--danger]="timerDanger"
+              style="stroke-dasharray: 113.1"
+            />
+          </svg>
+          <span class="timer-val">{{ timeLeft }}</span>
+        </div>
+      </div>
 
-    <!-- Planet map strip -->
-    <div class="q-planet-strip">
-      <div
-        *ngFor="let p of PLANET_CONFIGS; let i = index"
-        class="strip-dot"
-        [style.background]="i < currentQIndex ? p.color : 'transparent'"
-        [style.border-color]="p.color"
-        [class.strip-dot--current]="i === currentQIndex"
-      ></div>
-    </div>
-
-    <!-- Question card -->
-    <div class="q-card">
-      <div class="q-card__num">Câu {{ currentQIndex + 1 }}</div>
-      <p class="q-card__text">{{ currentQuestion.content }}</p>
+      <!-- Question text -->
+      <div class="qpanel__q-num">
+        HÀNH TINH {{ currentQIndex + 1 }} / {{ questions.length }}
+      </div>
+      <div class="qpanel__q-text">{{ currentGalaxyQ.content }}</div>
 
       <!-- Answers -->
-      <div class="answers-grid">
+      <div class="qpanel__answers">
         <button
           *ngFor="
-            let ans of currentQuestion.answers;
+            let ans of currentGalaxyQ.answers;
             let i = index;
             trackBy: trackByAnswer
           "
-          class="ans-btn"
-          [class.ans-btn--selected]="
-            selectedAnswerId === ans.id && !answerLocked
+          class="qpanel__ans-btn"
+          [class.qpanel__ans--selected]="
+            galaxySelectedId === ans.id && !galaxyAnswerLocked
           "
-          [class.ans-btn--locked-selected]="
-            answerLocked && selectedAnswerId === ans.id
+          [class.qpanel__ans--locked]="
+            galaxyAnswerLocked && galaxySelectedId === ans.id
           "
-          [disabled]="answerLocked"
-          (click)="selectAnswer(ans.id)"
+          [disabled]="galaxyAnswerLocked"
+          (click)="selectGalaxyAnswer(ans.id)"
         >
           <span class="ans-letter">{{ letterOf(i) }}</span>
           <span class="ans-text">{{ ans.content }}</span>
         </button>
       </div>
 
-      <!-- Skipped message -->
-      <div class="skip-msg" *ngIf="answerLocked && !selectedAnswerId">
+      <div class="skip-msg" *ngIf="galaxyAnswerLocked && !galaxySelectedId">
         ⏱ Hết giờ! Chuyển câu tiếp theo...
       </div>
     </div>
@@ -265,10 +269,8 @@
     *ngIf="screen === 'result' && gameResult"
   >
     <div class="result-wrap">
-      <!-- Trophy -->
       <div class="result-trophy">{{ resultLevel.icon }}</div>
 
-      <!-- Score ring -->
       <div class="score-ring">
         <svg viewBox="0 0 120 120" width="140" height="140">
           <circle class="ring-bg" cx="60" cy="60" r="52" />
@@ -288,13 +290,11 @@
         </div>
       </div>
 
-      <!-- Level -->
       <div class="result-level" [style.color]="resultLevel.color">
         {{ resultLevel.label }}
       </div>
       <p class="result-desc">{{ resultLevel.desc }}</p>
 
-      <!-- Points earned -->
       <div class="result-pts-card">
         <div class="result-pts-card__row">
           <span>Lượt này:</span>
@@ -306,7 +306,6 @@
         </div>
       </div>
 
-      <!-- Answer review -->
       <details class="review-toggle">
         <summary>📋 Xem lại đáp án</summary>
         <div class="review-list">
@@ -327,7 +326,6 @@
         </div>
       </details>
 
-      <!-- Actions -->
       <div class="result-actions">
         <button
           class="btn btn--launch"
@@ -356,13 +354,9 @@
         Bạn có <strong>⭐ {{ userPoints }}</strong> điểm
       </div>
     </div>
-
-    <!-- Loading -->
     <div class="shop-loading" *ngIf="isLoadingCoupons">
       <span class="spinner"></span> Đang tải...
     </div>
-
-    <!-- Empty -->
     <div
       class="shop-empty"
       *ngIf="!isLoadingCoupons && availableCoupons.length === 0"
@@ -370,37 +364,30 @@
       <span>🪐</span>
       <p>Chưa có coupon nào khả dụng</p>
     </div>
-
-    <!-- Coupon grid -->
     <div class="coupon-grid" *ngIf="!isLoadingCoupons">
       <div
         *ngFor="let c of availableCoupons; trackBy: trackByCoupon"
         class="coupon-card"
         [class.coupon-card--disabled]="!c.canRedeem"
       >
-        <!-- Discount badge -->
         <div
           class="coupon-card__badge"
           [class.coupon-card__badge--pct]="c.discountType === 'PERCENTAGE'"
         >
           {{ discountLabel(c) }}
         </div>
-
         <div class="coupon-card__body">
           <h3 class="coupon-card__name">{{ c.couponName }}</h3>
           <p class="coupon-card__desc">{{ c.description }}</p>
-
           <div class="coupon-card__meta">
             <span>🎫 Còn lại: {{ c.quantity }}</span>
             <span>📅 HSD: {{ c.endDate | date: "dd/MM/yyyy" }}</span>
           </div>
-
           <div class="coupon-card__cost">
             <span class="cost-icon">⭐</span>
             <span class="cost-val">{{ c.pointsRequired }}</span>
             <span class="cost-label">điểm</span>
           </div>
-
           <div
             class="coupon-card__insufficient"
             *ngIf="!c.canRedeem && userPoints < c.pointsRequired"
@@ -413,7 +400,6 @@
           >
             Đã hết coupon
           </div>
-
           <button
             class="btn btn--redeem"
             [disabled]="!c.canRedeem || isRedeeming"
@@ -439,12 +425,10 @@
         Tổng điểm: <strong>⭐ {{ userPoints }}</strong>
       </div>
     </div>
-
     <div class="shop-empty" *ngIf="couponHistory.length === 0">
       <span>🗂</span>
       <p>Chưa có lịch sử đổi coupon nào</p>
     </div>
-
     <div class="history-list">
       <div
         *ngFor="let h of couponHistory; trackBy: trackByHistory"
@@ -462,4 +446,3 @@
     </div>
   </section>
 </div>
-<!-- /galaxy-root -->

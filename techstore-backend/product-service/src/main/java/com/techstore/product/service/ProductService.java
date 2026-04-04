@@ -25,8 +25,10 @@ import com.techstore.product.dto.request.ProductUpdateImageRequestDTO;
 import com.techstore.product.dto.request.ProductUpdateRequestDTO;
 import com.techstore.product.dto.response.FileResponse;
 import com.techstore.product.dto.response.PageResponseDTO;
+import com.techstore.product.dto.response.ProductAIResponseDTO;
 import com.techstore.product.dto.response.ProductListResponseDTO;
 import com.techstore.product.dto.response.ProductResponseDTO;
+import com.techstore.product.dto.response.ProductSpecDTO;
 import com.techstore.product.entity.Brand;
 import com.techstore.product.entity.Category;
 import com.techstore.product.entity.Product;
@@ -417,14 +419,28 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public PageResponseDTO<ProductListResponseDTO> getProductsByCategoryId(
-            Long categoryId, int page, int size, String sortBy, String sortDirection) {
+            Long categoryId,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection,
+            List<Long> brandIds,
+            Double minPrice,
+            Double maxPrice) {
+
+        // validate
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            throw new IllegalArgumentException("minPrice không được lớn hơn maxPrice");
+        }
 
         Sort sort = sortDirection.equalsIgnoreCase("ASC")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Product> productPage = productRepository.findByCategoryId(categoryId, pageable);
+
+        Page<Product> productPage =
+                productRepository.searchProductsV2(brandIds, List.of(categoryId), minPrice, maxPrice, pageable);
 
         List<ProductListResponseDTO> content = productMapper.toListResponseDTOList(productPage.getContent());
 
@@ -483,6 +499,51 @@ public class ProductService {
                 .findByVariantId(variantId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         return productMapper.toResponseDTO(product);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductAIResponseDTO> getPCComponentsForAI() {
+
+        List<String> types = List.of("SSD", "RAM", "PSU", "MAINBOARD", "HDD", "GPU", "CASE");
+
+        List<Product> products = productRepository.findPCComponentsForAI(types);
+
+        return products.stream()
+                .map(p -> {
+                    ProductAIResponseDTO dto = new ProductAIResponseDTO();
+
+                    dto.setId(p.getId());
+                    dto.setName(p.getName());
+                    dto.setBasePrice(p.getBasePrice());
+                    dto.setPerformanceScore(p.getPerformanceScore());
+                    dto.setPowerConsumption(p.getPowerConsumption());
+
+                    if (p.getCategory() != null) {
+                        dto.setCategoryType(p.getCategory().getCategoryType());
+                        dto.setPcComponentType(p.getCategory().getPcComponentType());
+                    }
+
+                    dto.setPrimaryImage(p.getImages().stream()
+                            .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                            .map(ProductImage::getUrl)
+                            .findFirst()
+                            .orElse(p.getImages().stream()
+                                    .findFirst()
+                                    .map(ProductImage::getUrl)
+                                    .orElse(null)));
+
+                    dto.setSpecs(p.getSpecs().stream()
+                            .map(spec -> {
+                                ProductSpecDTO s = new ProductSpecDTO();
+                                s.setSpecKey(spec.getSpecKey());
+                                s.setSpecValue(spec.getSpecValue());
+                                return s;
+                            })
+                            .toList());
+
+                    return dto;
+                })
+                .toList();
     }
 
     private void ensurePrimaryImage(Set<ProductImage> images) {

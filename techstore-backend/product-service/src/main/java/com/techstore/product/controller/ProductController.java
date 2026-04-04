@@ -26,6 +26,7 @@ import com.techstore.product.dto.request.ProductUpdateImageRequestDTO;
 import com.techstore.product.dto.request.ProductUpdateRequestDTO;
 import com.techstore.product.dto.response.ApiResponse;
 import com.techstore.product.dto.response.PageResponseDTO;
+import com.techstore.product.dto.response.ProductAIResponseDTO;
 import com.techstore.product.dto.response.ProductListResponseDTO;
 import com.techstore.product.dto.response.ProductResponseDTO;
 import com.techstore.product.service.ProductService;
@@ -122,6 +123,17 @@ public class ProductController {
     }
 
     /**
+     * Lấy danh sách sản phẩm phục vụ đào tạo AI
+     */
+    @GetMapping("/ai/pc-components")
+    public ApiResponse<List<ProductAIResponseDTO>> getPCComponentsForAI() {
+
+        return ApiResponse.<List<ProductAIResponseDTO>>builder()
+                .result(productService.getPCComponentsForAI())
+                .build();
+    }
+
+    /**
      * Lấy danh sách sản phẩm theo category
      */
     @GetMapping("/category/type/{categoryType}")
@@ -143,10 +155,14 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(required = false) List<Long> brandIds,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
             @RequestParam(defaultValue = "DESC") String sortDirection) {
 
         return ApiResponse.<PageResponseDTO<ProductListResponseDTO>>builder()
-                .result(productService.getProductsByCategoryId(categoryId, page, size, sortBy, sortDirection))
+                .result(productService.getProductsByCategoryId(
+                        categoryId, page, size, sortBy, sortDirection, brandIds, minPrice, maxPrice))
                 .build();
     }
 

@@ -94,4 +94,34 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("SELECT p FROM Product p JOIN p.variants v WHERE v.id = :variantId")
     Optional<Product> findByVariantId(@Param("variantId") Long variantId);
+
+    @Query(
+            """
+			SELECT p FROM Product p
+			WHERE p.status = 'ACTIVE'
+
+			AND (:categoryIds IS NULL OR p.category.id IN :categoryIds)
+
+			AND (:brandIds IS NULL OR p.brand.id IN :brandIds)
+
+			AND (:minPrice IS NULL OR p.basePrice >= :minPrice)
+
+			AND (:maxPrice IS NULL OR p.basePrice <= :maxPrice)
+		""")
+    Page<Product> searchProductsV2(
+            @Param("brandIds") List<Long> brandIds,
+            @Param("categoryIds") List<Long> categoryIds,
+            @Param("minPrice") Double minPrice,
+            @Param("maxPrice") Double maxPrice,
+            Pageable pageable);
+
+    @Query(
+            """
+			SELECT DISTINCT p FROM Product p
+			LEFT JOIN FETCH p.specs
+			LEFT JOIN FETCH p.images
+			WHERE p.category.pcComponentType IN :types
+			AND p.status = 'ACTIVE'
+		""")
+    List<Product> findPCComponentsForAI(@Param("types") List<String> types);
 }

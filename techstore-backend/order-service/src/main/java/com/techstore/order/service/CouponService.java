@@ -117,6 +117,14 @@ public class CouponService {
                 .toList();
     }
 
+    public List<CouponResponse> getPrivateCoupons() {
+
+        return couponRepo.findValidPublicCoupons("ACTIVE", "PRIVATE", LocalDateTime.now()).stream()
+                .filter(coupon -> coupon.getUsageLimit() == null || coupon.getUsedCount() < coupon.getUsageLimit())
+                .map(couponMapper::toResponse)
+                .toList();
+    }
+
     // ── Lấy nhiều coupon theo danh sách ID ──────────────────────────────────────
     public List<CouponResponse> getByIds(List<Long> ids) {
 

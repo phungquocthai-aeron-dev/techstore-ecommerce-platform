@@ -66,6 +66,14 @@ public class CouponController {
                 .build();
     }
 
+    @GetMapping("/private")
+    public ApiResponse<List<CouponResponse>> getPrivateCoupons() {
+
+        return ApiResponse.<List<CouponResponse>>builder()
+                .result(couponService.getPrivateCoupons())
+                .build();
+    }
+
     // GET /coupons/ids?ids=1,2,3
     @GetMapping("/ids")
     public ApiResponse<List<CouponResponse>> getByIds(@RequestParam List<Long> ids) {

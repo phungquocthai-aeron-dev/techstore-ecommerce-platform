@@ -12,6 +12,7 @@ import {
 import {
   CouponResponse
 } from './models/coupon.model';
+import { TokenService } from '../../core/services/token.service';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +21,10 @@ export class CouponService {
 
   private baseUrl = environment.orderUrl + '/coupons';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private tokenService: TokenService
+  ) {}
 
   // ===============================
   // CREATE
@@ -61,6 +65,24 @@ export class CouponService {
   }
 
   // ===============================
+  // GET AVAILABLE COUPONS
+  // ===============================
+  getAvailableCoupons(): Observable<ApiResponse<CouponResponse[]>> {
+    return this.http.get<ApiResponse<CouponResponse[]>>(
+      `${this.baseUrl}/available`
+    );
+  }
+
+  // ===============================
+  // GET PRIVATE COUPONS
+  // ===============================
+  getPrivateCoupons(): Observable<ApiResponse<CouponResponse[]>> {
+    return this.http.get<ApiResponse<CouponResponse[]>>(
+      `${this.baseUrl}/private`
+    );
+  }
+
+  // ===============================
   // UPDATE
   // ===============================
 
@@ -88,4 +110,34 @@ export class CouponService {
     );
   }
 
+  getMyCoupons(): Observable<ApiResponse<CouponResponse[]>> {
+  const customerId = this.tokenService.getUserId();
+
+  return this.http.get<ApiResponse<CouponResponse[]>>(
+    `${this.baseUrl}/customer/${customerId}`
+  );
+}
+
+assignCouponToCustomer(
+  couponId: number
+): Observable<ApiResponse<void>> {
+
+  const customerId = this.tokenService.getUserId();
+
+  return this.http.post<ApiResponse<void>>(
+    `${this.baseUrl}/customer/${customerId}/${couponId}`,
+    {}
+  );
+}
+
+removeCouponFromCustomer(
+  couponId: number
+): Observable<ApiResponse<void>> {
+
+  const customerId = this.tokenService.getUserId();
+
+  return this.http.delete<ApiResponse<void>>(
+    `${this.baseUrl}/customer/${customerId}/${couponId}`
+  );
+}
 }

@@ -235,3 +235,84 @@
   line-height: 1.8;
   margin-bottom: 1rem;
 }
+
+/* ── Category Shortcuts ── */
+.category-shortcuts {
+  background: #020617;
+  padding: 40px 0;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.shortcut-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: #0f172a;
+  text-decoration: none;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.shortcut-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.shortcut-glow {
+  position: absolute;
+  top: -30px; left: -30px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.shortcut-card:hover .shortcut-glow { opacity: 0.6; }
+
+.shortcut-card.laptop   .shortcut-glow { background: #38bdf8; }
+.shortcut-card.phone    .shortcut-glow { background: #a855f7; }
+.shortcut-card.pc       .shortcut-glow { background: #4ade80; }
+.shortcut-card.accessory .shortcut-glow { background: #f59e0b; }
+
+.shortcut-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.shortcut-card:hover .shortcut-icon { transform: scale(1.15); }
+
+.shortcut-card.laptop    .shortcut-icon { color: #38bdf8; }
+.shortcut-card.phone     .shortcut-icon { color: #a855f7; }
+.shortcut-card.pc        .shortcut-icon { color: #4ade80; }
+.shortcut-card.accessory .shortcut-icon { color: #f59e0b; }
+
+.shortcut-info { flex: 1; }
+.shortcut-info h4 { color: #e5e7eb; font-size: 0.95rem; font-weight: 600; margin: 0 0 3px; }
+.shortcut-info p  { color: #6b7280; font-size: 0.78rem; margin: 0; }
+
+.shortcut-arrow {
+  color: #374151;
+  font-size: 1rem;
+  transition: all 0.25s;
+  margin-left: auto;
+}
+.shortcut-card:hover .shortcut-arrow { color: #38bdf8; transform: translateX(4px); }
+
+@media (max-width: 992px) {
+  .shortcuts-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 576px) {
+  .shortcuts-grid { grid-template-columns: 1fr; }
+}

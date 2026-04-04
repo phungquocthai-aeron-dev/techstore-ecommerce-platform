@@ -79,6 +79,69 @@
   </div>
 </section>
 
+<!-- Category Shortcuts -->
+<section class="category-shortcuts">
+  <div class="container">
+    <div class="shortcuts-grid">
+      <a
+        class="shortcut-card laptop"
+        routerLink="/products"
+        [queryParams]="{ categoryType: 'LAPTOP' }"
+      >
+        <div class="shortcut-glow"></div>
+        <i class="bi bi-laptop shortcut-icon"></i>
+        <div class="shortcut-info">
+          <h4>Laptop</h4>
+          <p>Văn phòng · Gaming · Đồ họa</p>
+        </div>
+        <i class="bi bi-arrow-right shortcut-arrow"></i>
+      </a>
+
+      <a
+        class="shortcut-card phone"
+        routerLink="/products"
+        [queryParams]="{ categoryType: 'SMARTPHONE' }"
+      >
+        <div class="shortcut-glow"></div>
+        <i class="bi bi-phone shortcut-icon"></i>
+        <div class="shortcut-info">
+          <h4>Điện thoại</h4>
+          <p>Android · iPhone</p>
+        </div>
+        <i class="bi bi-arrow-right shortcut-arrow"></i>
+      </a>
+
+      <a
+        class="shortcut-card pc"
+        routerLink="/products"
+        [queryParams]="{ categoryType: 'PC_COMPONENT' }"
+      >
+        <div class="shortcut-glow"></div>
+        <i class="bi bi-cpu shortcut-icon"></i>
+        <div class="shortcut-info">
+          <h4>Linh kiện PC</h4>
+          <p>CPU · GPU · RAM · SSD</p>
+        </div>
+        <i class="bi bi-arrow-right shortcut-arrow"></i>
+      </a>
+
+      <a
+        class="shortcut-card accessory"
+        routerLink="/products"
+        [queryParams]="{ categoryType: 'ACCESSORY' }"
+      >
+        <div class="shortcut-glow"></div>
+        <i class="bi bi-headphones shortcut-icon"></i>
+        <div class="shortcut-info">
+          <h4>Phụ kiện</h4>
+          <p>Chuột · Bàn phím · Tai nghe</p>
+        </div>
+        <i class="bi bi-arrow-right shortcut-arrow"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- Products Section - Latest -->
 <section class="product-section" id="products">
   <div class="container">

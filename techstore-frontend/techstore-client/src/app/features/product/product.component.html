@@ -1,1 +1,221 @@
-<p>product works!</p>
+<div class="products-page">
+  <!-- ── Page Header ── -->
+  <div class="page-header">
+    <div class="container">
+      <div class="header-inner">
+        <div>
+          <h1 class="page-title">
+            <ng-container *ngIf="selectedCategoryType; else allTitle">
+              <i
+                class="bi {{ getTypeMeta(selectedCategoryType).icon }} me-3"
+              ></i>
+              {{ getTypeMeta(selectedCategoryType).label }}
+            </ng-container>
+            <ng-template #allTitle>Tất cả sản phẩm</ng-template>
+          </h1>
+          <p class="page-subtitle">{{ totalElements | number }} sản phẩm</p>
+        </div>
+
+        <!-- Category Type Tabs -->
+        <div class="type-tabs">
+          <button
+            class="type-tab"
+            [class.active]="!selectedCategoryType"
+            (click)="selectType('')"
+          >
+            <i class="bi bi-grid-3x3-gap"></i> Tất cả
+          </button>
+          <button
+            *ngFor="let t of categoryTypes"
+            class="type-tab"
+            [class.active]="selectedCategoryType === t.type"
+            (click)="selectType(t.type)"
+          >
+            <i class="bi {{ t.icon }}"></i> {{ t.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="products-layout">
+      <!-- ── Sidebar Filter ── -->
+      <aside class="filter-sidebar">
+        <div class="filter-header">
+          <span class="filter-title"
+            ><i class="bi bi-sliders me-2"></i>Bộ lọc</span
+          >
+          <button
+            class="reset-btn"
+            (click)="resetFilters()"
+            *ngIf="activeFilterCount > 0"
+          >
+            Xóa ({{ activeFilterCount }})
+          </button>
+        </div>
+
+        <!-- Sort -->
+        <div class="filter-block">
+          <h6 class="filter-label">Sắp xếp</h6>
+          <select
+            class="filter-select"
+            [(ngModel)]="sortBy"
+            (change)="onSortChange()"
+          >
+            <option *ngFor="let s of sortOptions" [value]="s.value">
+              {{ s.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Categories -->
+        <div class="filter-block" *ngIf="filteredCategories.length > 0">
+          <h6 class="filter-label">Danh mục</h6>
+          <ul class="filter-list">
+            <li *ngFor="let cat of filteredCategories">
+              <button
+                class="filter-item"
+                [class.selected]="selectedCategoryId === cat.id"
+                (click)="selectCategory(cat.id)"
+              >
+                <span class="item-dot"></span>
+                {{ cat.name }}
+                <i class="bi bi-check2 check-icon"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Brands -->
+        <div class="filter-block">
+          <h6 class="filter-label">Thương hiệu</h6>
+          <ul class="filter-list">
+            <li *ngFor="let brand of brands">
+              <button
+                class="filter-item"
+                [class.selected]="isBrandSelected(brand.id)"
+                (click)="toggleBrand(brand.id)"
+              >
+                <span class="item-dot"></span>
+                {{ brand.name }}
+                <i class="bi bi-check2 check-icon"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Price Range -->
+        <div class="filter-block">
+          <h6 class="filter-label">Khoảng giá</h6>
+          <div class="price-inputs">
+            <input
+              type="number"
+              class="price-input"
+              placeholder="Từ"
+              [(ngModel)]="minPrice"
+              (keydown.enter)="applyPrice()"
+            />
+            <span class="price-sep">—</span>
+            <input
+              type="number"
+              class="price-input"
+              placeholder="Đến"
+              [(ngModel)]="maxPrice"
+              (keydown.enter)="applyPrice()"
+            />
+          </div>
+          <button class="apply-price-btn" (click)="applyPrice()">
+            Áp dụng
+          </button>
+        </div>
+      </aside>
+
+      <!-- ── Main Content ── -->
+      <main class="products-main">
+        <!-- Loading skeleton -->
+        <div class="skeleton-grid" *ngIf="loading">
+          <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8]">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body">
+              <div class="skeleton-line short"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line medium"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="product-grid" *ngIf="!loading">
+          <div
+            class="product-card"
+            *ngFor="let product of products"
+            [routerLink]="['/product', product.id]"
+          >
+            <div class="card-img-wrap">
+              <img
+                [src]="getImageUrl(product.primaryImage)"
+                (error)="handleImageError($event)"
+                [alt]="product.name"
+                class="card-img"
+              />
+              <div class="card-overlay">
+                <span class="view-btn"
+                  ><i class="bi bi-eye me-1"></i> Xem chi tiết</span
+                >
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="card-category">{{ product.categoryName }}</p>
+              <h5 class="card-name">{{ product.name }}</h5>
+              <p class="card-brand">
+                <i class="bi bi-patch-check-fill me-1"></i
+                >{{ product.brandName }}
+              </p>
+              <div class="card-footer-row">
+                <span class="card-price"
+                  >{{ product.basePrice | number }}đ</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" *ngIf="!loading && products.length === 0">
+          <i class="bi bi-inbox empty-icon"></i>
+          <p>Không tìm thấy sản phẩm nào</p>
+          <button class="reset-btn-lg" (click)="resetFilters()">
+            Xóa bộ lọc
+          </button>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-wrap" *ngIf="!loading && totalPages > 1">
+          <button
+            class="page-btn"
+            [disabled]="page === 0"
+            (click)="goPage(page - 1)"
+          >
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button
+            *ngFor="let p of pageNumbers"
+            class="page-btn"
+            [class.active]="p === page"
+            (click)="goPage(p)"
+          >
+            {{ p + 1 }}
+          </button>
+          <button
+            class="page-btn"
+            [disabled]="page === totalPages - 1"
+            (click)="goPage(page + 1)"
+          >
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

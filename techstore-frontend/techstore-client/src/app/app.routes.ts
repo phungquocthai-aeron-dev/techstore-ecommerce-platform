@@ -30,6 +30,12 @@ export const routes: Routes = [
             .then(m => m.ProductDetailComponent)
       },
       {
+        path: 'products',
+        loadComponent: () =>
+          import('./features/product/product.component')
+            .then(m => m.ProductsComponent)
+      },
+      {
         path: 'search',
         loadComponent: () =>
           import('./features/search/search.component')
@@ -63,6 +69,12 @@ export const routes: Routes = [
           import('./features/user/profile.component')
             .then(m => m.ProfileComponent)
       },
+      {
+        path: 'promotions',
+        loadComponent: () =>
+          import('./features/coupon/coupon.component')
+            .then(m => m.PromotionsComponent)
+      },
     ]
   },
 
@@ -90,7 +102,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/quizgame/quizgame.component')
             .then(m => m.QuizGameComponent)
-      },
+      }
     ]
   },
 

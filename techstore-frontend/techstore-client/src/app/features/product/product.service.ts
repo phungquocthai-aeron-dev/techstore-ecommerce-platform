@@ -153,28 +153,44 @@ export class ProductService {
 
   // ===============================
   // GET BY CATEGORY ID
-  // ⚠ BE hiện tại bị trùng mapping
   // ===============================
 
   getByCategoryId(
-    categoryId: number,
-    page = 0,
-    size = 10,
-    sortBy = 'id',
-    sortDirection = 'DESC'
-  ): Observable<ApiResponse<PageResponse<ProductListResponse>>> {
+  categoryId: number,
+  page = 0,
+  size = 10,
+  sortBy = 'id',
+  sortDirection = 'DESC',
+  brandIds?: number[],
+  minPrice?: number,
+  maxPrice?: number
+): Observable<ApiResponse<PageResponse<ProductListResponse>>> {
 
-    let params = new HttpParams()
-      .set('page', page)
-      .set('size', size)
-      .set('sortBy', sortBy)
-      .set('sortDirection', sortDirection);
+  let params = new HttpParams()
+    .set('page', page)
+    .set('size', size)
+    .set('sortBy', sortBy)
+    .set('sortDirection', sortDirection);
 
-    return this.http.get<ApiResponse<PageResponse<ProductListResponse>>>(
-      `${this.baseUrl}/category/${categoryId}`,
-      { params }
-    );
+  if (brandIds && brandIds.length > 0) {
+    brandIds.forEach(id => {
+      params = params.append('brandIds', id);
+    });
   }
+
+  if (minPrice != null) {
+    params = params.set('minPrice', minPrice);
+  }
+
+  if (maxPrice != null) {
+    params = params.set('maxPrice', maxPrice);
+  }
+
+  return this.http.get<ApiResponse<PageResponse<ProductListResponse>>>(
+    `${this.baseUrl}/category/${categoryId}`,
+    { params }
+  );
+}
 
   // ===============================
   // GET LATEST

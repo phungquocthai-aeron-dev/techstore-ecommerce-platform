@@ -8,6 +8,7 @@ export const environment = {
     productUrl: 'http://localhost:8888/techstore/api/v1/product',
     cartUrl: 'http://localhost:8888/techstore/api/v1/cart',
     orderUrl: 'http://localhost:8888/techstore/api/v1/order',
+    notificationUrl: 'http://localhost:8888/techstore/api/v1/notification',
     quizGameUrl: 'http://localhost:8888/techstore/api/v1/quizgame',
     chatUrl: 'http://localhost:8888/techstore/api/v1/chat',
     chatSocketUrl: 'http://localhost:8099',

@@ -11,29 +11,37 @@
   <div class="offcanvas-body">
     <ul class="sidebar-nav">
       <li>
-        <a routerLink="/home" routerLinkActive="active" class="nav-link"
-          ><i class="bi bi-house"></i>Trang chủ</a
-        >
+        <a routerLink="/home" routerLinkActive="active" class="nav-link">
+          <i class="bi bi-house"></i>Trang chủ
+        </a>
       </li>
-      <li>
-        <a routerLink="/products" routerLinkActive="active" class="nav-link"
-          ><i class="bi bi-laptop"></i>Laptop</a
-        >
-      </li>
-      <li>
-        <a href="#" class="nav-link"><i class="bi bi-phone"></i>Điện thoại</a>
-      </li>
-      <li>
-        <a href="#" class="nav-link"><i class="bi bi-cpu"></i>Linh kiện PC</a>
-      </li>
-      <li>
-        <a href="#" class="nav-link"
-          ><i class="bi bi-headphones"></i>Gaming Gear</a
-        >
-      </li>
+      <ng-container *ngFor="let group of categoryGroups">
+        <li>
+          <a
+            class="nav-link nav-link-group"
+            (click)="goCategory(group.type)"
+            data-bs-dismiss="offcanvas"
+          >
+            <i class="bi {{ group.icon }}"></i>
+            <span>{{ group.label }}</span>
+            <i class="bi bi-chevron-right ms-auto chevron-icon"></i>
+          </a>
+        </li>
+        <li *ngFor="let cat of group.items">
+          <a
+            class="nav-link nav-link-sub"
+            (click)="goCategory(group.type, cat.id)"
+            data-bs-dismiss="offcanvas"
+          >
+            <span class="sub-dot"></span>{{ cat.name }}
+          </a>
+        </li>
+      </ng-container>
       <div class="sidebar-divider"></div>
       <li>
-        <a href="#" class="nav-link"><i class="bi bi-tag"></i>Khuyến mãi</a>
+        <a (click)="goPromotion()" data-bs-dismiss="offcanvas" class="nav-link">
+          <i class="bi bi-tag"></i>Khuyến mãi
+        </a>
       </li>
       <li>
         <a href="#" class="nav-link"
@@ -44,6 +52,107 @@
         <a href="#" class="nav-link"><i class="bi bi-envelope"></i>Liên hệ</a>
       </li>
     </ul>
+  </div>
+</div>
+
+<!-- Notification Panel Overlay -->
+<div
+  class="notif-backdrop"
+  *ngIf="showNotifPanel"
+  (click)="closeNotifPanel()"
+></div>
+
+<!-- Notification Panel -->
+<div class="notif-panel" [class.open]="showNotifPanel">
+  <div class="notif-panel-header">
+    <div class="notif-panel-title">
+      <i class="bi bi-bell-fill"></i>
+      Thông báo
+      <span class="notif-count-badge" *ngIf="unreadCount > 0">{{
+        unreadCount
+      }}</span>
+    </div>
+    <div class="notif-panel-actions">
+      <button
+        class="notif-mark-all-btn"
+        (click)="markAllAsRead()"
+        *ngIf="unreadCount > 0"
+      >
+        <i class="bi bi-check2-all"></i> Đọc tất cả
+      </button>
+      <button class="notif-close-btn" (click)="closeNotifPanel()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading initial -->
+  <div class="notif-loading-initial" *ngIf="notifLoadingInitial">
+    <div class="notif-skeleton" *ngFor="let i of [1, 2, 3]">
+      <div class="notif-skeleton-icon"></div>
+      <div class="notif-skeleton-body">
+        <div class="notif-skeleton-line short"></div>
+        <div class="notif-skeleton-line"></div>
+        <div class="notif-skeleton-line xs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div
+    class="notif-empty"
+    *ngIf="!notifLoadingInitial && notifications.length === 0"
+  >
+    <div class="notif-empty-icon">
+      <i class="bi bi-bell-slash"></i>
+    </div>
+    <p>Chưa có thông báo nào</p>
+  </div>
+
+  <!-- Notification list -->
+  <div
+    class="notif-list"
+    #notifScrollContainer
+    (scroll)="onNotifScroll($event)"
+    *ngIf="!notifLoadingInitial"
+  >
+    <div
+      class="notif-item"
+      *ngFor="let n of notifications"
+      [class.unread]="!n.isRead"
+      (click)="onNotifItemClick(n)"
+    >
+      <div class="notif-item-icon" [class.unread-icon]="!n.isRead">
+        <i class="bi bi-bell-fill" *ngIf="!n.isRead"></i>
+        <i class="bi bi-bell" *ngIf="n.isRead"></i>
+      </div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">{{ n.title }}</div>
+        <div class="notif-item-content">{{ n.content }}</div>
+        <div class="notif-item-time">
+          <i class="bi bi-clock"></i> {{ formatNotifDate(n.createdDate) }}
+        </div>
+      </div>
+      <div class="notif-unread-dot" *ngIf="!n.isRead"></div>
+    </div>
+
+    <!-- Load more spinner -->
+    <div class="notif-load-more" *ngIf="notifLoadingMore">
+      <div class="notif-mini-spinner"></div>
+      <span>Đang tải thêm...</span>
+    </div>
+
+    <!-- End of list -->
+    <div
+      class="notif-end"
+      *ngIf="
+        !notifLoadingMore &&
+        notifCurrentPage >= notifTotalPages &&
+        notifications.length > 0
+      "
+    >
+      <i class="bi bi-check2-circle"></i> Đã tải hết thông báo
+    </div>
   </div>
 </div>
 
@@ -61,7 +170,6 @@
           <i class="bi bi-list fs-2 me-2"></i>
           <span>Menu</span>
         </button>
-
         <div class="position-relative w-100">
           <i class="bi bi-search search-icon fs-4" (click)="goSearch()"></i>
           <input
@@ -81,21 +189,21 @@
             src="images/brand.png"
             style="width: 150px; margin-bottom: 12px"
             alt="TechStore"
-        /></a>
+          />
+        </a>
       </div>
 
       <!-- Right: Actions -->
       <div class="col-md-4 d-flex justify-content-end align-items-center gap-3">
-        <!-- Support -->
-        <div
+        <!-- <div
           class="d-flex align-items-center nav-support"
           style="cursor: pointer"
         >
           <i class="bi bi-headset fs-4 me-2"></i>
           <span>Hỗ trợ</span>
-        </div>
+        </div> -->
 
-        <!-- ── CHƯA ĐĂNG NHẬP ── -->
+        <!-- Chưa đăng nhập -->
         <ng-container *ngIf="!isLoggedIn">
           <button class="btn-auth btn-auth--outline" (click)="goLogin()">
             Đăng nhập
@@ -105,15 +213,31 @@
           </button>
         </ng-container>
 
-        <!-- ── ĐÃ ĐĂNG NHẬP ── -->
+        <!-- Đã đăng nhập -->
         <ng-container *ngIf="isLoggedIn">
+          <!-- Notification Bell -->
+          <button
+            class="nav-icon-btn notif-bell-btn position-relative"
+            (click)="toggleNotifPanel()"
+            [class.active]="showNotifPanel"
+            title="Thông báo"
+          >
+            <i class="bi bi-bell fs-4"></i>
+            <span class="notif-badge" *ngIf="unreadCount > 0">
+              {{ unreadCount > 99 ? "99+" : unreadCount }}
+            </span>
+          </button>
+
           <!-- Cart -->
           <a
             routerLink="/cart"
-            class="d-flex align-items-center position-relative nav-icon-btn mx-3"
+            class="d-flex align-items-center position-relative nav-icon-btn"
+            style="margin-left: 24px; margin-right: 24px"
           >
-            <i class="bi bi-bag fs-4"></i>
+            <i class="bi bi-bag fs-4" style="background-color: transparent"></i>
           </a>
+
+          <!-- Avatar Dropdown -->
           <div class="dropdown">
             <a
               href="#"

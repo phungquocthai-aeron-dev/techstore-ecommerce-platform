@@ -1,1 +1,202 @@
-<p>coupon works!</p>
+<div class="promo-page">
+  <!-- ── Ticker tape ── -->
+  <div class="ticker-wrap">
+    <div class="ticker-track">
+      <span *ngFor="let item of tickerItems" class="ticker-item">{{
+        item
+      }}</span>
+      <!-- Duplicate for infinite scroll -->
+      <span *ngFor="let item of tickerItems" class="ticker-item">{{
+        item
+      }}</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- ── Hero Banner ── -->
+    <div class="promo-hero">
+      <div class="hero-left">
+        <span class="hero-eyebrow">🔥 KHUYẾN MÃI ĐỘC QUYỀN</span>
+        <h1 class="hero-title">
+          Mã Giảm Giá<br /><span class="gradient-text">Hôm Nay</span>
+        </h1>
+        <p class="hero-desc">
+          Sưu tập các ưu đãi đang hoạt động. Dùng ngay khi thanh toán để tiết
+          kiệm hơn.
+        </p>
+        <div class="hero-stats">
+          <div class="hstat">
+            <span class="hstat-val">{{ coupons.length }}</span>
+            <span class="hstat-label">Mã đang có</span>
+          </div>
+          <div class="hstat-divider"></div>
+          <div class="hstat">
+            <span class="hstat-val">24h</span>
+            <span class="hstat-label">Cập nhật mỗi ngày</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Quiz Game CTA Banner ── -->
+      <a routerLink="/quizgame" class="quiz-cta-card">
+        <div class="quiz-cta-glow"></div>
+        <div class="quiz-cta-orbit">
+          <span class="orbit-planet p1">🪐</span>
+          <span class="orbit-planet p2">⭐</span>
+          <span class="orbit-planet p3">🚀</span>
+        </div>
+        <div class="quiz-cta-body">
+          <div class="quiz-cta-badge">MINI GAME</div>
+          <h3 class="quiz-cta-title">TECH GALAXY<br />QUIZ</h3>
+          <p class="quiz-cta-desc">
+            Trả lời câu hỏi công nghệ · Tích điểm · Đổi coupon độc quyền
+          </p>
+          <div class="quiz-cta-pills">
+            <span class="qpill">🪐 10 câu hỏi</span>
+            <span class="qpill">⏱ 20s/câu</span>
+            <span class="qpill">🎁 Đổi quà</span>
+          </div>
+          <div class="quiz-cta-btn">
+            <span>🚀 PHÓNG PHI THUYỀN</span>
+            <i class="bi bi-arrow-right-circle-fill"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- ── Section title ── -->
+    <div class="section-header">
+      <h2 class="section-title">
+        <span class="title-accent"></span>
+        Tất cả coupon đang hoạt động
+      </h2>
+      <span class="section-count" *ngIf="!loading"
+        >{{ coupons.length }} mã</span
+      >
+    </div>
+
+    <!-- ── Skeleton loading ── -->
+    <div class="coupon-grid" *ngIf="loading">
+      <div class="skeleton-coupon" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+        <div class="sk-badge"></div>
+        <div class="sk-body">
+          <div class="sk-line wide"></div>
+          <div class="sk-line medium"></div>
+          <div class="sk-line short"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Coupon Grid ── -->
+    <div class="coupon-grid" *ngIf="!loading">
+      <div
+        *ngFor="let c of coupons"
+        class="coupon-card"
+        [class.coupon-card--pct]="c.discountType === 'PERCENTAGE'"
+        [class.coupon-card--fixed]="c.discountType !== 'PERCENTAGE'"
+        [class.coupon-card--hot]="isAlmostGone(c)"
+      >
+        <!-- Hot badge -->
+        <div class="hot-badge" *ngIf="isAlmostGone(c)">🔥 HOT</div>
+
+        <!-- Expiring soon badge -->
+        <div class="expiry-badge" *ngIf="isExpiringSoon(c)">⏰ Sắp hết hạn</div>
+
+        <!-- Left tear section -->
+        <div class="coupon-left">
+          <div class="discount-label">{{ getDiscountLabel(c) }}</div>
+          <div class="discount-type">
+            {{ c.discountType === "PERCENT" ? "Phần trăm" : "Cố định" }}
+          </div>
+        </div>
+
+        <!-- Perforation -->
+        <div class="coupon-perf">
+          <div class="perf-dot top"></div>
+          <div class="perf-line"></div>
+          <div class="perf-dot bottom"></div>
+        </div>
+
+        <!-- Right body -->
+        <div class="coupon-right">
+          <div class="coupon-name">{{ c.name }}</div>
+
+          <div class="coupon-meta">
+            <div class="meta-row">
+              <i class="bi bi-cart-check"></i>
+              <span
+                >Đơn tối thiểu:
+                <strong>{{ c.minOrderValue | number }}đ</strong></span
+              >
+            </div>
+            <div class="meta-row" *ngIf="c.discountType === 'PERCENTAGE'">
+              <i class="bi bi-arrow-down-circle"></i>
+              <span
+                >Giảm tối đa:
+                <strong>{{ c.maxDiscount | number }}đ</strong></span
+              >
+            </div>
+            <div class="meta-row">
+              <i class="bi bi-calendar3"></i>
+              <span
+                >HSD:
+                <strong>{{ c.endDate | date: "dd/MM/yyyy" }}</strong></span
+              >
+            </div>
+          </div>
+
+          <!-- Usage progress bar -->
+          <div class="usage-wrap">
+            <div class="usage-header">
+              <span class="usage-label">Đã dùng</span>
+              <span
+                class="usage-remain"
+                [class.usage-remain--hot]="isAlmostGone(c)"
+              >
+                Còn {{ getRemainingCount(c) }} lượt
+              </span>
+            </div>
+            <div class="usage-bar">
+              <div
+                class="usage-fill"
+                [style.width.%]="getUsagePercent(c)"
+                [class.usage-fill--hot]="isAlmostGone(c)"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Info note -->
+          <div class="coupon-note">
+            <i class="bi bi-info-circle"></i>
+            Áp dụng khi thanh toán
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Empty state ── -->
+    <div class="empty-state" *ngIf="!loading && coupons.length === 0">
+      <div class="empty-icon">🪐</div>
+      <h3>Chưa có coupon nào đang hoạt động</h3>
+      <p>Chơi Quiz Game để săn mã giảm giá độc quyền!</p>
+      <a routerLink="/quizgame" class="btn-go-quiz">🚀 Chơi ngay</a>
+    </div>
+
+    <!-- ── Bottom Quiz CTA ── -->
+    <div class="bottom-quiz-cta" *ngIf="!loading && coupons.length > 0">
+      <div class="bq-text">
+        <span class="bq-icon">🎮</span>
+        <div>
+          <h4>Muốn có thêm mã giảm giá riêng?</h4>
+          <p>
+            Tham gia Tech Galaxy Quiz — trả lời đúng, tích điểm, đổi coupon độc
+            quyền chỉ dành cho bạn!
+          </p>
+        </div>
+      </div>
+      <a routerLink="/quizgame" class="bq-btn">
+        Chơi ngay <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>

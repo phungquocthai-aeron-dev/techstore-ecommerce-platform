@@ -1,7 +1,9 @@
 package com.techstore.notification.controller;
 
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -62,5 +64,41 @@ public class PostController {
     ApiResponse<Void> markAllAsRead() {
         postService.markAllAsRead();
         return ApiResponse.<Void>builder().build();
+    }
+
+    @GetMapping
+    ApiResponse<PageResponse<PostResponse>> getAllPosts(
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size) {
+
+        return ApiResponse.<PageResponse<PostResponse>>builder()
+                .result(postService.getAllPosts(page, size))
+                .build();
+    }
+
+    @PutMapping("/{postId}")
+    ApiResponse<PostResponse> updatePost(@PathVariable String postId, @RequestBody PostRequest request) {
+
+        return ApiResponse.<PostResponse>builder()
+                .result(postService.updatePost(postId, request))
+                .build();
+    }
+
+    @DeleteMapping("/{postId}")
+    ApiResponse<Void> deletePost(@PathVariable String postId) {
+        postService.deletePost(postId);
+        return ApiResponse.<Void>builder().build();
+    }
+
+    @GetMapping("/search")
+    ApiResponse<PageResponse<PostResponse>> searchPosts(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ApiResponse.<PageResponse<PostResponse>>builder()
+                .result(postService.searchPosts(title, fromDate, toDate, page, size))
+                .build();
     }
 }

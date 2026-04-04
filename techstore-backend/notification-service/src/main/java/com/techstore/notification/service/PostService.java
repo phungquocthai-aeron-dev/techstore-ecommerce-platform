@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -167,5 +168,116 @@ public class PostService {
         });
 
         postRepository.saveAll(posts);
+    }
+
+    public PageResponse<PostResponse> getAllPosts(int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        Sort sort = Sort.by("createdDate").descending();
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
+
+        var pageData = postRepository.findAllByUserIdOrGlobal(userId, pageable);
+
+        var postList = pageData.getContent().stream()
+                .map(post -> {
+                    var res = postMapper.toPostResponse(post);
+                    res.setCreatedDate(dateTimeFormatter.format(post.getCreatedDate()));
+                    return res;
+                })
+                .toList();
+
+        return PageResponse.<PostResponse>builder()
+                .currentPage(page)
+                .pageSize(pageData.getSize())
+                .totalPages(pageData.getTotalPages())
+                .totalElements(pageData.getTotalElements())
+                .data(postList)
+                .build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
+    public PostResponse updatePost(String postId, PostRequest request) {
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            post.setTitle(request.getTitle());
+        }
+
+        if (request.getContent() != null && !request.getContent().trim().isEmpty()) {
+            post.setContent(request.getContent());
+        }
+
+        post.setModifiedDate(Instant.now());
+
+        post = postRepository.save(post);
+
+        var res = postMapper.toPostResponse(post);
+        res.setCreatedDate(dateTimeFormatter.format(post.getCreatedDate()));
+
+        return res;
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SALES_STAFF')")
+    public void deletePost(String postId) {
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+
+        postRepository.delete(post);
+    }
+
+    public PageResponse<PostResponse> searchPosts(
+            String title, String fromDateStr, String toDateStr, int page, int size) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        Instant fromDate = null;
+        Instant toDate = null;
+
+        try {
+            if (fromDateStr != null) {
+                fromDate = Instant.parse(fromDateStr);
+            }
+            if (toDateStr != null) {
+                toDate = Instant.parse(toDateStr);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid date format (ISO-8601 required)");
+        }
+
+        // ✅ xử lý logic ngày
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            // swap
+            Instant temp = fromDate;
+            fromDate = toDate;
+            toDate = temp;
+        }
+
+        Sort sort = Sort.by("createdDate").descending();
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
+
+        if (title == null || title.trim().isEmpty()) {
+            title = ".*";
+        }
+
+        var pageData = postRepository.searchPosts(userId, title, fromDate, toDate, pageable);
+
+        var postList = pageData.getContent().stream()
+                .map(post -> {
+                    var res = postMapper.toPostResponse(post);
+                    res.setCreatedDate(dateTimeFormatter.format(post.getCreatedDate()));
+                    return res;
+                })
+                .toList();
+
+        return PageResponse.<PostResponse>builder()
+                .currentPage(page)
+                .pageSize(pageData.getSize())
+                .totalPages(pageData.getTotalPages())
+                .totalElements(pageData.getTotalElements())
+                .data(postList)
+                .build();
     }
 }

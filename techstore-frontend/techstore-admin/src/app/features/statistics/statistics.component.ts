@@ -7,6 +7,11 @@ import { NgFor, NgIf, DatePipe, DecimalPipe } from '@angular/common';
 import { OrderService } from '../order/order.service';
 import { WarehouseStatisticsService } from '../warehouse/warehouse-statistics.service';
 
+import { ProductService } from '../product/product.service';
+import { ProductListResponse } from '../product/models/product.model';
+import { ProductSalesResponse } from '../order/models/order.model';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+
 import {
   RevenueStatsResponse,
   TopVariantResponse,
@@ -16,7 +21,7 @@ import {
 import { RevenuePeriod } from '../order/models/order-request.model';
 import { InboundCostStatResponse, PeriodType } from '../warehouse/models/warehouse-statistics.model';
 
-type TabType = 'revenue' | 'orders' | 'products' | 'customers' | 'warehouse';
+type TabType = 'revenue' | 'orders' | 'products' | 'customers' | 'warehouse' | 'product-sales';
 
 @Component({
   selector: 'app-statistics',
@@ -51,6 +56,7 @@ export class StatisticsComponent implements OnInit, OnDestroy {
     { key: 'products',  label: 'Sản phẩm',     icon: 'bi-box-seam-fill'     },
     { key: 'customers', label: 'Khách hàng',   icon: 'bi-people-fill'       },
     { key: 'warehouse', label: 'Nhập kho',     icon: 'bi-building-fill'     },
+    { key: 'product-sales', label: 'Doanh thu SP', icon: 'bi-graph-up' },
   ];
 
   // ─── Revenue ────────────────────────────────
@@ -82,13 +88,31 @@ export class StatisticsComponent implements OnInit, OnDestroy {
     RETURNED:   { label: 'Hoàn hàng',    css: 'returned',  color: '#ec4899' },
   };
 
+  productSearchQuery = '';
+  productSearchResults: ProductListResponse[] = [];
+  selectedProduct: ProductListResponse | null = null;
+  productSalesData: ProductSalesResponse | null = null;
+  productSalesLoading = false;
+  productSalesMax = 1;
+  showProductDropdown = false;
+  private productSearch$ = new Subject<string>();
+
   constructor(
     private orderService: OrderService,
+    private productService: ProductService,
     private warehouseStatsService: WarehouseStatisticsService,
   ) {}
 
   ngOnInit(): void {
     this.loadAll();
+    this.productSearch$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(q => this.productService.search({ keyword: q, page: 0, size: 10 }))
+    ).pipe(takeUntil(this.destroy$)).subscribe(res => {
+      this.productSearchResults = res.result?.content ?? [];
+      this.showProductDropdown = true;
+    });
   }
 
   ngOnDestroy(): void {
@@ -131,6 +155,8 @@ export class StatisticsComponent implements OnInit, OnDestroy {
         },
         error: () => { this.loading = false; }
       });
+
+    if (this.selectedProduct) this.loadProductSales();
   }
 
   onPeriodChange(): void {
@@ -143,6 +169,47 @@ export class StatisticsComponent implements OnInit, OnDestroy {
 
   switchTab(tab: TabType): void {
     this.activeTab = tab;
+  }
+
+  onProductSearchInput(): void {
+    if (this.productSearchQuery.trim().length >= 1) {
+      this.productSearch$.next(this.productSearchQuery.trim());
+    } else {
+      this.productSearchResults = [];
+      this.showProductDropdown = false;
+    }
+  }
+
+  selectProduct(p: ProductListResponse): void {
+    this.selectedProduct = p;
+    this.productSearchQuery = p.name;
+    this.showProductDropdown = false;
+    this.loadProductSales();
+  }
+
+  loadProductSales(): void {
+    if (!this.selectedProduct) return;
+    this.productSalesLoading = true;
+    const params = this.buildParams();
+    this.orderService.getProductSales(this.selectedProduct.id, params)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.productSalesData = res.result ?? null;
+          const allQty = (this.productSalesData?.variants ?? [])
+            .flatMap(v => v.dataPoints.map(d => d.quantitySold));
+          this.productSalesMax = Math.max(...allQty, 1);
+          this.productSalesLoading = false;
+        },
+        error: () => { this.productSalesLoading = false; }
+      });
+  }
+
+  clearProductSelection(): void {
+    this.selectedProduct = null;
+    this.productSearchQuery = '';
+    this.productSalesData = null;
+    this.productSearchResults = [];
   }
 
   // ─── Helpers ────────────────────────────────

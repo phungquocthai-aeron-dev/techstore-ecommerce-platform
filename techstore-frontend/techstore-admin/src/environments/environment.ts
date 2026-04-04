@@ -9,6 +9,7 @@ export const environment = {
     productUrl: 'http://localhost:8888/techstore/api/v1/product',
     cartUrl: 'http://localhost:8888/techstore/api/v1/cart',
     orderUrl: 'http://localhost:8888/techstore/api/v1/order',
+    notificationUrl: 'http://localhost:8888/techstore/api/v1/notification',
     warehouseUrl: 'http://localhost:8888/techstore/api/v1/warehouse',
     reviewUrl: 'http://localhost:8888/techstore/api/v1/review',
     chatUrl: 'http://localhost:8888/techstore/api/v1/chat',

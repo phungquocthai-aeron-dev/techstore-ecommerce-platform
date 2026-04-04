@@ -123,6 +123,13 @@ export const routes: Routes = [
             .then(m => m.ReviewComponent)
       },
       {
+        path: 'notifications',
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/notification/notification.component')
+            .then(m => m.AdminNotificationComponent)
+      },
+      {
         path: 'chats',
         canActivate: [roleGuard],
         loadComponent: () =>

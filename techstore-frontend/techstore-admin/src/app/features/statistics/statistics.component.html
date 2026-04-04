@@ -544,4 +544,176 @@
       <i class="bi bi-building"></i> Chưa có dữ liệu nhập kho
     </div>
   </div>
+
+  <!-- ══════════════════════════════════
+     TAB: DOANH THU SẢN PHẨM
+══════════════════════════════════ -->
+  <div class="st-content" *ngIf="activeTab === 'product-sales'">
+    <!-- Search Card -->
+    <div class="st-card">
+      <div class="st-card-header">
+        <div class="st-card-title">
+          <i class="bi bi-search"></i> Chọn sản phẩm cần thống kê
+        </div>
+      </div>
+      <div class="st-ps-search-wrap">
+        <div class="st-ps-search-box">
+          <i class="bi bi-search st-ps-search-icon"></i>
+          <input
+            class="st-ps-search-input"
+            type="text"
+            [(ngModel)]="productSearchQuery"
+            (input)="onProductSearchInput()"
+            (focus)="onProductSearchInput()"
+            placeholder="Tìm theo tên sản phẩm..."
+            autocomplete="off"
+          />
+          <button
+            *ngIf="selectedProduct"
+            class="st-ps-clear"
+            (click)="clearProductSelection()"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <!-- Dropdown -->
+        <div
+          class="st-ps-dropdown"
+          *ngIf="showProductDropdown && productSearchResults.length > 0"
+          style="z-index: 9999 !important"
+        >
+          <div
+            class="st-ps-option"
+            *ngFor="let p of productSearchResults"
+            (click)="selectProduct(p)"
+          >
+            <img
+              *ngIf="p.primaryImage"
+              [src]="p.primaryImage"
+              class="st-ps-opt-img"
+            />
+            <div *ngIf="!p.primaryImage" class="st-ps-opt-img-ph">
+              <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="st-ps-opt-info">
+              <div class="st-ps-opt-name">{{ p.name }}</div>
+              <div class="st-ps-opt-meta">
+                {{ p.brandName }} · {{ p.categoryName }}
+              </div>
+            </div>
+            <div class="st-ps-opt-price">{{ formatShort(p.basePrice) }}</div>
+          </div>
+        </div>
+        <div
+          class="st-ps-dropdown"
+          *ngIf="
+            showProductDropdown &&
+            productSearchResults.length === 0 &&
+            productSearchQuery.length > 0
+          "
+        >
+          <div class="st-ps-no-result">
+            <i class="bi bi-inbox"></i> Không tìm thấy sản phẩm
+          </div>
+        </div>
+      </div>
+      <!-- Selected Product Badge -->
+      <div class="st-ps-selected" *ngIf="selectedProduct">
+        <img
+          *ngIf="selectedProduct.primaryImage"
+          [src]="selectedProduct.primaryImage"
+          class="st-ps-sel-img"
+        />
+        <div *ngIf="!selectedProduct.primaryImage" class="st-ps-sel-img-ph">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="st-ps-sel-info">
+          <div class="st-ps-sel-name">{{ selectedProduct.name }}</div>
+          <div class="st-ps-sel-meta">
+            {{ selectedProduct.brandName }} ·
+            {{ selectedProduct.categoryName }} · ID #{{ selectedProduct.id }}
+          </div>
+        </div>
+        <div class="st-ps-sel-price">
+          {{ formatShort(selectedProduct.basePrice) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="st-loading-bar" *ngIf="productSalesLoading">
+      <div class="st-loading-inner"></div>
+    </div>
+
+    <!-- No selection prompt -->
+    <div class="st-empty-card" *ngIf="!selectedProduct && !productSalesLoading">
+      <i class="bi bi-graph-up"></i> Vui lòng chọn sản phẩm để xem thống kê
+    </div>
+
+    <!-- Summary KPIs -->
+    <div class="st-order-kpis" *ngIf="productSalesData">
+      <div class="st-order-kpi">
+        <div class="st-ok-val">
+          {{ productSalesData.totalQuantitySold | number }}
+        </div>
+        <div class="st-ok-lbl">Tổng bán</div>
+      </div>
+      <div class="st-order-kpi">
+        <div class="st-ok-val">{{ productSalesData.variants.length }}</div>
+        <div class="st-ok-lbl">Biến thể</div>
+      </div>
+      <div class="st-order-kpi accent">
+        <div class="st-ok-val">{{ productSalesData.period }}</div>
+        <div class="st-ok-lbl">Chu kỳ</div>
+      </div>
+    </div>
+
+    <!-- Per-Variant Charts -->
+    <div *ngIf="productSalesData && productSalesData.variants.length > 0">
+      <div
+        class="st-card st-chart-card"
+        *ngFor="let variant of productSalesData.variants"
+      >
+        <div class="st-card-header">
+          <div class="st-card-title">
+            <i class="bi bi-layers-fill" style="color: var(--st-purple)"></i>
+            {{ variant.variantName }}
+          </div>
+          <div class="st-card-meta">
+            Tổng
+            <strong style="color: var(--st-purple)">{{
+              variant.totalQuantitySold
+            }}</strong>
+            sp
+          </div>
+        </div>
+        <div class="st-chart-area">
+          <div class="st-chart-bars">
+            <div class="st-chart-col" *ngFor="let dp of variant.dataPoints">
+              <div class="st-bar-tooltip ps">
+                <strong>{{ dp.quantitySold }} sp</strong>
+                <span>{{ dp.label }}</span>
+              </div>
+              <div
+                class="st-bar ps-bar"
+                [style.height.%]="getBarH(dp.quantitySold, productSalesMax)"
+              ></div>
+              <div class="st-bar-label">{{ dp.label }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="st-empty-card"
+      *ngIf="
+        productSalesData &&
+        productSalesData.variants.length === 0 &&
+        !productSalesLoading
+      "
+    >
+      <i class="bi bi-graph-up"></i> Chưa có dữ liệu bán hàng
+    </div>
+  </div>
 </div>

@@ -1,0 +1,719 @@
+<div class="an-root">
+  <!-- ══════════════════ TOPBAR ══════════════════ -->
+  <div class="an-topbar">
+    <div class="an-topbar-left">
+      <div class="an-logo-mark"><i class="bi bi-bell-fill"></i></div>
+      <div>
+        <div class="an-topbar-title">Quản lý Thông báo</div>
+        <div class="an-breadcrumb">
+          <span>Trang chủ</span><span class="sep">/</span>
+          <span class="cur">Thông báo</span>
+        </div>
+      </div>
+    </div>
+    <div class="an-topbar-right">
+      <button
+        class="an-btn an-btn-outline"
+        (click)="markAllAsRead()"
+        [disabled]="unreadCount === 0"
+      >
+        <i class="bi bi-check2-all"></i> Đọc tất cả
+      </button>
+      <button class="an-btn an-btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-send-fill"></i> Tạo thông báo
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STAT CARDS ══════════════════ -->
+  <div class="an-stats">
+    <div
+      class="an-stat"
+      [class.active]="activeFilter === 'all'"
+      (click)="filterBy('all')"
+    >
+      <div class="an-stat-icon" style="--c: #0ea5e9; --cb: #f0f9ff">
+        <i class="bi bi-bell-fill"></i>
+      </div>
+      <div>
+        <div class="an-stat-num">{{ totalElements }}</div>
+        <div class="an-stat-lbl">Tổng thông báo</div>
+      </div>
+      <div
+        class="an-stat-bar"
+        style="background: #0ea5e9"
+        *ngIf="activeFilter === 'all'"
+      ></div>
+    </div>
+
+    <div
+      class="an-stat"
+      [class.active]="activeFilter === 'unread'"
+      (click)="filterBy('unread')"
+    >
+      <div class="an-stat-icon" style="--c: #ef4444; --cb: #fef2f2">
+        <i class="bi bi-bell-slash-fill"></i>
+      </div>
+      <div>
+        <div class="an-stat-num">{{ unreadCount }}</div>
+        <div class="an-stat-lbl">Chưa đọc (trang này)</div>
+      </div>
+      <div
+        class="an-stat-bar"
+        style="background: #ef4444"
+        *ngIf="activeFilter === 'unread'"
+      ></div>
+    </div>
+
+    <div
+      class="an-stat"
+      [class.active]="activeFilter === 'read'"
+      (click)="filterBy('read')"
+    >
+      <div class="an-stat-icon" style="--c: #10b981; --cb: #ecfdf5">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="an-stat-num">{{ readCount }}</div>
+        <div class="an-stat-lbl">Đã đọc (trang này)</div>
+      </div>
+      <div
+        class="an-stat-bar"
+        style="background: #10b981"
+        *ngIf="activeFilter === 'read'"
+      ></div>
+    </div>
+
+    <div class="an-stat an-stat-info">
+      <div class="an-stat-icon" style="--c: #8b5cf6; --cb: #f5f3ff">
+        <i class="bi bi-files"></i>
+      </div>
+      <div>
+        <div class="an-stat-num">{{ totalPages }}</div>
+        <div class="an-stat-lbl">Tổng số trang</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOOLBAR ══════════════════ -->
+  <div class="an-toolbar">
+    <div class="an-toolbar-left">
+      <div class="an-search-wrap">
+        <i class="bi bi-search an-search-icon"></i>
+        <input
+          class="an-search"
+          type="text"
+          placeholder="Tìm tiêu đề..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
+        <button
+          class="an-search-clear"
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="an-date-range">
+        <div class="an-date-field">
+          <i class="bi bi-calendar3"></i>
+          <input
+            type="date"
+            class="an-date-input"
+            [(ngModel)]="fromDate"
+            (change)="onDateChange()"
+          />
+        </div>
+        <span class="an-date-sep">—</span>
+        <div class="an-date-field">
+          <i class="bi bi-calendar3"></i>
+          <input
+            type="date"
+            class="an-date-input"
+            [(ngModel)]="toDate"
+            (change)="onDateChange()"
+          />
+        </div>
+        <button
+          class="an-btn an-btn-ghost an-btn-sm"
+          *ngIf="fromDate || toDate"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x-circle"></i> Xoá
+        </button>
+      </div>
+    </div>
+
+    <div class="an-toolbar-right">
+      <span class="an-count-lbl"
+        >{{ filteredNotifications.length }}/{{ totalElements }} thông báo</span
+      >
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOADING ══════════════════ -->
+  <div class="an-loading" *ngIf="loading">
+    <div class="an-spinner"></div>
+    <span>Đang tải dữ liệu...</span>
+  </div>
+
+  <!-- ══════════════════ EMPTY ══════════════════ -->
+  <div class="an-empty" *ngIf="!loading && filteredNotifications.length === 0">
+    <div class="an-empty-icon"><i class="bi bi-bell-slash"></i></div>
+    <div class="an-empty-title">Không tìm thấy thông báo</div>
+    <div class="an-empty-sub">Thử thay đổi bộ lọc hoặc tạo thông báo mới</div>
+    <button
+      class="an-btn an-btn-primary"
+      style="margin-top: 16px"
+      (click)="openCreateModal()"
+    >
+      <i class="bi bi-send-fill"></i> Tạo thông báo đầu tiên
+    </button>
+  </div>
+
+  <!-- ══════════════════ TABLE ══════════════════ -->
+  <div
+    class="an-table-wrap"
+    *ngIf="!loading && filteredNotifications.length > 0"
+  >
+    <table class="an-table">
+      <thead>
+        <tr>
+          <th style="width: 42px">#</th>
+          <th>Tiêu đề & Nội dung</th>
+          <th>Người nhận</th>
+          <th>Thời gian</th>
+          <th>Trạng thái</th>
+          <th style="text-align: center; width: 160px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let n of filteredNotifications; let i = index"
+          [class.an-row-unread]="!n.isRead"
+        >
+          <td class="an-cell-idx">
+            {{ (currentPage - 1) * pageSize + i + 1 }}
+          </td>
+
+          <!-- Title & Content -->
+          <td>
+            <div class="an-notif-cell">
+              <div class="an-notif-dot" [class.unread]="!n.isRead"></div>
+              <div>
+                <div class="an-notif-title">{{ n.title }}</div>
+                <div class="an-notif-preview">{{ truncate(n.content) }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Recipient -->
+          <td>
+            <div class="an-recipient-chip" [class.broadcast]="isBroadcast(n)">
+              <i
+                class="bi"
+                [class.bi-broadcast]="isBroadcast(n)"
+                [class.bi-person-circle]="!isBroadcast(n)"
+              ></i>
+              <span>{{
+                isBroadcast(n) ? "Tất cả người dùng" : "User #" + n.userId
+              }}</span>
+            </div>
+          </td>
+
+          <!-- Date -->
+          <td>
+            <div class="an-date-cell">
+              <span class="an-date-main">{{
+                formatRelativeDate(n.createdDate)
+              }}</span>
+              <span class="an-date-sub">{{ formatDate(n.createdDate) }}</span>
+            </div>
+          </td>
+
+          <!-- Status -->
+          <td>
+            <span
+              class="an-status-badge"
+              [class.read]="n.isRead"
+              [class.unread]="!n.isRead"
+            >
+              <i
+                class="bi"
+                [class.bi-check-circle-fill]="n.isRead"
+                [class.bi-circle-fill]="!n.isRead"
+              ></i>
+              {{ n.isRead ? "Đã đọc" : "Chưa đọc" }}
+            </span>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="an-actions">
+              <button
+                class="an-action-btn an-action-view"
+                title="Xem chi tiết"
+                (click)="openDetail(n)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+              <button
+                class="an-action-btn an-action-edit"
+                title="Chỉnh sửa"
+                (click)="openEditModal(n)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="an-action-btn an-action-read"
+                title="Đánh dấu đã đọc"
+                (click)="markAsRead(n)"
+                [disabled]="n.isRead"
+                [class.done]="n.isRead"
+              >
+                <i class="bi bi-check2-all"></i>
+              </button>
+              <button
+                class="an-action-btn an-action-delete"
+                title="Xoá"
+                (click)="openDeleteModal(n)"
+              >
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════ PAGINATION ══════════════════ -->
+  <div class="an-pagination" *ngIf="!loading && totalPages > 1">
+    <button
+      class="an-page-btn"
+      (click)="goPage(currentPage - 1)"
+      [disabled]="currentPage === 1"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+
+    <button class="an-page-btn" *ngIf="pages[0] > 1" (click)="goPage(1)">
+      1
+    </button>
+    <span class="an-page-dots" *ngIf="pages[0] > 2">…</span>
+
+    <button
+      class="an-page-btn"
+      *ngFor="let p of pages"
+      [class.active]="p === currentPage"
+      (click)="goPage(p)"
+    >
+      {{ p }}
+    </button>
+
+    <span class="an-page-dots" *ngIf="pages[pages.length - 1] < totalPages - 1"
+      >…</span
+    >
+    <button
+      class="an-page-btn"
+      *ngIf="pages[pages.length - 1] < totalPages"
+      (click)="goPage(totalPages)"
+    >
+      {{ totalPages }}
+    </button>
+
+    <button
+      class="an-page-btn"
+      (click)="goPage(currentPage + 1)"
+      [disabled]="currentPage === totalPages"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <span class="an-page-info">Trang {{ currentPage }} / {{ totalPages }}</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: TẠO / SỬA THÔNG BÁO
+══════════════════════════════════════════════ -->
+<div class="an-overlay" *ngIf="showFormModal" (click)="closeFormModal()">
+  <div class="an-modal an-modal-md" (click)="$event.stopPropagation()">
+    <div class="an-modal-header">
+      <div class="an-modal-title">
+        <div
+          class="an-modal-icon"
+          [style.background]="isEdit ? '#fef3c7' : '#eff6ff'"
+          [style.color]="isEdit ? '#f59e0b' : '#3b82f6'"
+        >
+          <i
+            class="bi"
+            [class.bi-send-fill]="!isEdit"
+            [class.bi-pencil-square]="isEdit"
+          ></i>
+        </div>
+        {{ isEdit ? "Chỉnh sửa thông báo" : "Tạo thông báo mới" }}
+      </div>
+      <button class="an-modal-close" (click)="closeFormModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="an-modal-body">
+      <!-- TIÊU ĐỀ -->
+      <div class="an-form-group">
+        <label class="an-label">Tiêu đề <span class="req">*</span></label>
+        <input
+          class="an-input"
+          type="text"
+          [(ngModel)]="form.title"
+          placeholder="Nhập tiêu đề thông báo..."
+          maxlength="200"
+        />
+        <div class="an-char-count">{{ form.title.length }}/200</div>
+      </div>
+
+      <!-- NỘI DUNG -->
+      <div class="an-form-group" style="margin-top: 14px">
+        <label class="an-label">Nội dung <span class="req">*</span></label>
+        <textarea
+          class="an-textarea"
+          [(ngModel)]="form.content"
+          placeholder="Nhập nội dung thông báo chi tiết..."
+          rows="4"
+          maxlength="2000"
+        ></textarea>
+        <div class="an-char-count">{{ form.content.length }}/2000</div>
+      </div>
+
+      <!-- ── NGƯỜI NHẬN ── -->
+      <div class="an-form-group" style="margin-top: 16px">
+        <label class="an-label">Người nhận <span class="req">*</span></label>
+
+        <!-- Target mode toggle -->
+        <div class="an-target-toggle">
+          <label
+            class="an-target-option"
+            [class.selected]="form.targetMode === 'all'"
+            (click)="form.targetMode = 'all'; onTargetModeChange()"
+          >
+            <div class="an-target-radio">
+              <div
+                class="an-radio-inner"
+                *ngIf="form.targetMode === 'all'"
+              ></div>
+            </div>
+            <div class="an-target-info">
+              <div class="an-target-label">
+                <i class="bi bi-broadcast"></i> Gửi tất cả người dùng
+              </div>
+              <div class="an-target-desc">
+                Broadcast tới toàn bộ người dùng (userId = 0)
+              </div>
+            </div>
+          </label>
+
+          <label
+            class="an-target-option"
+            [class.selected]="form.targetMode === 'specific'"
+            (click)="form.targetMode = 'specific'; onTargetModeChange()"
+          >
+            <div class="an-target-radio">
+              <div
+                class="an-radio-inner"
+                *ngIf="form.targetMode === 'specific'"
+              ></div>
+            </div>
+            <div class="an-target-info">
+              <div class="an-target-label">
+                <i class="bi bi-person-circle"></i> Gửi người dùng cụ thể
+              </div>
+              <div class="an-target-desc">
+                Tìm và chọn người nhận theo tên, email hoặc số điện thoại
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Customer search (visible only when targetMode === 'specific') -->
+        <div
+          class="an-customer-search-box"
+          *ngIf="form.targetMode === 'specific'"
+        >
+          <div class="an-customer-input-wrap">
+            <i class="bi bi-search an-customer-icon"></i>
+            <input
+              class="an-input an-customer-input"
+              type="text"
+              [(ngModel)]="form.customerSearch"
+              (ngModelChange)="onCustomerSearchChange()"
+              placeholder="Tìm theo tên, email, số điện thoại..."
+              [disabled]="isAllMode"
+            />
+            <button
+              class="an-customer-clear"
+              *ngIf="form.customerSearch"
+              (click)="clearCustomerSelection()"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+
+          <!-- Selected customer chip -->
+          <div class="an-selected-customer" *ngIf="form.selectedCustomer">
+            <div class="an-customer-avatar">
+              {{ form.selectedCustomer.fullName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="an-customer-details">
+              <span class="an-customer-name">{{
+                form.selectedCustomer.fullName
+              }}</span>
+              <span class="an-customer-email">{{
+                form.selectedCustomer.email
+              }}</span>
+            </div>
+            <span class="an-customer-id">#{{ form.selectedCustomer.id }}</span>
+            <button
+              class="an-customer-remove"
+              (click)="clearCustomerSelection()"
+            >
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          </div>
+
+          <!-- Dropdown results -->
+          <div
+            class="an-customer-dropdown pb-3"
+            *ngIf="customerSearchResults.length > 0 || customerSearchLoading"
+          >
+            <div class="an-dropdown-loading" *ngIf="customerSearchLoading">
+              <div class="an-mini-spinner"></div>
+              Đang tìm kiếm...
+            </div>
+            <div
+              class="an-dropdown-item"
+              *ngFor="let c of customerSearchResults"
+              (click)="selectCustomer(c)"
+            >
+              <div class="an-dropdown-avatar">
+                {{ c.fullName.charAt(0).toUpperCase() }}
+              </div>
+              <div class="an-dropdown-info">
+                <div class="an-dropdown-name">{{ c.fullName }}</div>
+                <div class="an-dropdown-sub">
+                  {{ c.email }} · {{ c.phone || "—" }}
+                </div>
+              </div>
+              <span class="an-dropdown-id">#{{ c.id }}</span>
+            </div>
+            <div
+              class="an-dropdown-empty"
+              *ngIf="
+                !customerSearchLoading && customerSearchResults.length === 0
+              "
+            >
+              <i class="bi bi-search"></i> Không tìm thấy người dùng
+            </div>
+          </div>
+        </div>
+
+        <!-- Broadcast note -->
+        <div class="an-broadcast-note" *ngIf="form.targetMode === 'all'">
+          <i class="bi bi-megaphone-fill"></i>
+          Thông báo sẽ được gửi đến <strong>tất cả người dùng</strong> trong hệ
+          thống thông qua Kafka event.
+        </div>
+      </div>
+    </div>
+
+    <div class="an-modal-footer">
+      <button class="an-btn an-btn-ghost" (click)="closeFormModal()">
+        Hủy
+      </button>
+      <button
+        class="an-btn an-btn-primary"
+        [disabled]="saving"
+        (click)="savePost()"
+      >
+        <span *ngIf="saving" class="an-btn-spinner"></span>
+        <i
+          *ngIf="!saving"
+          class="bi"
+          [class.bi-send-fill]="!isEdit"
+          [class.bi-check-lg]="isEdit"
+        ></i>
+        {{ saving ? "Đang lưu..." : isEdit ? "Cập nhật" : "Gửi thông báo" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: CHI TIẾT
+══════════════════════════════════════════════ -->
+<div class="an-overlay" *ngIf="showDetailModal" (click)="closeDetail()">
+  <div class="an-modal an-modal-md" (click)="$event.stopPropagation()">
+    <div class="an-modal-header">
+      <div class="an-modal-title">
+        <div class="an-modal-icon" style="background: #f0fdf4; color: #10b981">
+          <i class="bi bi-bell-fill"></i>
+        </div>
+        Chi tiết thông báo
+      </div>
+      <button class="an-modal-close" (click)="closeDetail()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="an-modal-body" *ngIf="detailTarget">
+      <div class="an-detail-status-bar" [class.read]="detailTarget.isRead">
+        <i
+          class="bi"
+          [class.bi-check-circle-fill]="detailTarget.isRead"
+          [class.bi-clock-fill]="!detailTarget.isRead"
+        ></i>
+        {{ detailTarget.isRead ? "Đã đọc" : "Chưa đọc" }}
+        <span class="an-detail-id">ID: {{ detailTarget.id }}</span>
+      </div>
+
+      <div class="an-detail-title">{{ detailTarget.title }}</div>
+
+      <div class="an-detail-meta">
+        <div class="an-meta-item">
+          <i
+            class="bi"
+            [class.bi-broadcast]="isBroadcast(detailTarget)"
+            [class.bi-person-circle]="!isBroadcast(detailTarget)"
+          ></i>
+          <span>
+            Người nhận:
+            <strong>{{
+              isBroadcast(detailTarget)
+                ? "Tất cả người dùng"
+                : "User #" + detailTarget.userId
+            }}</strong>
+          </span>
+        </div>
+        <div class="an-meta-item">
+          <i class="bi bi-calendar-event"></i>
+          <span
+            >Tạo lúc:
+            <strong>{{ formatDate(detailTarget.createdDate) }}</strong></span
+          >
+        </div>
+        <div
+          class="an-meta-item"
+          *ngIf="
+            detailTarget.modifiedDate &&
+            detailTarget.modifiedDate !== detailTarget.createdDate
+          "
+        >
+          <i class="bi bi-pencil-square"></i>
+          <span
+            >Cập nhật:
+            <strong>{{ formatDate(detailTarget.modifiedDate) }}</strong></span
+          >
+        </div>
+      </div>
+
+      <div class="an-detail-content-label">Nội dung</div>
+      <div class="an-detail-content-body">{{ detailTarget.content }}</div>
+
+      <div class="an-detail-footer-actions">
+        <button
+          class="an-btn an-btn-outline"
+          (click)="openEditModal(detailTarget); closeDetail()"
+        >
+          <i class="bi bi-pencil"></i> Chỉnh sửa
+        </button>
+        <button
+          class="an-btn an-btn-success"
+          *ngIf="!detailTarget.isRead"
+          (click)="markAsRead(detailTarget); closeDetail()"
+        >
+          <i class="bi bi-check2-all"></i> Đánh dấu đã đọc
+        </button>
+        <button
+          class="an-btn an-btn-danger"
+          (click)="openDeleteModal(detailTarget); closeDetail()"
+        >
+          <i class="bi bi-trash3"></i> Xoá
+        </button>
+      </div>
+    </div>
+
+    <div class="an-modal-footer">
+      <button class="an-btn an-btn-ghost" (click)="closeDetail()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: XOÁ
+══════════════════════════════════════════════ -->
+<div
+  class="an-overlay"
+  *ngIf="showDeleteModal"
+  (click)="showDeleteModal = false"
+>
+  <div class="an-modal an-modal-sm" (click)="$event.stopPropagation()">
+    <div class="an-modal-header">
+      <div class="an-modal-title">
+        <div class="an-modal-icon" style="background: #fef2f2; color: #ef4444">
+          <i class="bi bi-trash3-fill"></i>
+        </div>
+        Xác nhận xoá thông báo
+      </div>
+      <button class="an-modal-close" (click)="showDeleteModal = false">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="an-modal-body" *ngIf="deleteTarget">
+      <div class="an-delete-confirm-card">
+        <div class="an-delete-icon-wrap">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="an-delete-text">
+          <p>Bạn có chắc chắn muốn xoá thông báo này?</p>
+          <div class="an-delete-preview">
+            <strong>{{ deleteTarget.title }}</strong>
+            <span>{{ truncate(deleteTarget.content, 60) }}</span>
+          </div>
+          <p class="an-delete-warning">Hành động này không thể hoàn tác.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="an-modal-footer">
+      <button class="an-btn an-btn-ghost" (click)="showDeleteModal = false">
+        Hủy
+      </button>
+      <button
+        class="an-btn an-btn-danger"
+        [disabled]="deleting"
+        (click)="confirmDelete()"
+      >
+        <span *ngIf="deleting" class="an-btn-spinner"></span>
+        <i *ngIf="!deleting" class="bi bi-trash3-fill"></i>
+        {{ deleting ? "Đang xoá..." : "Xác nhận xoá" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TOAST ══════════════════ -->
+<div
+  class="an-toast"
+  [class.show]="toast.show"
+  [class.an-toast-error]="toast.type === 'error'"
+>
+  <i
+    class="bi"
+    [class.bi-check-circle-fill]="toast.type === 'success'"
+    [class.bi-x-circle-fill]="toast.type === 'error'"
+  ></i>
+  {{ toast.message }}
+</div>

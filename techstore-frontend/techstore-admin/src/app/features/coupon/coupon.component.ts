@@ -8,7 +8,7 @@ import { CouponRequest } from './models/coupon-request.model';
 
 const EMPTY_FORM = (): CouponRequest => ({
   name:          '',
-  discountType:  'PERCENTAGE',
+  discountType:  'PERCENT',
   discountValue: 0,
   minOrderValue: 0,
   maxDiscount:   0,

@@ -66,7 +66,7 @@
       <label class="filter-label">Loại</label>
       <select [(ngModel)]="filterType" (change)="applyFilter()">
         <option value="">Tất cả</option>
-        <option value="PERCENTAGE">Phần trăm</option>
+        <option value="PERCENT">Phần trăm</option>
         <option value="FIXED">Số tiền cố định</option>
       </select>
     </div>
@@ -133,13 +133,13 @@
                 <div class="coupon-name-cell">
                   <div
                     class="coupon-chip"
-                    [class.chip-pct]="c.discountType === 'PERCENTAGE'"
+                    [class.chip-pct]="c.discountType === 'PERCENT'"
                     [class.chip-fix]="c.discountType === 'FIXED'"
                   >
                     <i
                       class="bi"
-                      [class.bi-percent]="c.discountType === 'PERCENTAGE'"
-                      [class.bi-cash-coin]="c.discountType !== 'PERCENTAGE'"
+                      [class.bi-percent]="c.discountType === 'PERCENT'"
+                      [class.bi-cash-coin]="c.discountType !== 'PERCENT'"
                     ></i>
                   </div>
                   <span class="font-medium">{{ c.name }}</span>
@@ -148,11 +148,11 @@
               <td>
                 <span
                   class="type-badge"
-                  [class.type-pct]="c.discountType === 'PERCENTAGE'"
-                  [class.type-fix]="c.discountType !== 'PERCENTAGE'"
+                  [class.type-pct]="c.discountType === 'PERCENT'"
+                  [class.type-fix]="c.discountType !== 'PERCENT'"
                 >
                   {{
-                    c.discountType === "PERCENTAGE"
+                    c.discountType === "PERCENT"
                       ? "Phần trăm"
                       : "Số tiền cố định"
                   }}
@@ -160,7 +160,7 @@
               </td>
               <td style="text-align: right" class="font-medium value-text">
                 {{
-                  c.discountType === "PERCENTAGE"
+                  c.discountType === "PERCENT"
                     ? c.discountValue + "%"
                     : (c.discountValue | number) + "₫"
                 }}
@@ -281,7 +281,7 @@
           <div class="form-group">
             <label>Loại giảm <span class="required">*</span></label>
             <select [(ngModel)]="form.discountType">
-              <option value="PERCENTAGE">Phần trăm (%)</option>
+              <option value="PERCENT">Phần trăm (%)</option>
               <option value="FIXED">Số tiền cố định (₫)</option>
             </select>
           </div>
@@ -295,7 +295,7 @@
                 placeholder="0"
               />
               <span class="input-addon">{{
-                form.discountType === "PERCENTAGE" ? "%" : "₫"
+                form.discountType === "PERCENT" ? "%" : "₫"
               }}</span>
             </div>
           </div>
@@ -387,7 +387,7 @@
               <div class="preview-right">
                 <div class="preview-value">
                   {{
-                    form.discountType === "PERCENTAGE"
+                    form.discountType === "PERCENT"
                       ? (form.discountValue || 0) + "%"
                       : (form.discountValue || 0 | number) + "₫"
                   }}

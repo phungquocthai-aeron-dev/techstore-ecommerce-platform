@@ -22,6 +22,19 @@ public class VNPayUtils {
 
         Map<String, String> params = new HashMap<>();
 
+        TimeZone tz = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
+        Calendar cld = Calendar.getInstance(tz);
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        formatter.setTimeZone(tz);
+
+        String createDate = formatter.format(cld.getTime());
+        params.put("vnp_CreateDate", createDate);
+
+        cld.add(Calendar.MINUTE, 10);
+        String expireDate = formatter.format(cld.getTime());
+        params.put("vnp_ExpireDate", expireDate);
+
         params.put("vnp_Version", VERSION);
         params.put("vnp_Command", COMMAND);
         params.put("vnp_TmnCode", VNPayConfig.vnp_TmnCode);
@@ -32,13 +45,13 @@ public class VNPayUtils {
         params.put("vnp_OrderType", ORDER_TYPE);
         params.put("vnp_Locale", "vn");
         params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
-        params.put("vnp_CreateDate", getCurrentTime());
         params.put("vnp_IpAddr", ipAddress);
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        cld.add(Calendar.MINUTE, 15);
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
+        System.out.println("=== VNPay DEBUG ===");
+        System.out.println("CreateDate: " + createDate);
+        System.out.println("ExpireDate: " + expireDate);
+        System.out.println("ServerTime: " + getCurrentTime());
+        System.out.println("===================");
 
         return params;
     }

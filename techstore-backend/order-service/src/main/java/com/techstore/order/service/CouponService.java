@@ -33,11 +33,12 @@ public class CouponService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public CouponResponse create(CouponCreateRequest request) {
+        System.out.println("AAAAAAAAAAAAAA");
 
         if (couponRepo.findByName(request.getName()).isPresent()) {
             throw new AppException(ErrorCode.COUPON_EXISTED);
         }
-
+        System.out.println("BBBBBBBBBBBBB");
         validateDiscountType(request.getDiscountType());
         validateDate(request.getStartDate(), request.getEndDate());
 
@@ -64,6 +65,7 @@ public class CouponService {
                 .build();
 
         kafkaTemplate.send("post-delivery", event);
+        System.out.println("CCCCCCCCCCCCCCC");
 
         return couponMapper.toResponse(couponRepo.save(coupon));
     }
@@ -144,7 +146,6 @@ public class CouponService {
     }
 
     // ── Gán coupon cho khách hàng ────────────────────────────────────────────────
-    @PreAuthorize("hasRole('ADMIN')")
     public void assignCouponToCustomer(Long customerId, Long couponId) {
 
         if (customerCouponRepo.existsByCustomerIdAndCouponId(customerId, couponId)) {
@@ -164,7 +165,6 @@ public class CouponService {
     }
 
     // ── Gỡ coupon khỏi khách hàng ────────────────────────────────────────────────
-    @PreAuthorize("hasRole('ADMIN')")
     public void removeCouponFromCustomer(Long customerId, Long couponId) {
 
         CustomerCoupon customerCoupon = customerCouponRepo

@@ -99,7 +99,7 @@ public class OrderServiceImpl implements OrderService {
     private static final Set<String> REVENUE_STATUSES = Set.of("PROCESSING", "READY_TO_SHIP", "SHIPPING", "DELIVERED");
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN','CUSTOMER', 'SALES_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER', 'SALES_STAFF')")
     public List<CustomerOrderResponse> getOrdersByCustomer(Long customerId, String status) {
 
         List<Order> orders;
@@ -255,7 +255,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'SALES_STAFF')")
     public OrderResponse createOrder(OrderCreateRequest request, String ipAddress) {
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());

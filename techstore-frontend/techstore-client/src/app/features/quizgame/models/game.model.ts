@@ -75,7 +75,7 @@ export interface CouponConfigResponseDTO {
   quantity: number;
   status: string;
   canRedeem: boolean;
-  discountType: 'PERCENTAGE' | 'FIXED';
+  discountType: 'PERCENT' | 'FIXED';
   discountValue: number;
   endDate: string;
 }

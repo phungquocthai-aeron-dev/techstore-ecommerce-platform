@@ -107,8 +107,8 @@ export const routes: Routes = [
   },
 
   // ─── Fallback ────────────────────────────────────────────────────
-  {
-    path: '**',
-    redirectTo: 'home'
-  }
+  // {
+  //   path: '**',
+  //   redirectTo: 'home'
+  // }
 ];

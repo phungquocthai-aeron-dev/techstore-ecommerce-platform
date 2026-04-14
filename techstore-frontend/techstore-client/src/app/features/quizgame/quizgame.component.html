@@ -133,7 +133,7 @@
 
     <div class="intro__pills" *ngIf="dailyInfo?.canPlay">
       <span class="pill">🪐 10 hành tinh</span>
-      <span class="pill">⏱ 20s / câu</span>
+      <span class="pill">⏱ 90s / câu</span>
       <span class="pill">⭐ Tích điểm đổi quà</span>
     </div>
   </section>
@@ -172,7 +172,7 @@
         >
       </div>
       <div class="hud-score">
-        ĐIỂM&nbsp;<span>{{ userAnswers.length }}</span>
+        SỐ CÂU ĐÃ TRẢ LỜI&nbsp;<span>{{ userAnswers.length }}</span>
       </div>
     </div>
 
@@ -368,11 +368,12 @@
       <div
         *ngFor="let c of availableCoupons; trackBy: trackByCoupon"
         class="coupon-card"
-        [class.coupon-card--disabled]="!c.canRedeem"
       >
+        <!-- [class.coupon-card--disabled]="!c.canRedeem" -->
+
         <div
           class="coupon-card__badge"
-          [class.coupon-card__badge--pct]="c.discountType === 'PERCENTAGE'"
+          [class.coupon-card__badge--pct]="c.discountType === 'PERCENT'"
         >
           {{ discountLabel(c) }}
         </div>

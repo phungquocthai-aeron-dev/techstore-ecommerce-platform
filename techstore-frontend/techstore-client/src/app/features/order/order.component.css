@@ -526,7 +526,7 @@
   border-radius: 18px;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: 80vh;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.25s ease;

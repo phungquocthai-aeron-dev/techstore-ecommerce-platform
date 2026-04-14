@@ -191,7 +191,7 @@
       </div>
 
       <!-- Mã giảm giá đã chọn từ cart -->
-      <div *ngIf="appliedCoupon" class="co-card co-coupon-card">
+      <!-- <div *ngIf="appliedCoupon" class="co-card co-coupon-card">
         <div class="co-card-title">
           <i class="bi bi-tag-fill"></i> Mã giảm giá
         </div>
@@ -212,6 +212,166 @@
             −{{ discountAmount | number: "1.0-0" }}đ
           </div>
         </div>
+      </div> -->
+
+      <!-- Mã giảm giá -->
+      <div class="co-card">
+        <div class="co-card-title">
+          <i class="bi bi-ticket-perforated-fill"></i> Mã giảm giá
+        </div>
+
+        <!-- Header row -->
+        <div class="co-coupon-header">
+          <div class="co-coupon-header-left">
+            <i class="bi bi-ticket-perforated-fill"></i>
+            Chọn mã giảm giá
+          </div>
+          <button
+            *ngIf="applicableCoupons.length > 0"
+            class="co-coupon-best-pill"
+            (click)="applyBestCoupon()"
+          >
+            <i class="bi bi-stars"></i> Tốt nhất
+          </button>
+        </div>
+
+        <!-- Applied bar -->
+        <div *ngIf="appliedCoupon" class="co-coupon-applied-bar">
+          <div class="co-coupon-ab-left">
+            <span class="co-coupon-ab-tag">{{ appliedCoupon.name }}</span>
+            <span class="co-coupon-ab-type">
+              {{
+                appliedCoupon.discountType === "PERCENT"
+                  ? appliedCoupon.discountValue + "%"
+                  : (appliedCoupon.discountValue | number: "1.0-0") + "đ"
+              }}
+            </span>
+            <span class="co-coupon-ab-save"
+              >Tiết kiệm {{ discountAmount | number: "1.0-0" }}đ</span
+            >
+          </div>
+          <button class="co-coupon-ab-cancel" (click)="removeCoupon()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="couponsLoading" class="co-coupon-loading">
+          <div class="co-spinner co-spinner-sm"></div>
+          <span>Đang tải mã giảm giá...</span>
+        </div>
+
+        <ng-container *ngIf="!couponsLoading">
+          <!-- Empty -->
+          <div *ngIf="availableCoupons.length === 0" class="co-coupon-empty">
+            <i class="bi bi-ticket-perforated"></i>
+            <span>Không có mã giảm giá nào</span>
+          </div>
+
+          <div
+            *ngIf="availableCoupons.length > 0"
+            class="co-coupon-list"
+            [class.co-coupon-list-scroll]="availableCoupons.length > 3"
+          >
+            <!-- Applicable group -->
+            <div
+              *ngIf="applicableCoupons.length > 0"
+              class="co-coupon-group-sep"
+            >
+              <hr />
+              <span class="ok">Có thể áp dụng</span>
+              <hr />
+            </div>
+
+            <div
+              class="co-cp-card"
+              *ngFor="let c of applicableCoupons"
+              [class.selected]="appliedCoupon?.id === c.id"
+              (click)="selectCoupon(c)"
+            >
+              <div
+                class="co-cp-stripe"
+                [ngClass]="getCouponStripeClass(c)"
+              ></div>
+              <div class="co-cp-ico">
+                <i
+                  class="bi"
+                  [ngClass]="
+                    c.discountType === 'PERCENT' ? 'bi-percent' : 'bi-tag-fill'
+                  "
+                ></i>
+              </div>
+              <div class="co-cp-body">
+                <div class="co-cp-name">{{ c.name }}</div>
+                <div class="co-cp-desc">
+                  <span *ngIf="c.discountType === 'PERCENT'"
+                    >Giảm {{ c.discountValue }}% · Tối đa
+                    {{ c.maxDiscount | number: "1.0-0" }}đ</span
+                  >
+                  <span *ngIf="c.discountType === 'FIXED'"
+                    >Giảm thẳng {{ c.discountValue | number: "1.0-0" }}đ</span
+                  >
+                </div>
+                <div class="co-cp-cond">
+                  Đơn tối thiểu {{ c.minOrderValue | number: "1.0-0" }}đ · HSD
+                  {{ c.endDate | date: "dd/MM/yyyy" }}
+                </div>
+                <div class="co-cp-save">
+                  ✦ Tiết kiệm: {{ calcCouponDiscount(c) | number: "1.0-0" }}đ
+                </div>
+              </div>
+              <div class="co-cp-radio">
+                <div class="co-cp-rring"><div class="co-cp-rdot"></div></div>
+              </div>
+            </div>
+
+            <!-- Inapplicable group -->
+            <div
+              *ngIf="inapplicableCoupons.length > 0"
+              class="co-coupon-group-sep"
+              style="margin-top: 4px"
+            >
+              <hr />
+              <span class="no">Chưa đủ điều kiện</span>
+              <hr />
+            </div>
+
+            <div
+              class="co-cp-card locked"
+              *ngFor="let c of inapplicableCoupons"
+            >
+              <div class="co-cp-stripe gray"></div>
+              <div class="co-cp-ico muted">
+                <i
+                  class="bi"
+                  [ngClass]="
+                    c.discountType === 'PERCENT' ? 'bi-percent' : 'bi-tag'
+                  "
+                ></i>
+              </div>
+              <div class="co-cp-body">
+                <div class="co-cp-name">{{ c.name }}</div>
+                <div class="co-cp-desc muted">
+                  <span *ngIf="c.discountType === 'PERCENT'"
+                    >Giảm {{ c.discountValue }}% · Tối đa
+                    {{ c.maxDiscount | number: "1.0-0" }}đ</span
+                  >
+                  <span *ngIf="c.discountType === 'FIXED'"
+                    >Giảm thẳng {{ c.discountValue | number: "1.0-0" }}đ</span
+                  >
+                </div>
+                <div class="co-cp-need">
+                  Cần thêm
+                  <strong
+                    >{{ c.minOrderValue - subtotal | number: "1.0-0" }}đ</strong
+                  >
+                  để dùng
+                </div>
+              </div>
+              <div class="co-cp-radio"><div class="co-cp-rring"></div></div>
+            </div>
+          </div>
+        </ng-container>
       </div>
 
       <!-- Tóm tắt đơn hàng -->

@@ -8,6 +8,7 @@ import { CustomerService } from '../user/customer.service';
 import { AddressService } from '../user/address.service';
 import { ShippingService } from './shipping.service';
 import { OrderService } from './order.service';
+import { CouponService } from '../coupon/coupon.service';
 import { PaymentMethodService } from './payment-method.service';
 
 import { CustomerResponse } from '../user/models/customer.model';
@@ -15,6 +16,7 @@ import { AddressResponse } from '../user/models/address.model';
 import { CouponResponse } from '../coupon/models/coupon.model';
 import { PaymentMethodResponse } from './models/payment-method.model';
 import { OrderCreateRequest, OrderItemRequest } from './models/order-request.model';
+
 
 export interface OrderItem {
   productId: number;
@@ -46,6 +48,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   selectedAddressId: number | null = null;
   selectedPaymentMethodId: number | null = null;
 
+  availableCoupons: CouponResponse[] = [];
+  couponsLoading = false;
+
   orderError = '';
 
   shippingFee = 0;
@@ -61,6 +66,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     private addressService: AddressService,
     private shippingService: ShippingService,
     private orderService: OrderService,
+    private couponService: CouponService,
     private paymentMethodService: PaymentMethodService,
     private router: Router
   ) {}
@@ -91,6 +97,22 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   get canOrder(): boolean {
     return !!this.selectedAddressId && !!this.selectedPaymentMethodId && this.items.length > 0;
+  }
+
+  get applicableCoupons(): CouponResponse[] {
+    return this.availableCoupons.filter(c =>
+      c.status === 'ACTIVE' &&
+      this.subtotal >= c.minOrderValue &&
+      new Date(c.endDate) >= new Date()
+    );
+  }
+
+  get inapplicableCoupons(): CouponResponse[] {
+    return this.availableCoupons.filter(c =>
+      c.status === 'ACTIVE' &&
+      this.subtotal < c.minOrderValue &&
+      new Date(c.endDate) >= new Date()
+    );
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────
@@ -127,6 +149,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       },
       error: () => { this.loading = false; }
     });
+
+    this.loadCoupons();
   }
 
   ngOnDestroy(): void {
@@ -150,6 +174,53 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         next: res => { this.shippingFee = res.result ?? 0; this.loadingFee = false; },
         error: () => { this.shippingFee = 0; this.loadingFee = false; }
       });
+  }
+
+  // Coupons
+
+  loadCoupons(): void {
+    this.couponsLoading = true;
+    forkJoin({
+      available: this.couponService.getAvailableCoupons(),
+      private: this.couponService.getPrivateCoupons()
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ available, private: priv }) => {
+        this.availableCoupons = [
+          ...(available.result ?? []),
+          ...(priv.result ?? [])
+        ];
+        this.couponsLoading = false;
+      },
+      error: () => { this.couponsLoading = false; }
+    });
+  }
+  
+  selectCoupon(coupon: CouponResponse): void {
+    if (this.subtotal < coupon.minOrderValue) return;
+    this.appliedCoupon = this.appliedCoupon?.id === coupon.id ? null : coupon;
+  }
+  
+  removeCoupon(): void {
+    this.appliedCoupon = null;
+  }
+  
+  calcCouponDiscount(c: CouponResponse): number {
+    if (this.subtotal < c.minOrderValue) return 0;
+    const d = c.discountType === 'PERCENT'
+      ? Math.round(this.subtotal * c.discountValue / 100)
+      : c.discountValue;
+    return Math.min(d, c.maxDiscount);
+  }
+  
+  applyBestCoupon(): void {
+    if (this.applicableCoupons.length === 0) return;
+    this.appliedCoupon = this.applicableCoupons.reduce((best, c) =>
+      this.calcCouponDiscount(c) > this.calcCouponDiscount(best) ? c : best
+    );
+  }
+  
+  getCouponStripeClass(c: CouponResponse): string {
+    return c.discountType === 'PERCENT' ? 'blue' : 'green';
   }
 
   // ── Place order ───────────────────────────────────────────────────

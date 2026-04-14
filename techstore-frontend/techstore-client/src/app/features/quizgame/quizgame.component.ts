@@ -604,7 +604,7 @@ export class QuizGameComponent implements OnInit, OnDestroy, AfterViewInit {
 
   letterOf(i: number): string { return ['A', 'B', 'C', 'D'][i]; }
   discountLabel(c: CouponConfigResponseDTO): string {
-    return c.discountType === 'PERCENTAGE' ? `Giảm ${c.discountValue}%` : `Giảm ${c.discountValue?.toLocaleString('vi-VN')}₫`;
+    return c.discountType === 'PERCENT' ? `Giảm ${c.discountValue}%` : `Giảm ${c.discountValue?.toLocaleString('vi-VN')}₫`;
   }
   trackByToast(_: number, t: Toast): number { return t.id; }
   trackByQ(_: number, q: QuestionResponseDTO): number { return q.id; }

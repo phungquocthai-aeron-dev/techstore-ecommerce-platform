@@ -378,7 +378,7 @@ export class OrdersComponent implements OnInit {
     setTimeout(() => { this.alert = null; }, 3500);
   }
 
-  handleImgError(event: Event): void {
-    (event.target as HTMLImageElement).src = 'images/product-placeholder.png';
+  handleImgError(event: any) {
+    event.target.src = 'images/no-product-image.jpg';
   }
 }

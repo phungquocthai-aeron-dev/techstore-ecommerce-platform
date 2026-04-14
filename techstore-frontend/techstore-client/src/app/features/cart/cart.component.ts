@@ -167,16 +167,41 @@ export class CartComponent implements OnInit, OnDestroy {
 
   // ── Coupon ────────────────────────────────────────────────────────
 
+  // loadCoupons(): void {
+  //   this.couponsLoading = true;
+  //   this.couponService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
+  //     next: res => {
+  //       this.availableCoupons = (res.result ?? []).filter(
+  //         c => c.status === 'ACTIVE' && new Date(c.endDate) >= new Date()
+  //       );
+  //       this.couponsLoading = false;
+  //     },
+  //     error: () => { this.couponsLoading = false; }
+  //   });
+  // }
+
+  
   loadCoupons(): void {
     this.couponsLoading = true;
-    this.couponService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => {
-        this.availableCoupons = (res.result ?? []).filter(
-          c => c.status === 'ACTIVE' && new Date(c.endDate) >= new Date()
-        );
+  
+    forkJoin({
+      available: this.couponService.getAvailableCoupons(),
+      private: this.couponService.getPrivateCoupons()
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ({ available, private: privateCoupons }) => {
+      
+        this.availableCoupons = [
+          ...(available.result ?? []),
+          ...(privateCoupons.result ?? [])
+        ];
+      
         this.couponsLoading = false;
       },
-      error: () => { this.couponsLoading = false; }
+      error: () => {
+        this.couponsLoading = false;
+      }
     });
   }
 

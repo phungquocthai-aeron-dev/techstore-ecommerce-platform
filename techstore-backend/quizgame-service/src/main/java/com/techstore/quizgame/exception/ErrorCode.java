@@ -53,6 +53,8 @@ public enum ErrorCode {
     COUPON_VALIDATION_FAILED(4014, "Coupon không hợp lệ từ order-service", HttpStatus.BAD_REQUEST),
     COUPON_EXPIRED(4015, "Coupon đã hết hạn sử dụng", HttpStatus.BAD_REQUEST),
     COUPON_ASSIGN_FAILED(4016, "Không thể gán coupon, vui lòng thử lại", HttpStatus.INTERNAL_SERVER_ERROR),
+    COUPON_ALREADY_DELETED(4016, "Mã giảm giá đã bị xóa trước đó", HttpStatus.BAD_REQUEST),
+    COUPON_ALREADY_EXISTS(4016, "Mã giảm giá đã tồn tại", HttpStatus.BAD_REQUEST),
 
     // User errors
     USER_NOT_FOUND(4020, "Không tìm thấy user", HttpStatus.NOT_FOUND),

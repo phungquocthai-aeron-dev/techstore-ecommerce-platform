@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.techstore.quizgame.client.CouponServiceClient;
+import com.techstore.quizgame.dto.request.CouponConfigRequestDTO;
 import com.techstore.quizgame.dto.request.RedeemCouponRequestDTO;
 import com.techstore.quizgame.dto.response.CouponConfigResponseDTO;
 import com.techstore.quizgame.dto.response.CouponResponse;
@@ -47,7 +48,7 @@ public class CouponService {
         // Lấy danh sách coupon đang ACTIVE từ order-service để hiển thị thông tin thật
         List<CouponResponse> orderCoupons;
         try {
-            orderCoupons = couponServiceClient.getAvailableCoupons().getResult();
+            orderCoupons = couponServiceClient.getPrivateCoupons().getResult();
         } catch (Exception ex) {
             log.warn("Không thể lấy danh sách coupon từ order-service: {}", ex.getMessage());
             orderCoupons = List.of();
@@ -212,5 +213,62 @@ public class CouponService {
      */
     public List<UserCoupon> getUserCoupons(Long userId) {
         return userCouponRepository.findByUserIdOrderByRedeemedAtDesc(userId);
+    }
+
+    public CouponConfig createCouponConfig(CouponConfigRequestDTO request) {
+
+        if (couponConfigRepository
+                .findByCouponIdAndStatus(request.getCouponId(), "ACTIVE")
+                .isPresent()) {
+            throw new AppException(ErrorCode.COUPON_ALREADY_EXISTS);
+        }
+
+        CouponConfig coupon = CouponConfig.builder()
+                .couponId(request.getCouponId())
+                .couponName(request.getCouponName())
+                .description(request.getDescription())
+                .pointsRequired(request.getPointsRequired())
+                .quantity(request.getQuantity())
+                .status("ACTIVE")
+                .build();
+
+        return couponConfigRepository.save(coupon);
+    }
+
+    public CouponConfig updateCouponConfig(Long id, CouponConfigRequestDTO request) {
+
+        CouponConfig coupon = couponConfigRepository
+                .findByIdAndStatus(id, "ACTIVE")
+                .orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_FOUND));
+
+        coupon.setCouponId(request.getCouponId());
+        coupon.setCouponName(request.getCouponName());
+        coupon.setDescription(request.getDescription());
+        coupon.setPointsRequired(request.getPointsRequired());
+        coupon.setQuantity(request.getQuantity());
+        coupon.setStatus(request.getStatus()); // cho phép ACTIVE / INACTIVE
+
+        return couponConfigRepository.save(coupon);
+    }
+
+    @Transactional
+    public void deleteCouponConfig(Long id) {
+
+        CouponConfig coupon = couponConfigRepository
+                .findByIdAndStatus(id, "ACTIVE")
+                .orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_FOUND));
+
+        coupon.setStatus("INACTIVE");
+        couponConfigRepository.save(coupon);
+    }
+
+    public List<CouponConfig> getAllCouponConfigs() {
+        return couponConfigRepository.findByStatus("ACTIVE");
+    }
+
+    public CouponConfig getCouponConfigById(Long id) {
+        return couponConfigRepository
+                .findByIdAndStatus(id, "ACTIVE")
+                .orElseThrow(() -> new AppException(ErrorCode.COUPON_NOT_FOUND));
     }
 }

@@ -16,6 +16,10 @@ public interface CouponConfigRepository extends JpaRepository<CouponConfig, Long
 
     Optional<CouponConfig> findByCouponId(Long couponId);
 
+    Optional<CouponConfig> findByIdAndStatus(Long id, String status);
+
+    Optional<CouponConfig> findByCouponIdAndStatus(Long couponId, String status);
+
     // Giảm quantity đi 1 (chỉ giảm khi còn hàng)
     @Modifying
     @Query("UPDATE CouponConfig c SET c.quantity = c.quantity - 1 WHERE c.id = :id AND c.quantity > 0")

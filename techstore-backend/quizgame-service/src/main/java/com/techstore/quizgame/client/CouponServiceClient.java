@@ -36,4 +36,7 @@ public interface CouponServiceClient {
 
     @DeleteMapping("/coupons/customer/{customerId}/{couponId}")
     ApiResponse<Void> removeCouponFromCustomer(@PathVariable Long customerId, @PathVariable Long couponId);
+
+    @GetMapping("/coupons/private")
+    ApiResponse<List<CouponResponse>> getPrivateCoupons();
 }

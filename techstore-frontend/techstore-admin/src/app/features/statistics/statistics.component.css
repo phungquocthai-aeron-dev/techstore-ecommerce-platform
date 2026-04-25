@@ -207,16 +207,39 @@
 
 /* ── CHART ───────────────────────────────── */
 .st-chart-card { }
-.st-chart-area { padding: 16px 18px 4px; }
-.st-chart-bars {
+.st-chart-area { padding: 16px 18px 4px; overflow: visible }
+/* .st-chart-bars {
   display: flex; align-items: flex-end; gap: 5px;
   height: 180px; overflow-x: auto;
-}
+} */
 .st-chart-bars::-webkit-scrollbar { height: 0; }
-.st-chart-col {
+/* .st-chart-col {
   flex: 1; min-width: 32px; display: flex;
   flex-direction: column; align-items: center; gap: 5px;
   cursor: pointer; position: relative;
+} */
+
+.st-chart-bars {
+  display: flex;
+  align-items: flex-end;   /* ← căn đáy tất cả các cột */
+  gap: 5px;
+  height: 200px;           /* tăng lên một chút cho dễ nhìn */
+  overflow-x: auto;
+  padding-bottom: 24px;    /* chừa chỗ cho label */
+  position: relative;
+  box-sizing: border-box;
+}
+
+.st-chart-col {
+  flex: 1;
+  min-width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  height: 100%;             /* ← chiếm toàn bộ chiều cao cha */
+  justify-content: flex-end; /* ← đẩy bar xuống đáy */
 }
 .st-chart-col:hover .st-bar-tooltip { opacity: 1; transform: translateY(0); }
 .st-bar-tooltip {
@@ -225,21 +248,38 @@
   font-size: 10px; padding: 5px 9px; border-radius: 7px;
   white-space: nowrap; opacity: 0;
   transform: translateY(4px); transition: all .18s; pointer-events: none;
-  display: flex; flex-direction: column; gap: 1px; z-index: 10;
+  display: flex; flex-direction: column; gap: 30px; z-index: 1000;
   font-family: var(--st-mono);
 }
 .st-bar-tooltip strong { font-size: 11px; }
 .st-bar-tooltip span { color: #a4c0fd; font-size: 9.5px; }
-.st-bar {
+/* .st-bar {
   width: 100%; border-radius: 5px 5px 0 0;
   background: linear-gradient(180deg, #a4c0fd, #1e40af);
   transition: height .4s cubic-bezier(.34,1.56,.64,1); min-height: 4px;
-}
+} */
 .st-bar:hover { opacity: .85; }
 .st-bar.wh-bar {
   background: linear-gradient(180deg, #c4b5fd, #7c3aed);
 }
-.st-bar-label { font-size: 9.5px; color: var(--st-muted); font-family: var(--st-mono); white-space: nowrap; }
+/* .st-bar-label { font-size: 9.5px; color: var(--st-muted); font-family: var(--st-mono); white-space: nowrap; } */
+.st-bar {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, #a4c0fd, #1e40af);
+  transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 4px;
+  /* KHÔNG set height ở đây — để Angular binding [style.height.%] điều khiển */
+}
+
+.st-bar-label {
+  position: absolute;
+  bottom: -20px;            /* ← đặt label ra ngoài vùng bar */
+  font-size: 13px;
+  color: var(--st-muted);
+  font-family: var(--st-mono);
+  white-space: nowrap;
+}
 
 /* ── TABLE ───────────────────────────────── */
 .st-table-wrap { overflow-x: auto; }
@@ -488,3 +528,13 @@
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--st-border); border-radius: 10px; }
+/* NEW CODE */
+.st-filter-group { display: flex; flex-direction: column; gap: 5px; }
+.st-filter-label {
+  font-size: 10.5px; font-weight: 700; color: var(--st-muted);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.st-filter-divider {
+  width: 1px; height: 40px;
+  background: var(--st-border); align-self: center;
+}

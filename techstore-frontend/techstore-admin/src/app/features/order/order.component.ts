@@ -113,7 +113,7 @@ export class OrderManagementComponent implements OnInit, OnDestroy {
   timelineSteps: string[] = [
     'PROCESSING',
     'READY_TO_SHIP',
-    'SHIPPING',
+    // 'SHIPPING',
     'DELIVERED'
   ];
 
@@ -121,8 +121,8 @@ export class OrderManagementComponent implements OnInit, OnDestroy {
   statusTabs: StatusTab[] = [
     { value: 'ALL',          label: 'Tất cả',         icon: 'bi-grid-fill',           color: '#0ea5e9', bgColor: '#f0f9ff', count: 0 },
     { value: 'PROCESSING',   label: 'Chờ xác nhận',   icon: 'bi-hourglass-split',     color: '#f59e0b', bgColor: '#fffbeb', count: 0 },
-    { value: 'READY_TO_SHIP',label: 'Sẵn sàng giao',  icon: 'bi-box-seam-fill',       color: '#6366f1', bgColor: '#eef2ff', count: 0 },
-    { value: 'SHIPPING',     label: 'Đang giao',      icon: 'bi-truck',               color: '#0ea5e9', bgColor: '#f0f9ff', count: 0 },
+    { value: 'READY_TO_SHIP',label: 'Đang giao hàng',  icon: 'bi-box-seam-fill',       color: '#6366f1', bgColor: '#eef2ff', count: 0 },
+    // { value: 'SHIPPING',     label: 'Đang giao',      icon: 'bi-truck',               color: '#0ea5e9', bgColor: '#f0f9ff', count: 0 },
     { value: 'DELIVERED',    label: 'Đã giao',        icon: 'bi-patch-check-fill',    color: '#10b981', bgColor: '#ecfdf5', count: 0 },
     { value: 'CANCELLED',    label: 'Đã hủy',         icon: 'bi-x-circle-fill',       color: '#ef4444', bgColor: '#fef2f2', count: 0 },
     { value: 'RETURNED',     label: 'Hoàn trả',       icon: 'bi-arrow-return-left',   color: '#8b5cf6', bgColor: '#f5f3ff', count: 0 },
@@ -237,7 +237,7 @@ export class OrderManagementComponent implements OnInit, OnDestroy {
         const tabAll = this.statusTabs.find(t => t.value === 'ALL');
         if (tabAll) tabAll.count = all.length;
 
-        const statuses: OrderStatus[] = ['PROCESSING','READY_TO_SHIP','SHIPPING','DELIVERED','CANCELLED','RETURNED'];
+        const statuses: OrderStatus[] = ['PROCESSING','READY_TO_SHIP','DELIVERED','CANCELLED','RETURNED'];
         statuses.forEach(s => {
           const t = this.statusTabs.find(x => x.value === s);
           if (t) t.count = all.filter(o => o.status === s).length;
@@ -423,7 +423,7 @@ export class OrderManagementComponent implements OnInit, OnDestroy {
   getStatusLabel(status: string): string {
     const map: Record<string, string> = {
       PROCESSING:    'Chờ xác nhận',
-      READY_TO_SHIP: 'Sẵn sàng giao',
+      READY_TO_SHIP: 'Đang giao',
       SHIPPING:      'Đang giao',
       DELIVERED:     'Đã giao',
       CANCELLED:     'Đã hủy',
@@ -445,7 +445,7 @@ export class OrderManagementComponent implements OnInit, OnDestroy {
     return {
       PROCESSING:    'bi-hourglass-split',
       READY_TO_SHIP: 'bi-box-seam',
-      SHIPPING:      'bi-truck',
+      // SHIPPING:      'bi-truck',
       DELIVERED:     'bi-patch-check-fill'
     }[step] ?? 'bi-circle';
   }

@@ -81,8 +81,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           if (!newToken) {
             // Server trả 200 nhưng không có token → coi như thất bại
             refreshTokenSubject.next(undefined); // giải phóng request đang chờ với undefined
-            tokenService.removeToken();
-            router.navigate(['/auth']);
+            // tokenService.removeToken();
+            // router.navigate(['/auth']);
             return throwError(() => new Error('Refresh token không hợp lệ'));
           }
 
@@ -100,8 +100,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           // → các request đang chờ nhận lỗi sạch, không bị treo
           refreshTokenSubject.next(undefined);
 
-          tokenService.removeToken();
-          router.navigate(['/auth']);
+          // tokenService.removeToken();
+          // router.navigate(['/auth']);
           return throwError(() => refreshError);
         })
       );

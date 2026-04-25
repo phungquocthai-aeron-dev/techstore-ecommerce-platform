@@ -114,13 +114,24 @@ export class AdminChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  // get filteredConvs(): ConversationResponse[] {
+  //   const q = this.convSearch.toLowerCase().trim();
+  //   if (!q) return this.conversations;
+  //   return this.conversations.filter((c) =>
+  //     this.getConvName(c).toLowerCase().includes(q)
+  //   );
+  // }
+
   get filteredConvs(): ConversationResponse[] {
-    const q = this.convSearch.toLowerCase().trim();
-    if (!q) return this.conversations;
-    return this.conversations.filter((c) =>
-      this.getConvName(c).toLowerCase().includes(q)
-    );
-  }
+  const q = this.convSearch.toLowerCase().trim();
+
+  return this.conversations
+    .filter(c => c.participants.some(p => p.userType === 'EXTERNAL')) // lọc khách hàng
+    .filter(c => {
+      if (!q) return true;
+      return this.getConvName(c).toLowerCase().includes(q);
+    });
+}
 
   selectConv(conv: ConversationResponse): void {
     this.activeConv = conv;

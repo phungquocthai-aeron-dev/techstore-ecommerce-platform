@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Subject, forkJoin } from 'rxjs';
+import { Observable, Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf, DatePipe, DecimalPipe } from '@angular/common';
@@ -42,13 +42,20 @@ export class StatisticsComponent implements OnInit, OnDestroy {
   fromDate = '';
   toDate   = '';
 
+  // periodOptions: { value: RevenuePeriod; label: string }[] = [
+  //   { value: 'TODAY',   label: 'Hôm nay'    },
+  //   { value: 'MONTH',   label: 'Tháng này'  },
+  //   { value: 'QUARTER', label: 'Quý này'    },
+  //   { value: 'YEAR',    label: 'Năm nay'    },
+  //   { value: 'CUSTOM',  label: 'Tùy chọn'   },
+  // ];
+
   periodOptions: { value: RevenuePeriod; label: string }[] = [
-    { value: 'TODAY',   label: 'Hôm nay'    },
-    { value: 'MONTH',   label: 'Tháng này'  },
-    { value: 'QUARTER', label: 'Quý này'    },
-    { value: 'YEAR',    label: 'Năm nay'    },
-    { value: 'CUSTOM',  label: 'Tùy chọn'   },
-  ];
+  { value: 'TODAY',   label: 'Hôm nay'   },
+  { value: 'MONTH',   label: 'Tháng' },
+  { value: 'QUARTER', label: 'Quý'   },
+  { value: 'YEAR',    label: 'Năm'   },
+];
 
   tabs: { key: TabType; label: string; icon: string }[] = [
     { key: 'revenue',   label: 'Doanh thu',    icon: 'bi-graph-up-arrow'    },
@@ -122,54 +129,129 @@ export class StatisticsComponent implements OnInit, OnDestroy {
 
   // ─── Load ────────────────────────────────────
 
+  // loadAll(): void {
+  //   console.log('loadAll called, params:', this.buildParams());
+  //   this.loading = true;
+
+  //   const params = this.buildParams();
+
+  //   forkJoin({
+  //     revenue:     this.orderService.getRevenueStats(params),
+  //     summary:     this.orderService.getOrderSummary({ ...params, status: 'ALL' }),
+  //     topVariants: this.orderService.getTopVariants({ top: this.topVariantsCount, from: params.from, to: params.to }),
+  //     topCustomers:this.orderService.getTopLoyalCustomers({ top: this.topCustomersCount, period: params.period, from: params.from, to: params.to }),
+  //     warehouse:   this.warehouseStatsService.getInboundCost(this.mapPeriod(this.selectedPeriod), params.from, params.to),
+  //   }).pipe(takeUntil(this.destroy$))
+  //     .subscribe({
+  //       next: res => {
+  //         this.revenueStats = res.revenue.result ?? null;
+  //         console.error("AAAAAAA")
+  //         console.log(res.revenue)
+  //         const pts = this.revenueStats?.dataPoints ?? [];
+  //         this.revenueMax   = Math.max(...pts.map(p => p.revenue), 1);
+
+  //         this.orderSummary  = res.summary.result ?? null;
+
+  //         this.topVariants  = res.topVariants.result ?? [];
+  //         this.variantMax   = Math.max(...this.topVariants.map(v => v.totalQuantitySold), 1);
+
+  //         this.topCustomers = res.topCustomers.result ?? [];
+
+  //         this.warehouseStats = res.warehouse.result ?? null;
+  //         const wpts = this.warehouseStats?.data ?? [];
+  //         this.warehouseMax = Math.max(...wpts.map(p => p.totalCost), 1);
+
+  //         this.loading = false;
+  //       },
+  //       error: () => { this.loading = false; }
+  //     });
+
+  //   if (this.selectedProduct) this.loadProductSales();
+  // }
+
   loadAll(): void {
-    this.loading = true;
+  console.log('loadAll called, params:', this.buildParams());
+  this.loading = true;
+  const params = this.buildParams();
 
-    const params = this.buildParams();
+  const requests: Record<string, Observable<any>> = {
+    revenue:      this.orderService.getRevenueStats(params),
+    summary:      this.orderService.getOrderSummary({ ...params, status: 'ALL' }),
+    topVariants:  this.orderService.getTopVariants({ top: this.topVariantsCount, from: params.from, to: params.to }),
+    topCustomers: this.orderService.getTopLoyalCustomers({ top: this.topCustomersCount, period: params.period, from: params.from, to: params.to }),
+    warehouse:    this.warehouseStatsService.getInboundCost(this.mapPeriod(this.selectedPeriod), params.from, params.to),
+  };
 
-    forkJoin({
-      revenue:     this.orderService.getRevenueStats(params),
-      summary:     this.orderService.getOrderSummary({ ...params, status: 'ALL' }),
-      topVariants: this.orderService.getTopVariants({ top: this.topVariantsCount, from: params.from, to: params.to }),
-      topCustomers:this.orderService.getTopLoyalCustomers({ top: this.topCustomersCount, period: params.period, from: params.from, to: params.to }),
-      warehouse:   this.warehouseStatsService.getInboundCost(this.mapPeriod(this.selectedPeriod), params.from, params.to),
-    }).pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: res => {
+  // Chỉ lấy request cần thiết cho tab hiện tại
+  const tabRequestMap: Record<TabType, (keyof typeof requests)[]> = {
+    'revenue':       ['revenue'],
+    'orders':        ['summary'],
+    'products':      ['topVariants'],
+    'customers':     ['topCustomers'],
+    'warehouse':     ['warehouse'],
+    'product-sales': [],
+  };
+
+  const needed = tabRequestMap[this.activeTab];
+  const activeRequests: Record<string, Observable<any>> = {};
+  for (const key of needed) {
+    activeRequests[key] = requests[key];
+  }
+
+  // Nếu không có request nào (product-sales tự load riêng)
+  if (Object.keys(activeRequests).length === 0) {
+    this.loading = false;
+    if (this.selectedProduct) this.loadProductSales();
+    return;
+  }
+
+  forkJoin(activeRequests)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (res: any) => {
+        if (res.revenue) {
           this.revenueStats = res.revenue.result ?? null;
           const pts = this.revenueStats?.dataPoints ?? [];
-          this.revenueMax   = Math.max(...pts.map(p => p.revenue), 1);
-
-          this.orderSummary  = res.summary.result ?? null;
-
-          this.topVariants  = res.topVariants.result ?? [];
-          this.variantMax   = Math.max(...this.topVariants.map(v => v.totalQuantitySold), 1);
-
+          this.revenueMax = Math.max(...pts.map((p: any) => p.revenue), 1);
+        }
+        if (res.summary) {
+          this.orderSummary = res.summary.result ?? null;
+        }
+        if (res.topVariants) {
+          this.topVariants = res.topVariants.result ?? [];
+          this.variantMax = Math.max(...this.topVariants.map(v => v.totalQuantitySold), 1);
+        }
+        if (res.topCustomers) {
           this.topCustomers = res.topCustomers.result ?? [];
-
+        }
+        if (res.warehouse) {
           this.warehouseStats = res.warehouse.result ?? null;
           const wpts = this.warehouseStats?.data ?? [];
-          this.warehouseMax = Math.max(...wpts.map(p => p.totalCost), 1);
+          this.warehouseMax = Math.max(...wpts.map((p: any) => p.totalCost), 1);
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('forkJoin error:', err);
+        this.loading = false;
+      }
+    });
 
-          this.loading = false;
-        },
-        error: () => { this.loading = false; }
-      });
+  if (this.selectedProduct) this.loadProductSales();
+}
 
-    if (this.selectedProduct) this.loadProductSales();
-  }
+  // onPeriodChange(): void {
+  //   if (this.selectedPeriod !== 'CUSTOM') this.loadAll();
+  // }
 
-  onPeriodChange(): void {
-    if (this.selectedPeriod !== 'CUSTOM') this.loadAll();
-  }
+  // applyCustomRange(): void {
+  //   if (this.fromDate && this.toDate) this.loadAll();
+  // }
 
-  applyCustomRange(): void {
-    if (this.fromDate && this.toDate) this.loadAll();
-  }
-
-  switchTab(tab: TabType): void {
-    this.activeTab = tab;
-  }
+switchTab(tab: TabType): void {
+  this.activeTab = tab;
+  this.loadAll(); // ← load đúng API cho tab mới
+}
 
   onProductSearchInput(): void {
     if (this.productSearchQuery.trim().length >= 1) {

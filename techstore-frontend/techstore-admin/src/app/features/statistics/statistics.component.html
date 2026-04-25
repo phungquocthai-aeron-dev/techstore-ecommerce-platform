@@ -20,7 +20,7 @@
   </div>
 
   <!-- ══════════════ PERIOD FILTER ══════════════ -->
-  <div class="st-filter-bar">
+  <!-- <div class="st-filter-bar">
     <div class="st-period-tabs">
       <button
         class="st-period-btn"
@@ -53,6 +53,41 @@
       >
         <i class="bi bi-check-lg"></i> Áp dụng
       </button>
+    </div>
+  </div> -->
+
+  <!-- ══════════════ PERIOD FILTER V2 ══════════════ -->
+  <div class="st-filter-bar">
+    <div class="st-filter-group">
+      <div class="st-filter-label">Chu kỳ</div>
+      <div class="st-period-tabs">
+        <button
+          class="st-period-btn"
+          *ngFor="let p of periodOptions"
+          [class.active]="selectedPeriod === p.value"
+          (click)="selectedPeriod = p.value; loadAll()"
+        >
+          {{ p.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="st-filter-divider"></div>
+
+    <div class="st-filter-group">
+      <div class="st-filter-label">Khoảng thời gian</div>
+      <div class="st-date-range">
+        <input class="st-date-input" type="date" [(ngModel)]="fromDate" />
+        <span class="st-date-sep">—</span>
+        <input class="st-date-input" type="date" [(ngModel)]="toDate" />
+        <button
+          class="st-apply-btn"
+          (click)="loadAll()"
+          [disabled]="!fromDate || !toDate"
+        >
+          <i class="bi bi-check-lg"></i> Áp dụng
+        </button>
+      </div>
     </div>
   </div>
 
@@ -137,6 +172,19 @@
         *ngIf="revenueStats && revenueStats.dataPoints.length > 0"
       >
         <div class="st-chart-bars">
+          <!-- <div class="st-chart-col" *ngFor="let pt of revenueStats.dataPoints">
+            <div class="st-bar-tooltip">
+              <strong>{{ formatShort(pt.revenue) }}</strong>
+              <span>{{ pt.orderCount }} đơn</span>
+            </div>
+            <div
+              class="st-bar"
+              [style.height.%]="getBarH(pt.revenue, revenueMax)"
+            ></div>
+            <div class="st-bar-label">{{ pt.label }}</div>
+          </div> -->
+
+          <!-- Thay vì dùng gap để tách bar và label, dùng position absolute cho label -->
           <div class="st-chart-col" *ngFor="let pt of revenueStats.dataPoints">
             <div class="st-bar-tooltip">
               <strong>{{ formatShort(pt.revenue) }}</strong>

@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import jakarta.transaction.Transactional;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -105,9 +106,9 @@ public class OrderServiceImpl implements OrderService {
         List<Order> orders;
 
         if (status == null || status.isBlank() || status.equalsIgnoreCase("ALL")) {
-            orders = orderRepository.findByCustomerId(customerId);
+            orders = orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
         } else {
-            orders = orderRepository.findByCustomerIdAndStatus(customerId, status);
+            orders = orderRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(customerId, status);
         }
 
         return orders.stream()
@@ -178,9 +179,9 @@ public class OrderServiceImpl implements OrderService {
         List<Order> orders;
 
         if (status == null || status.isBlank() || status.equalsIgnoreCase("ALL")) {
-            orders = orderRepository.findAll();
+            orders = orderRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         } else {
-            orders = orderRepository.findByStatus(status);
+            orders = orderRepository.findByStatusOrderByCreatedAtDesc(status);
         }
 
         return orders.stream()

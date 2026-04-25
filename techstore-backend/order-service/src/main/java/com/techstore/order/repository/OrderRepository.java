@@ -13,11 +13,11 @@ import com.techstore.order.entity.Order;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    List<Order> findByCustomerId(Long customerId);
+    List<Order> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 
-    List<Order> findByCustomerIdAndStatus(Long customerId, String status);
+    List<Order> findByCustomerIdAndStatusOrderByCreatedAtDesc(Long customerId, String status);
 
-    List<Order> findByStatus(String status);
+    List<Order> findByStatusOrderByCreatedAtDesc(String status);
 
     @Query(
             """

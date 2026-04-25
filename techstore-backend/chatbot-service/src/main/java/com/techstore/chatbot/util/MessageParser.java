@@ -137,23 +137,91 @@ public class MessageParser {
      * "laptop gaming dưới 20 triệu" → "laptop gaming"
      * "iphone 15 tầm 25 triệu"      → "iphone 15"
      */
+    //    public String extractSearchKeyword(String message) {
+    //        String result = message.toLowerCase()
+    //
+    //                // Loại cụm chỉ giá (phải làm trước khi xóa số đơn lẻ)
+    //                .replaceAll("(?i)\\b(dưới|trên|tầm|khoảng|từ|đến|hơn)\\s+\\d+(?:[.,]\\d+)?\\s*(?:triệu|tr)\\b",
+    // "")
+    //                .replaceAll("(?i)\\d+(?:[.,]\\d+)?\\s*(?:triệu|tr)\\b", "")
+    //
+    //                // Loại từ phụ không liên quan
+    //                .replaceAll(
+    //                        "(?i)\\b(tôi muốn|cho tôi|giúp tôi|tìm|mua|xem|cần|muốn mua|có không|còn
+    // không|giá|budget)\\b",
+    //                        "")
+    //
+    //                // Xóa khoảng trắng thừa
+    //                .replaceAll("\\s{2,}", " ")
+    //                .trim();
+    //
+    //        return result.isEmpty() ? message.trim() : result;
+    //    }
+
     public String extractSearchKeyword(String message) {
         String result = message.toLowerCase()
-
-                // Loại cụm chỉ giá (phải làm trước khi xóa số đơn lẻ)
-                .replaceAll("(?i)\\b(dưới|trên|tầm|khoảng|từ|đến|hơn)\\s+\\d+(?:[.,]\\d+)?\\s*(?:triệu|tr)\\b", "")
+                .replaceAll(
+                        "(?i)\\b(dưới|trên|tầm|khoảng|từ|đến|hơn)\\s+\\d+(?:[.,]\\d+)?\\s*(?:triệu|tr|k|nghìn)\\b", "")
                 .replaceAll("(?i)\\d+(?:[.,]\\d+)?\\s*(?:triệu|tr)\\b", "")
 
-                // Loại từ phụ không liên quan
+                // ✅ THÊM: strip câu hỏi đầu/cuối
+                .replaceAll("(?i)^(có|bạn có|shop có|cho tôi xem|cho mình)\\s+", "")
+                .replaceAll("(?i)\\s+(nào|không|ko|k|vậy|nhỉ|nhé|ạ|hả|ha|hông)\\s*$", "")
+
+                // ✅ THÊM: chuẩn hóa tiếng lóng
+                .replace("chơi game", "gaming")
+                .replace("lấp top", "laptop")
+                .replace("máy tính xách tay", "laptop")
                 .replaceAll(
                         "(?i)\\b(tôi muốn|cho tôi|giúp tôi|tìm|mua|xem|cần|muốn mua|có không|còn không|giá|budget)\\b",
                         "")
-
-                // Xóa khoảng trắng thừa
                 .replaceAll("\\s{2,}", " ")
                 .trim();
 
-        return result.isEmpty() ? message.trim() : result;
+        // ✅ Nếu kết quả vẫn quá dài (>4 từ) → có thể vẫn là câu hỏi, trả null
+        if (result.isEmpty() || result.split("\\s+").length > 4) {
+            return extractFallbackKeyword(message);
+        }
+
+        return result;
+    }
+
+    // ✅ THÊM method mới
+    private String extractFallbackKeyword(String message) {
+        String lower = message.toLowerCase()
+                .replace("chơi game", "gaming")
+                .replace("lấp top", "laptop")
+                .replace("máy tính xách tay", "laptop");
+
+        // Ưu tiên theo thứ tự cụ thể → chung
+        List<String> terms = List.of(
+                "laptop gaming",
+                "laptop văn phòng",
+                "laptop đồ họa",
+                "laptop sinh viên",
+                "iphone",
+                "samsung galaxy",
+                "xiaomi",
+                "oppo",
+                "macbook",
+                "laptop",
+                "điện thoại",
+                "smartphone",
+                "tai nghe",
+                "chuột",
+                "bàn phím",
+                "màn hình",
+                "cpu",
+                "gpu",
+                "ram",
+                "ssd",
+                "mainboard");
+
+        for (String term : terms) {
+            if (lower.contains(term)) return term;
+        }
+
+        return null; // null → search theo giá không có keyword
     }
 
     /**

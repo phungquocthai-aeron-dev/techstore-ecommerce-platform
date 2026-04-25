@@ -58,6 +58,7 @@ public class NlpIntentService {
 
         } catch (Exception ex) {
             log.warn("  [NLP] Gemini analysis failed: {}, falling back to rule-based", ex.getMessage());
+            log.warn("  [NLP] FULL EXCEPTION:", ex);
         }
 
         // Fallback: MessageParser rule-based
@@ -69,23 +70,54 @@ public class NlpIntentService {
     // ─────────────────────────────────────────────────────────────────────────
 
     private IntentAnalysisResult analyzeWithGemini(String message) throws Exception {
+        log.info(">>> [NLP] TRY Gemini với message: {}", message);
         String prompt = buildAnalysisPrompt(message);
+
+        log.info("🧠 [Gemini] PROMPT:\n{}", prompt);
+        log.info(">>> [NLP] TRY Gemini với message: {}", message);
         String rawJson = geminiService.generateContent(prompt);
 
-        // Gemini đôi khi wrap JSON trong ```json ... ``` — cần strip
-        //        String cleanJson =
-        //                rawJson.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
-        String cleanJson = rawJson.trim();
+        // 🔥 LOG QUAN TRỌNG NHẤT
+        log.info("🔥 [Gemini] RAW RESPONSE:\n{}", rawJson);
+
+        // Clean markdown nếu có
+        String cleanJson =
+                rawJson.replaceAll("(?s)```json\\s*", "").replaceAll("```", "").trim();
+
+        log.info("🧹 [Gemini] CLEAN JSON:\n{}", cleanJson);
 
         try {
-            return objectMapper.readValue(cleanJson, IntentAnalysisResult.class);
+            IntentAnalysisResult result = objectMapper.readValue(cleanJson, IntentAnalysisResult.class);
+
+            // 🔥 LOG KẾT QUẢ PARSE
+            log.info("✅ [Gemini] PARSED RESULT: {}", result);
+
+            return result;
+
         } catch (Exception ex) {
-            log.warn("[NLP] Parse failed, retry Gemini");
+            log.warn("❌ [Gemini] Parse failed, retrying...");
+            log.warn("❌ [Gemini] ERROR:", ex);
 
             String retryPrompt = buildRetryPrompt(message);
+
+            log.info("🔁 [Gemini] RETRY PROMPT:\n{}", retryPrompt);
+
             String retryJson = geminiService.generateContent(retryPrompt);
 
-            return objectMapper.readValue(retryJson.trim(), IntentAnalysisResult.class);
+            log.info("🔥 [Gemini] RETRY RAW:\n{}", retryJson);
+
+            String retryClean = retryJson
+                    .replaceAll("(?s)```json\\s*", "")
+                    .replaceAll("```", "")
+                    .trim();
+
+            log.info("🧹 [Gemini] RETRY CLEAN:\n{}", retryClean);
+
+            IntentAnalysisResult retryResult = objectMapper.readValue(retryClean, IntentAnalysisResult.class);
+
+            log.info("✅ [Gemini] RETRY PARSED: {}", retryResult);
+
+            return retryResult;
         }
     }
 
@@ -170,8 +202,8 @@ public class NlpIntentService {
 		- PRODUCT_SEARCH: tìm/mua/xem sản phẩm (có thể kèm giá hoặc tên hãng nếu có)
 		- STOCK_CHECK: hỏi còn hàng/tồn kho
 		- COMPARE: so sánh 2 sản phẩm
-		- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, liên hệ)
-		- COUPON: hỏi mã giảm giá, ưu đãi
+		- FAQ: hỏi chính sách (bảo hành, đổi trả, giao hàng, thanh toán, trả góp, liên hệ, hướng dẫn hoặc cách mua hàng)
+		- COUPON: hỏi mã giảm giá, ưu đãi, khuyến mãi
 		- AI_ADVICE: tư vấn, gợi ý, kỹ thuật, chào hỏi
 
 		Quy tắc xử lý:

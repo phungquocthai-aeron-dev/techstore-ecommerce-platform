@@ -57,7 +57,7 @@ public class FaqService {
                 """
 				🚚 **Chính sách giao hàng TechStore:**
 
-				• **Nội thành (HCM, HN, Đà Nẵng):** 2–4 giờ (giao nhanh) hoặc 1 ngày (giao tiêu chuẩn).
+				• **Nội thành (Cần Thơ):** 2–4 giờ (giao nhanh) hoặc 1 ngày (giao tiêu chuẩn).
 				• **Tỉnh thành khác:** 2–5 ngày làm việc.
 				• **Miễn phí giao hàng:** Đơn từ 500.000đ trở lên.
 				• **Phí ship:** 20.000đ – 50.000đ tùy khu vực.
@@ -72,10 +72,9 @@ public class FaqService {
                 """
 				💳 **Các phương thức thanh toán:**
 
-				• Tiền mặt khi nhận hàng (COD)
 				• Chuyển khoản ngân hàng
 				• Thẻ tín dụng / ghi nợ (Visa, Mastercard, JCB)
-				• Ví điện tử: MoMo, ZaloPay, VNPay
+				• Ví điện tử: VNPay
 				• Trả góp 0% lãi suất qua thẻ tín dụng (đơn từ 3 triệu)
 				""");
 
@@ -105,6 +104,30 @@ public class FaqService {
 
         faqMap.put("hotline", faqMap.get("liên hệ"));
         faqMap.put("địa chỉ", faqMap.get("liên hệ"));
+        // ===== Hướng dẫn mua hàng =====
+        faqMap.put(
+                "mua hàng",
+                """
+				🛒 **Hướng dẫn mua hàng tại TechStore:**
+
+				**Bước 1:** Tìm sản phẩm bạn muốn (có thể dùng thanh tìm kiếm hoặc hỏi chatbot 😉)
+				**Bước 2:** Chọn sản phẩm → nhấn **"Thêm vào giỏ hàng"** hoặc **"Mua ngay"**
+				**Bước 3:** Kiểm tra giỏ hàng → nhập thông tin nhận hàng
+				**Bước 4:** Chọn phương thức thanh toán phù hợp
+				**Bước 5:** Xác nhận đơn hàng 🎉
+
+				📦 Sau khi đặt hàng thành công:
+				• Bạn sẽ nhận được xác nhận qua email hoặc điện thoại
+				• Có thể theo dõi đơn hàng trực tiếp trên hệ thống
+
+				💬 Nếu cần hỗ trợ, bạn có thể chat ngay tại đây hoặc gọi hotline!
+				""");
+
+        faqMap.put("mua như", faqMap.get("mua hàng"));
+        faqMap.put("làm sao mua", faqMap.get("mua hàng"));
+        faqMap.put("cách mua", faqMap.get("mua hàng"));
+        faqMap.put("đặt hàng", faqMap.get("mua hàng"));
+        faqMap.put("hướng dẫn mua", faqMap.get("mua hàng"));
 
         //        // ===== Khuyến mãi =====
         //        faqMap.put(

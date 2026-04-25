@@ -60,6 +60,7 @@ public enum ErrorCode {
     INVALID_COLOR(4004, "Invalid variant color", HttpStatus.BAD_REQUEST),
     VARIANT_IMAGE_NOT_FOUND(4005, "Variant image not found", HttpStatus.BAD_REQUEST),
     GEMINI_API_ERROR(4005, "Gemini api error", HttpStatus.INTERNAL_SERVER_ERROR),
+    GEMINI_QUOTA_EXCEEDED(4006, "Gemini quota exceeded", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

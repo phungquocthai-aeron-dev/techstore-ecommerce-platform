@@ -22,7 +22,11 @@ app:
     secret: ${SESSION_KEY:b9fe0f207c53bf5eddca26bd363df8c4}
 
   gemini:
-    api-key: ${GEMINI_API_KEY:your-api-key}
+    api-keys:
+      - key: ${GEMINI_API_KEY_1:your-api-key-1}
+      - key: ${GEMINI_API_KEY_2:your-api-key-2}
+      - key: ${GEMINI_API_KEY_3:your-api-key-3}
+      - key: ${GEMINI_API_KEY_4:your-api-key-4}
     url: ${GEMINI_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent}
 jwt:
     signerKey: ${JWT_SIGNER_KEY:u00HlI390ctLn7BGyr0F2HczWiIskDBeX9WFOk25MEGnFoEjKwFoZh6h7gcX3Z3pJ0BAr9AbbGXelLMviWbZoZ}

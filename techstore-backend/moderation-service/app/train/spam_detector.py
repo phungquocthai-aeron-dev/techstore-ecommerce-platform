@@ -15,6 +15,9 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
 import warnings
 warnings.filterwarnings('ignore')
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # ========================= CẤU HÌNH =========================
 CSV_FILE       = '../data/comments_dataset.csv'
 TEST_SIZE      = 0.2
@@ -33,8 +36,9 @@ VIETNAMESE_STOPWORDS = [
 
 # Bad words – bổ sung tùy ý
 BAD_WORDS = {
-    "vcl", "vl", "cc", "dm", "cmm", "đm", "đmm",
-    "clm", "cặc", "lồn", "đéo", "địt", "mẹ kiếp", "bố mày",
+    "vcl", "vl", "cc", "dm", "cmm", "đm", "đmm", "ngu", "hãm", "giết", "máu", "đâm", "chém", "chặt", "chó", "đụ"
+    "clm", "cặc", "lồn", "đéo", "địt", "mẹ kiếp", "bố mày", "đĩ", "phò", "md", "shit", "cức", "cứt", "như cái", "mất dạy",
+    "khốn nạn", "quần què", "cút", "bố đời", "mất nết"
 }
 
 # Toxic threshold – nếu xác suất Toxic vượt ngưỡng này thì override
@@ -194,7 +198,12 @@ class SpamDetector:
         print("ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP TEST")
         print("="*60)
 
-        y_pred = self.predict(X_test)
+        # y_pred = self.predict(X_test)
+        y_pred = []
+        for text in X_test:
+            label, _ = self.predict_single(text)  # đi qua 3 layer
+            y_pred.append(label)
+        
         labels = list(self.model.classes_)
 
         accuracy  = accuracy_score(y_test, y_pred)
@@ -225,7 +234,17 @@ class SpamDetector:
             row_str = f"Actual {row_label:<9}" + "".join(f"{cm[i][j]:^{col_w}}" for j in range(len(labels)))
             print(row_str)
         print("="*60)
+        
+        print("\nCHI TIẾT DỰ ĐOÁN:")
+        print("-"*80)
 
+        for i in range(len(X_test)):
+            print(f"Text      : {X_test[i]}")
+            print(f"Actual    : {y_test[i]}")
+            print(f"Predicted : {y_pred[i]}")
+            print("-"*80)
+
+        plot_confusion_matrix(cm, labels)
         return accuracy, precision, recall, f1
 
 
@@ -282,7 +301,8 @@ def main():
 
     # ── BƯỚC 3: CHIA TRAIN/TEST ──
     print(f"\n[BƯỚC 3] Chia tập train/test ({(1-TEST_SIZE)*100:.0f}/{TEST_SIZE*100:.0f})...")
-    X = df['processed_text'].values
+    # X = df['processed_text'].values
+    X = df['text'].values
     y = df['label'].values
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
@@ -336,6 +356,18 @@ def main():
 
         except Exception as e:
             print(f"  ✗ LỖI KHI DỰ ĐOÁN: {e}")
+
+def plot_confusion_matrix(cm, labels):
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=labels, yticklabels=labels)
+
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.title("Confusion Matrix")
+    plt.tight_layout()
+    plt.savefig("confusion_matrix.png")  # lưu file
+    plt.show()
 
 
 # ========================= CHẠY =========================

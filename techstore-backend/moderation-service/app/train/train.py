@@ -47,7 +47,8 @@ def train_and_save():
 
     # ── CHIA TRAIN/TEST ────────────────────────────────────────────
     print(f"\n[3/5] Chia train/test ({(1-TEST_SIZE)*100:.0f}/{TEST_SIZE*100:.0f})...")
-    X = df['processed_text'].values
+    # X = df['processed_text'].values
+    X = df['text'].values
     y = df['label'].values
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y

@@ -304,10 +304,20 @@
 .co-spinner-sm { width:16px; height:16px; border-width:2px; }
 .co-coupon-empty { display:flex; align-items:center; justify-content:center; gap:8px; padding:16px 0; color:#334155; font-size:0.82rem; }
 .co-coupon-list { display:flex; flex-direction:column; gap:7px; }
-.co-coupon-list-scroll { max-height:272px; overflow-y:auto; padding-right:4px; }
+/* .co-coupon-list-scroll { max-height:272px; overflow-y:auto; padding-right:4px; } */
+.co-coupon-scrollable {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+}
 .co-coupon-list-scroll::-webkit-scrollbar { width:4px; }
 .co-coupon-list-scroll::-webkit-scrollbar-track { background:rgba(56,189,248,0.05); border-radius:4px; }
 .co-coupon-list-scroll::-webkit-scrollbar-thumb { background:rgba(56,189,248,0.25); border-radius:4px; }
+.co-coupon-scrollable::-webkit-scrollbar { width: 4px; }
+.co-coupon-scrollable::-webkit-scrollbar-track { background: rgba(56,189,248,0.05); border-radius: 4px; }
+.co-coupon-scrollable::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.25); border-radius: 4px; }
+.co-coupon-scrollable::-webkit-scrollbar-thumb:hover { background: rgba(56,189,248,0.5); }
 .co-coupon-group-sep { display:flex; align-items:center; gap:8px; margin:2px 0 5px; }
 .co-coupon-group-sep hr { flex:1; border:none; border-top:1px solid rgba(56,189,248,0.08); }
 .co-coupon-group-sep span { font-size:0.68rem; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; white-space:nowrap; }
@@ -336,6 +346,11 @@
 .co-cp-card.selected .co-cp-rring { border-color:#38bdf8; background:rgba(56,189,248,0.12); }
 .co-cp-rdot { width:7px; height:7px; border-radius:50%; background:#38bdf8; display:none; }
 .co-cp-card.selected .co-cp-rdot { display:block; }
+.co-card .co-coupon-block-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {

@@ -261,7 +261,7 @@
           <span>Đang tải mã giảm giá...</span>
         </div>
 
-        <ng-container *ngIf="!couponsLoading">
+        <div *ngIf="!couponsLoading" class="co-coupon-scrollable">
           <!-- Empty -->
           <div *ngIf="availableCoupons.length === 0" class="co-coupon-empty">
             <i class="bi bi-ticket-perforated"></i>
@@ -371,7 +371,7 @@
               <div class="co-cp-radio"><div class="co-cp-rring"></div></div>
             </div>
           </div>
-        </ng-container>
+        </div>
       </div>
 
       <!-- Tóm tắt đơn hàng -->

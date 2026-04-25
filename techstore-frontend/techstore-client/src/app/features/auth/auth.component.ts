@@ -103,7 +103,8 @@ constructor(
       },
       error: (err) => {
         this.isLoginLoading = false;
-        const msg = err?.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        // const msg = err?.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        const msg = 'Đăng nhập thất bại. Vui lòng thử lại.';
         this.showAlert('login', msg, 'error');
       }
     });

@@ -82,7 +82,7 @@ console.log(error)
           if (!newToken) {
             // Server trả 200 nhưng không có token → coi như thất bại
             refreshTokenSubject.next(undefined); // giải phóng request đang chờ với undefined
-            tokenService.removeToken();
+            // tokenService.removeToken();
             // router.navigate(['/home']);
             return throwError(() => new Error('Refresh token không hợp lệ'));
           }
@@ -101,7 +101,7 @@ console.log(error)
           // → các request đang chờ nhận lỗi sạch, không bị treo
           refreshTokenSubject.next(undefined);
 
-          tokenService.removeToken();
+          // tokenService.removeToken();
           // router.navigate(['/home']);
           return throwError(() => refreshError);
         })

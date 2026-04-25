@@ -8,6 +8,8 @@ import { CustomerResponse, CustomerUpdateRequest } from './models/customer.model
 import { AddressResponse, AddressRequest } from './models/address.model';
 import { ProvinceData, DistrictData, WardData } from '../check-out/models/shipping.model';
 import { environment } from '../../../environments/environment';
+import { TokenService } from '../../core/services/token.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile',
@@ -19,7 +21,7 @@ import { environment } from '../../../environments/environment';
 export class ProfileComponent implements OnInit {
 
   // ─── State ───────────────────────────────────────────
-  customerId = 1; // TODO: lấy từ AuthService / localStorage
+  customerId!: number;
 
   customer: CustomerResponse | null = null;
   addresses: AddressResponse[] = [];
@@ -61,10 +63,18 @@ export class ProfileComponent implements OnInit {
   constructor(
     private customerService: CustomerService,
     private addressService: AddressService,
-    private shippingService: ShippingService
+    private shippingService: ShippingService,
+    private tokenService: TokenService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
+    const id = Number(this.tokenService.getUserId());
+    if (!id) {
+      this.router.navigate(['/']);
+      return;
+    }
+    this.customerId = id;
     this.loadCustomer();
     this.loadAddresses();
   }

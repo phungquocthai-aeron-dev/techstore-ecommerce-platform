@@ -18,11 +18,38 @@
   <div class="page-hero mt-5 pt-4">
     <div class="page-hero__glow"></div>
     <div class="page-hero__content">
-      <h1 class="page-hero__title">
-        <span class="page-hero__icon"><i class="bi bi-bag-check"></i></span>
-        Đơn Hàng Của Tôi
-      </h1>
-      <p class="page-hero__sub">Theo dõi và quản lý toàn bộ đơn hàng của bạn</p>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        "
+      >
+        <div>
+          <h1 class="page-hero__title">
+            <span class="page-hero__icon"><i class="bi bi-bag-check"></i></span>
+            Đơn Hàng Của Tôi
+          </h1>
+          <p class="page-hero__sub">
+            Theo dõi và quản lý toàn bộ đơn hàng của bạn
+          </p>
+        </div>
+
+        <!-- NÚT LOAD LẠI -->
+        <button
+          class="btn-act btn-act--outline"
+          (click)="reloadOrders()"
+          [disabled]="loading"
+        >
+          <i
+            class="bi"
+            [class.bi-arrow-clockwise]="!loading"
+            [class.bi-arrow-repeat]="loading"
+          ></i>
+          {{ loading ? "Đang tải..." : "Làm mới" }}
+        </button>
+      </div>
     </div>
     <div class="page-hero__stat">
       <span class="stat-num">{{ allOrders.length }}</span>

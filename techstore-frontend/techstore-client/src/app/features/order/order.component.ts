@@ -7,6 +7,7 @@ import { ReviewService } from '../review/review.service';
 
 import { CreateReviewRequest } from '../review/models/review-request.model';
 import { CustomerOrderItemResponse, CustomerOrderResponse } from '../check-out/models/order.model';
+import { TokenService } from '../../core/services/token.service';
 
 type TabStatus = 'ALL' | 'PROCESSING' | 'READY_TO_SHIP' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
 
@@ -70,8 +71,8 @@ export class OrdersComponent implements OnInit {
   tabs: Tab[] = [
     { key: 'ALL',           label: 'Tất cả',        icon: 'bi-grid-3x3-gap'      },
     { key: 'PROCESSING',    label: 'Đang xử lý',    icon: 'bi-gear'              },
-    { key: 'READY_TO_SHIP', label: 'Sẵn sàng giao', icon: 'bi-box-seam'          },
-    { key: 'SHIPPING',      label: 'Đang giao',      icon: 'bi-truck'             },
+    { key: 'READY_TO_SHIP', label: 'Đang giao', icon: 'bi-box-seam'          },
+    // { key: 'SHIPPING',      label: 'Đang giao',      icon: 'bi-truck'             },
     { key: 'DELIVERED',     label: 'Đã giao',        icon: 'bi-bag-check'         },
     { key: 'CANCELLED',     label: 'Đã hủy',         icon: 'bi-x-circle'          },
     { key: 'RETURNED',      label: 'Trả hàng',       icon: 'bi-arrow-return-left' },
@@ -105,10 +106,12 @@ export class OrdersComponent implements OnInit {
 
   constructor(
     private orderService: OrderService,
-    private reviewService: ReviewService
+    private reviewService: ReviewService,
+    private tokenService: TokenService
   ) {}
 
   ngOnInit(): void {
+    this.customerId = Number(this.tokenService.getUserId());
     this.loadOrders();
   }
 
@@ -198,6 +201,11 @@ export class OrdersComponent implements OnInit {
       hour: '2-digit', minute: '2-digit'
     });
   }
+
+  reloadOrders(): void {
+  this.loadOrders();
+  this.showAlert('success', 'Đã cập nhật danh sách đơn hàng');
+}
 
   // ─── Detail modal ─────────────────────────────────────
 

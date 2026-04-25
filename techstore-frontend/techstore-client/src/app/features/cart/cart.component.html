@@ -183,7 +183,7 @@
           </div>
 
           <!-- Scroll list -->
-          <ng-container *ngIf="!couponsLoading">
+          <div *ngIf="!couponsLoading" class="cart-coupon-scrollable">
             <!-- Empty -->
             <div
               *ngIf="availableCoupons.length === 0"
@@ -304,7 +304,7 @@
                 </div>
               </div>
             </div>
-          </ng-container>
+          </div>
         </div>
         <!-- ── End coupon block ── -->
 

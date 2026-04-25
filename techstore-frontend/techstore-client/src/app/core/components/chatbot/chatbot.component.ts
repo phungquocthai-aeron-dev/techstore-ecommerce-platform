@@ -7,8 +7,9 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
-import { ChatApiService } from './chat-api.service'; 
+import { ChatApiService } from './chat-api.service';
 import { ChatSessionService } from './chat-session.service';
 import { ChatMessage, ChatSocketResponse } from './models/chat.model';
 
@@ -51,6 +52,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   constructor(
     private chatApi: ChatApiService,
     private sessionService: ChatSessionService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -60,14 +62,12 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   // ─── Session + Socket ──────────────────────────────────────────────────
 
   private initSession(): void {
-    // Lấy sessionId (extract từ sessionToken)
     const existingToken = this.sessionService.getSessionToken();
 
     if (existingToken) {
       this.sessionId = this.sessionService.getSessionId();
       this.connectSocket();
     } else {
-      // Gọi server tạo session mới
       this.sessionService.getValidSessionToken().subscribe({
         next: () => {
           this.sessionId = this.sessionService.getSessionId();
@@ -75,7 +75,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
         },
         error: () => {
           console.warn('[Chat] Session init failed — will use REST fallback');
-          this.sessionId = crypto.randomUUID(); // fallback tạm
+          this.sessionId = crypto.randomUUID();
         }
       });
     }
@@ -86,9 +86,11 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
       this.isConnected = true;
     });
 
-    // Lắng nghe response từ socket
     this.socketSub = this.chatApi.onSocketMessage$.subscribe(
-      (res: ChatSocketResponse) => this.handleSocketResponse(res)
+      (res: ChatSocketResponse) => {
+        console.warn(res)
+        this.handleSocketResponse(res)
+      }
     );
   }
 
@@ -118,7 +120,6 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     const text = this.inputText.trim();
     if (!text || this.isTyping) return;
 
-    // Hiển thị message của user
     this.messages.push({
       id: Date.now().toString(),
       role: 'user',
@@ -129,11 +130,9 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.inputText = '';
     this.shouldScroll = true;
 
-    // Thử gửi qua WebSocket trước
     const sent = this.chatApi.sendSocket(text, this.sessionId ?? '');
 
     if (!sent) {
-      // Fallback: gửi qua REST nếu socket chưa kết nối
       this.isTyping = true;
       this.chatApi.sendRest(text, this.sessionId ?? '').subscribe({
         next: res => {
@@ -151,7 +150,6 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   sendSuggestion(text: string): void {
-    // Bỏ emoji prefix nếu có (vd: "🔍 Tìm laptop gaming" → "Tìm laptop gaming")
     this.inputText = text.replace(/^[\p{Emoji}\s]+/u, '').trim();
     this.sendMessage();
   }
@@ -172,6 +170,167 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   formatTime(date: Date): string {
     return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  formatPrice(price: number): string {
+    return price.toLocaleString('vi-VN') + ' đ';
+  }
+
+  // ─── Rich content helpers ─────────────────────────────────────────────
+
+  /**
+   * Trả về true nếu message có type PRODUCT_LIST và có data
+   */
+  isProductList(msg: ChatMessage): boolean {
+    return msg.role === 'bot' && msg.type === 'PRODUCT_LIST' && Array.isArray(msg.data) && msg.data.length > 0;
+  }
+
+  /**
+   * Trả về true nếu message có data là danh sách voucher (detect theo cấu trúc data[0].discountType)
+   */
+  isVoucherList(msg: ChatMessage): boolean {
+    return msg.role === 'bot'
+      && Array.isArray(msg.data)
+      && msg.data.length > 0
+      && msg.data[0]?.discountType !== undefined;
+  }
+
+  /**
+   * Lấy tối đa 5 sản phẩm để hiển thị thẻ
+   */
+  getProductCards(msg: ChatMessage): any[] {
+    return (msg.data ?? []).slice(0, 5);
+  }
+
+  /**
+   * Lấy tối đa 5 voucher để hiển thị thẻ
+   */
+  getVoucherCards(msg: ChatMessage): any[] {
+    return (msg.data ?? []).slice(0, 5);
+  }
+
+  /**
+   * Có nhiều hơn 5 sản phẩm không?
+   */
+  hasMoreProducts(msg: ChatMessage): boolean {
+    return Array.isArray(msg.data) && (msg.metadata?.total ?? msg.data.length) > 5;
+  }
+
+  /**
+   * Keyword để link đến trang search
+   */
+  getSearchKeyword(msg: ChatMessage): string {
+    return msg.metadata?.keyword ?? '';
+  }
+
+  getTotalProducts(msg: ChatMessage): number {
+    return msg.metadata?.total ?? (msg.data?.length ?? 0);
+  }
+
+  navigateToProduct(id: number): void {
+    this.router.navigate(['/product', id]);
+  }
+
+  navigateToSearch(keyword: string): void {
+    this.router.navigate(['/search'], { queryParams: { keyword } });
+  }
+
+  navigateToCoupons(): void {
+    this.router.navigate(['/promotions']);
+  }
+
+  /**
+   * Parse markdown thành HTML cho phần text (không xử lý phần thẻ sản phẩm/voucher).
+   * Chỉ dùng cho message TEXT thuần hoặc phần mô tả đầu của message có thẻ.
+   */
+  parseMarkdown(text: string): string {
+    if (!text) return '';
+
+    // Loại bỏ các link dạng 👉 http://... hoặc **http://...** (sẽ được xử lý riêng)
+    let result = text;
+
+    // Xử lý link markdown [text](url)
+    result = result.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener" class="chat-link">$1</a>');
+
+    // Xử lý 👉 url
+    result = result.replace(/👉\s*(https?:\/\/\S+)/g, (_, url) => {
+      const label = this.getLinkLabel(url);
+      return `<a href="${url}" class="chat-btn-link" onclick="return false;" data-route="${url}">👉 ${label}</a>`;
+    });
+
+    // Bold: **text**
+    result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Italic: *text*
+    result = result.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Dòng kẻ ---
+    result = result.replace(/^---$/gm, '<hr class="chat-divider">');
+
+    // Bullet list: dòng bắt đầu bằng •
+    result = result.replace(/^•\s+(.+)$/gm, '<li>$1</li>');
+    result = result.replace(/(<li>.*<\/li>)/gs, '<ul class="chat-list">$1</ul>');
+    // Gộp các <ul> liền nhau
+    result = result.replace(/<\/ul>\s*<ul class="chat-list">/g, '');
+
+    // Newline → <br>
+    result = result.replace(/\n/g, '<br>');
+
+    // Xóa <br> thừa đầu/cuối
+    result = result.replace(/^(<br>)+|(<br>)+$/g, '');
+
+    return result;
+  }
+
+  /**
+   * Trích xuất phần text giới thiệu (trước danh sách bullet) để hiển thị phía trên thẻ sản phẩm/voucher
+   */
+  getIntroText(msg: ChatMessage): string {
+    if (!msg.content) return '';
+    // Lấy dòng đầu tiên (trước dấu •)
+    const firstBullet = msg.content.indexOf('\n•');
+    const intro = firstBullet > 0 ? msg.content.substring(0, firstBullet) : msg.content.split('\n')[0];
+    return this.parseMarkdown(intro.trim());
+  }
+
+  /**
+   * Lấy phần text phía SAU danh sách bullet (footer info, link coupons, v.v.)
+   */
+  getFooterText(msg: ChatMessage): string {
+    if (!msg.content) return '';
+    const lines = msg.content.split('\n');
+    // Tìm dòng cuối cùng có bullet
+    let lastBulletIdx = -1;
+    lines.forEach((l, i) => { if (l.trim().startsWith('•')) lastBulletIdx = i; });
+    if (lastBulletIdx === -1) return '';
+    const footerLines = lines.slice(lastBulletIdx + 1).join('\n').trim();
+    if (!footerLines) return '';
+    return this.parseMarkdown(footerLines);
+  }
+
+  private getLinkLabel(url: string): string {
+    if (url.includes('/promotions')) return 'Xem tất cả mã giảm giá';
+    if (url.includes('/search')) return 'Tìm kiếm sản phẩm';
+    if (url.includes('/product')) return 'Xem sản phẩm';
+    return 'Xem thêm';
+  }
+
+  getDiscountLabel(voucher: any): string {
+    if (voucher.discountType === 'PERCENT') {
+      return `-${voucher.discountValue}%`;
+    }
+    return `-${voucher.discountValue.toLocaleString('vi-VN')}đ`;
+  }
+
+  formatExpiry(dateStr: string): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('vi-VN');
+    } catch {
+      return dateStr;
+    }
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────

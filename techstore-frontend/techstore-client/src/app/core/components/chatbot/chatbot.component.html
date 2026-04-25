@@ -17,9 +17,7 @@
   <!-- Header -->
   <div class="chat-header">
     <div class="chat-avatar">
-      <span>
-        <i class="fa-solid fa-robot"></i>
-      </span>
+      <span><i class="fa-solid fa-robot"></i></span>
     </div>
     <div class="chat-info">
       <h4 class="chat-name">AI Assistant</h4>
@@ -33,22 +31,133 @@
 
   <!-- Messages -->
   <div class="chat-messages" #messagesContainer>
-    <div
-      *ngFor="let msg of messages"
-      class="message-row"
-      [class.user-row]="msg.role === 'user'"
-    >
-      <div
-        class="message-bubble"
-        [class.user-bubble]="msg.role === 'user'"
-        [class.bot-bubble]="msg.role === 'bot'"
-      >
-        {{ msg.content }}
+    <ng-container *ngFor="let msg of messages">
+      <div class="message-row" [class.user-row]="msg.role === 'user'">
+        <!-- ── USER bubble ── -->
+        <ng-container *ngIf="msg.role === 'user'">
+          <div class="message-bubble user-bubble">{{ msg.content }}</div>
+          <span class="message-time text-muted-custom">{{
+            formatTime(msg.timestamp)
+          }}</span>
+        </ng-container>
+
+        <!-- ── BOT: PRODUCT_LIST ── -->
+        <ng-container *ngIf="msg.role === 'bot' && isProductList(msg)">
+          <div class="bot-bubble message-bubble rich-bubble">
+            <!-- Intro text -->
+            <div class="rich-intro" [innerHTML]="getIntroText(msg)"></div>
+
+            <!-- Product cards -->
+            <div class="product-cards">
+              <div
+                *ngFor="let p of getProductCards(msg)"
+                class="product-card"
+                (click)="navigateToProduct(p.id)"
+                title="{{ p.name }}"
+              >
+                <div class="product-card-img">
+                  <img
+                    [src]="
+                      p.thumbnail || p.imageUrl || 'images/no-product-image.jpg'
+                    "
+                    [alt]="p.name"
+                    (error)="
+                      $any($event.target).src = 'images/no-product-image.jpg'
+                    "
+                  />
+                </div>
+                <div class="product-card-body">
+                  <div class="product-card-name">{{ p.name }}</div>
+                  <div class="product-card-brand">{{ p.brandName }}</div>
+                  <div class="product-card-price">
+                    {{ formatPrice(p.basePrice) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- "Xem thêm" nếu > 5 sản phẩm -->
+            <div *ngIf="hasMoreProducts(msg)" class="rich-footer">
+              <span class="more-hint">
+                📋 Tìm thấy <strong>{{ getTotalProducts(msg) }}</strong> sản
+                phẩm. Bạn có thể dùng bộ lọc tại trang tìm kiếm để thu hẹp kết
+                quả.
+              </span>
+              <button
+                class="chat-action-btn"
+                (click)="navigateToSearch(getSearchKeyword(msg))"
+              >
+                🔍 Xem tất cả kết quả
+              </button>
+            </div>
+          </div>
+          <span class="message-time text-muted-custom">{{
+            formatTime(msg.timestamp)
+          }}</span>
+        </ng-container>
+
+        <!-- ── BOT: VOUCHER LIST ── -->
+        <ng-container
+          *ngIf="
+            msg.role === 'bot' && !isProductList(msg) && isVoucherList(msg)
+          "
+        >
+          <div class="bot-bubble message-bubble rich-bubble">
+            <div class="rich-intro" [innerHTML]="getIntroText(msg)"></div>
+
+            <!-- Voucher cards -->
+            <div class="voucher-cards">
+              <div *ngFor="let v of getVoucherCards(msg)" class="voucher-card">
+                <div class="voucher-discount">{{ getDiscountLabel(v) }}</div>
+                <div class="voucher-body">
+                  <div class="voucher-name">{{ v.name }}</div>
+                  <div class="voucher-meta">
+                    <span>Đơn từ {{ formatPrice(v.minOrderValue) }}</span>
+                    <span *ngIf="v.usageLimit"
+                      >· Còn {{ v.remainingUsage ?? v.usageLimit }} lượt</span
+                    >
+                  </div>
+                  <div class="voucher-expiry" *ngIf="v.endDate">
+                    HSD: {{ formatExpiry(v.endDate) }}
+                  </div>
+                </div>
+                <div class="voucher-code" *ngIf="v.code">{{ v.code }}</div>
+              </div>
+            </div>
+
+            <!-- Footer + link coupons -->
+            <div class="rich-footer">
+              <div class="game-hint">
+                🎮 <strong>Mẹo hay:</strong> Tại trang mã giảm giá, bạn có thể
+                chơi <em>mini-game trả lời câu hỏi</em> để săn thêm các mã độc
+                quyền — mỗi ngày <strong>3 lượt miễn phí!</strong>
+              </div>
+              <button class="chat-action-btn" (click)="navigateToCoupons()">
+                🎟️ Xem mã &amp; chơi game săn voucher
+              </button>
+            </div>
+          </div>
+          <span class="message-time text-muted-custom">{{
+            formatTime(msg.timestamp)
+          }}</span>
+        </ng-container>
+
+        <!-- ── BOT: TEXT thường ── -->
+        <ng-container
+          *ngIf="
+            msg.role === 'bot' && !isProductList(msg) && !isVoucherList(msg)
+          "
+        >
+          <div
+            class="bot-bubble message-bubble"
+            [innerHTML]="parseMarkdown(msg.content)"
+          ></div>
+          <span class="message-time text-muted-custom">{{
+            formatTime(msg.timestamp)
+          }}</span>
+        </ng-container>
       </div>
-      <span class="message-time text-muted-custom">{{
-        formatTime(msg.timestamp)
-      }}</span>
-    </div>
+    </ng-container>
 
     <!-- Typing indicator -->
     <div class="message-row" *ngIf="isTyping">

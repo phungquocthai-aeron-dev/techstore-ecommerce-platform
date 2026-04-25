@@ -79,6 +79,8 @@
 
 /* ─── Product Info Card ─── */
 .product-info {
+  position: sticky;
+  top: 100px;
   background: #111827;
   padding: 32px;
   border-radius: 12px;

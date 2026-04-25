@@ -381,13 +381,13 @@ public class ReviewService {
             throw new AppException(ErrorCode.REPLY_ALREADY_EXISTED);
         }
 
-        ModerationRequest modReq = new ModerationRequest();
-        modReq.setContent(req.getContent());
+        //        ModerationRequest modReq = new ModerationRequest();
+        //        modReq.setContent(req.getContent());
+        //
+        //        var modResult = moderationClient.predict(modReq).getResult();
 
-        var modResult = moderationClient.predict(modReq).getResult();
-
-        String status = mapModerationToStatus(modResult.getLabel());
-
+        //        String status = mapModerationToStatus(modResult.getLabel());
+        String status = "ACTIVE";
         Reply reply = Reply.builder()
                 .content(req.getContent())
                 .status(status)

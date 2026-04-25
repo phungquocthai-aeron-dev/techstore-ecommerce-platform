@@ -1,5 +1,6 @@
 package com.techstore.warehouse.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,12 +23,16 @@ public class WarehouseStatisticsService {
     private final WarehouseTransactionRepository transactionRepo;
 
     @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_STAFF')")
-    public InboundCostStatResponse getInboundCostStats(PeriodType periodType, LocalDateTime from, LocalDateTime to) {
+    public InboundCostStatResponse getInboundCostStats(PeriodType periodType, LocalDate from, LocalDate to) {
 
-        // Nếu không truyền toDate thì mặc định là hiện tại
-        LocalDateTime effectiveTo = to != null ? to : LocalDateTime.now();
-        // Nếu không truyền fromDate thì mặc định theo periodType
-        LocalDateTime effectiveFrom = from != null ? from : resolveDefaultFrom(periodType, effectiveTo);
+        //        // Nếu không truyền toDate thì mặc định là hiện tại
+        //        LocalDateTime effectiveTo = to != null ? to : LocalDateTime.now();
+        //        // Nếu không truyền fromDate thì mặc định theo periodType
+        //        LocalDateTime effectiveFrom = from != null ? from : resolveDefaultFrom(periodType, effectiveTo);
+        LocalDateTime effectiveTo = (to != null) ? to.atTime(23, 59, 59) : LocalDateTime.now();
+
+        LocalDateTime effectiveFrom =
+                (from != null) ? from.atStartOfDay() : resolveDefaultFrom(periodType, effectiveTo);
 
         List<Object[]> rawRows =
                 switch (periodType) {

@@ -115,7 +115,7 @@ public class WarehouseTransactionService {
         }
 
         transaction.setDetails(details);
-        transaction.setStatus(TransactionStatus.PENDING.name());
+        transaction.setStatus(TransactionStatus.COMPLETED.name());
 
         WarehouseTransaction saved = transactionRepo.save(transaction);
         return transactionMapper.toResponse(saved);

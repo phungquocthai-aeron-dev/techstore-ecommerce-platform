@@ -1,0 +1,296 @@
+name: techstore
+services:
+
+# ================= INFRA =================
+    mysql:
+        image: mysql:8.0
+        container_name: mysql
+        hostname: mysql
+        restart: always
+        ports:
+            - "3307:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+        volumes:
+            - mysql_data:/var/lib/mysql
+            - ./mysql-init:/docker-entrypoint-initdb.d
+        networks:
+            - backend
+
+    mongodb:
+        image: mongo:8.0
+        container_name: mongodb
+        hostname: mongodb
+        restart: always
+        command: mongod --auth --bind_ip_all
+        ports:
+            - "27018:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: root
+        volumes:
+            - mongo_data:/data/db
+        networks:
+            - backend
+
+    redis:
+        image: redis:7.2
+        container_name: redis
+        hostname: redis
+        restart: always
+        ports:
+            - "6380:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - backend
+
+    rabbitmq:
+        image: rabbitmq:3.13-management
+        container_name: rabbitmq
+        hostname: rabbitmq
+        restart: always
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        environment:
+            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_PASS: admin
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
+        networks:
+            - backend
+
+    kafka:
+        image: confluentinc/cp-kafka:7.6.0
+        container_name: kafka
+        hostname: kafka
+        restart: always
+        ports:
+            - "9094:9094"
+        environment:
+            KAFKA_NODE_ID: 1
+            KAFKA_PROCESS_ROLES: broker,controller
+            KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+            KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+            KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+            KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+            KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+            KAFKA_LOG_DIRS: /var/lib/kafka/data
+            CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+        volumes:
+            - kafka_data:/var/lib/kafka/data
+        networks:
+            - backend
+
+  # ================= MODERATION SERVICE =================
+    moderation-service:
+        build: ../techstore-backend/moderation-service
+        container_name: moderation-service
+        hostname: moderation-service
+        restart: "no"
+        profiles: ["app"]
+        ports:
+            - "8089:8089"
+        depends_on:
+            - redis
+            - kafka
+        networks:
+            - backend
+    
+  # ================= API GATEWAY =================
+    api-gateway:
+        build: ../techstore-backend/api-gateway
+        ports:
+          - "8888:8888"
+        env_file:
+          - .env
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+  # ================= SERVICES =================
+    identity-service:
+        build: ../techstore-backend/identity-service
+        ports:
+          - "8080:8080"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+    user-service:
+        build: ../techstore-backend/user-service
+        ports:
+          - "8081:8081"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+    
+    product-service:
+        build: ../techstore-backend/product-service
+        ports:
+          - "8083:8083"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+    order-service:
+        build: ../techstore-backend/order-service
+        ports:
+          - "8086:8086"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+    cart-service:
+        build: ../techstore-backend/cart-service
+        ports:
+          - "8085:8085"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - redis
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+    warehouse-service:
+        build: ../techstore-backend/warehouse-service
+        ports:
+          - "8084:8084"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+    review-service:
+        build: ../techstore-backend/review-service
+        ports:
+          - "8087:8087"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+  
+    file-service:
+        build: ../techstore-backend/file-service
+        ports:
+          - "8082:8082"
+        env_file:
+          - .env
+        depends_on:
+          - mongodb  
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+        volumes:
+          - D:/Luan_Van/app-data/uploads:/app/uploads
+  
+    notification-service:
+        build: ../techstore-backend/notification-service
+        ports:
+          - "8088:8088"
+        env_file:
+          - .env
+        depends_on:
+          - mongodb
+          - redis
+          - kafka
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+
+    chatbot-service:
+        build: ../techstore-backend/chatbot-service
+        ports:
+          - "8090:8090"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend
+
+    quizgame-service:
+        build: ../techstore-backend/quizgame-service
+        ports:
+          - "8091:8091"
+        env_file:
+          - .env
+        depends_on:
+          - mysql
+        restart: "no"
+        profiles: ["app"]
+        networks:
+          - backend        
+
+    chat-service:
+      build: ../techstore-backend/chat-service
+      ports:
+        - "8092:8092" # REST
+        - "8099:8099" # Socket.IO
+      env_file:
+        - .env
+      depends_on:
+        - mongodb
+        - kafka
+      restart: "no"
+      profiles: ["app"]
+      networks:
+        - backend 
+
+volumes:
+    mysql_data:
+    mongo_data:
+    redis_data:
+    rabbitmq_data:
+    kafka_data:
+
+
+networks:
+    backend:
+        driver: bridge
